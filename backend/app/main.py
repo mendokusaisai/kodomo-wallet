@@ -1,46 +1,65 @@
-import strawberry
+"""
+Kodomo Wallet API - FastAPI application with GraphQL.
+"""
+
+from app.api.graphql.schema import schema
+from app.core.config import settings
+from app.core.database import SessionLocal
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from strawberry.fastapi import GraphQLRouter
 
 
-# GraphQL スキーマ（後で実装）
-@strawberry.type
-class Query:
-    @strawberry.field
-    def hello(self) -> str:
-        return "Hello from Kodomo Wallet API!"
+# Context getter for GraphQL
+async def get_context():
+    """Provide database session to GraphQL context"""
+    db = SessionLocal()
+    try:
+        return {"db": db}
+    finally:
+        pass  # We'll close it in the finally block after the request
 
 
-schema = strawberry.Schema(query=Query)
-graphql_app = GraphQLRouter(schema)
+# GraphQL Router with context
+graphql_app = GraphQLRouter(schema, context_getter=get_context)
 
-# FastAPI アプリケーション
+# FastAPI application
 app = FastAPI(
     title="Kodomo Wallet API",
     description="親子で使えるお小遣い管理アプリの GraphQL API",
     version="0.1.0",
 )
 
-# CORS 設定
+# CORS configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # Next.js の開発サーバー
+    allow_origins=settings.CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# GraphQL エンドポイント
+# GraphQL endpoint
 app.include_router(graphql_app, prefix="/graphql")
 
 
 @app.get("/")
 def root():
-    return {"message": "Kodomo Wallet API", "graphql": "/graphql", "docs": "/docs"}
+    """Root endpoint with API information"""
+    return {
+        "message": "Kodomo Wallet API",
+        "version": "0.1.0",
+        "endpoints": {"graphql": "/graphql", "docs": "/docs", "redoc": "/redoc"},
+    }
+
+
+@app.get("/health")
+def health_check():
+    """Health check endpoint"""
+    return {"status": "healthy"}
 
 
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)
