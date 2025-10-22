@@ -2,8 +2,6 @@
 GraphQL types for Strawberry.
 """
 
-from typing import Optional
-
 import strawberry
 
 
@@ -14,7 +12,7 @@ class Profile:
     id: str
     name: str
     role: str
-    avatar_url: Optional[str]
+    avatar_url: str | None
     created_at: str
     updated_at: str
 
@@ -27,8 +25,8 @@ class Account:
     user_id: str
     balance: int
     currency: str
-    goal_name: Optional[str]
-    goal_amount: Optional[int]
+    goal_name: str | None
+    goal_amount: int | None
     created_at: str
     updated_at: str
 
@@ -41,7 +39,7 @@ class Transaction:
     account_id: str
     type: str
     amount: int
-    description: Optional[str]
+    description: str | None
     created_at: str
 
 
@@ -52,7 +50,7 @@ class WithdrawalRequest:
     id: str
     account_id: str
     amount: int
-    description: Optional[str]
+    description: str | None
     status: str
     created_at: str
     updated_at: str

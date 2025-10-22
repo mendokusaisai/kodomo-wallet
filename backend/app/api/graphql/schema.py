@@ -2,9 +2,8 @@
 GraphQL schema definition using Strawberry.
 """
 
-from typing import List, Optional
-
 import strawberry
+
 from app.api.graphql import resolvers
 from app.api.graphql.types import Account, Profile, Transaction
 from app.core.database import SessionLocal
@@ -20,19 +19,19 @@ class Query:
     """GraphQL Query definitions"""
 
     @strawberry.field
-    def me(self, info, user_id: str) -> Optional[Profile]:
+    def me(self, info, user_id: str) -> Profile | None:
         """Get current user profile"""
         db = info.context["db"]
         return resolvers.get_profile_by_id(db, user_id)
 
     @strawberry.field
-    def accounts(self, info, user_id: str) -> List[Account]:
+    def accounts(self, info, user_id: str) -> list[Account]:
         """Get accounts for a user"""
         db = info.context["db"]
         return resolvers.get_accounts_by_user_id(db, user_id)
 
     @strawberry.field
-    def transactions(self, info, account_id: str, limit: int = 50) -> List[Transaction]:
+    def transactions(self, info, account_id: str, limit: int = 50) -> list[Transaction]:
         """Get transactions for an account"""
         db = info.context["db"]
         return resolvers.get_transactions_by_account_id(db, account_id, limit)
@@ -44,14 +43,14 @@ class Mutation:
 
     @strawberry.mutation
     def deposit(
-        self, info, account_id: str, amount: int, description: Optional[str] = None
+        self, info, account_id: str, amount: int, description: str | None = None
     ) -> Transaction:
         """Create a deposit transaction"""
         db = info.context["db"]
         try:
             return resolvers.create_deposit(db, account_id, amount, description)
         except ValueError as e:
-            raise Exception(str(e))
+            raise Exception(str(e)) from e
 
 
 # Create schema

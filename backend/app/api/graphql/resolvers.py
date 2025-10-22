@@ -2,54 +2,35 @@
 GraphQL resolvers for queries and mutations.
 """
 
-from datetime import datetime
-from typing import List, Optional
+from datetime import UTC, datetime
+from decimal import Decimal
+
+from sqlalchemy.orm import Session
 
 from app.api.graphql.types import Account, Profile, Transaction
 from app.models.models import Account as AccountModel
 from app.models.models import Profile as ProfileModel
 from app.models.models import Transaction as TransactionModel
-from sqlalchemy.orm import Session
 
 
-def get_profile_by_id(db: Session, user_id: str) -> Optional[Profile]:
+def get_profile_by_id(db: Session, user_id: str) -> Profile | None:
     """Get user profile by ID"""
     profile = db.query(ProfileModel).filter(ProfileModel.id == user_id).first()
     if not profile:
         return None
 
-    return Profile(
-        id=str(profile.id),
-        name=profile.name,
-        role=profile.role,
-        avatar_url=profile.avatar_url,
-        created_at=profile.created_at,
-        updated_at=profile.updated_at,
-    )
+    return profile
 
 
-def get_accounts_by_user_id(db: Session, user_id: str) -> List[Account]:
+def get_accounts_by_user_id(db: Session, user_id: str) -> list[Account]:
     """Get all accounts for a user"""
     accounts = db.query(AccountModel).filter(AccountModel.user_id == user_id).all()
-
-    return [
-        Account(
-            id=str(account.id),
-            user_id=str(account.user_id),
-            balance=account.balance,
-            currency=account.currency,
-            goal_name=account.goal_name,
-            goal_amount=account.goal_amount,
-            created_at=account.created_at,
-            updated_at=account.updated_at,
-        )
-        for account in accounts
-    ]
+    return list(accounts)
 
 
 def get_transactions_by_account_id(
     db: Session, account_id: str, limit: int = 50
-) -> List[Transaction]:
+) -> list[Transaction]:
     """Get transactions for an account"""
     transactions = (
         db.query(TransactionModel)
@@ -58,22 +39,11 @@ def get_transactions_by_account_id(
         .limit(limit)
         .all()
     )
-
-    return [
-        Transaction(
-            id=str(tx.id),
-            account_id=str(tx.account_id),
-            type=tx.type,
-            amount=tx.amount,
-            description=tx.description,
-            created_at=tx.created_at,
-        )
-        for tx in transactions
-    ]
+    return list(transactions)
 
 
 def create_deposit(
-    db: Session, account_id: str, amount: int, description: Optional[str] = None
+    db: Session, account_id: str, amount: int, description: str | None = None
 ) -> Transaction:
     """Create a deposit transaction"""
     # Get account
@@ -83,7 +53,6 @@ def create_deposit(
 
     # Update balance
     account.balance += amount
-    account.updated_at = datetime.utcnow().isoformat()
 
     # Create transaction
     transaction = TransactionModel(
@@ -91,18 +60,11 @@ def create_deposit(
         type="deposit",
         amount=amount,
         description=description,
-        created_at=datetime.utcnow().isoformat(),
+        created_at=datetime.now(UTC),
     )
 
     db.add(transaction)
     db.commit()
     db.refresh(transaction)
 
-    return Transaction(
-        id=str(transaction.id),
-        account_id=str(transaction.account_id),
-        type=transaction.type,
-        amount=transaction.amount,
-        description=transaction.description,
-        created_at=transaction.created_at,
-    )
+    return transaction

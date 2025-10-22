@@ -2,12 +2,13 @@
 Kodomo Wallet API - FastAPI application with GraphQL.
 """
 
-from app.api.graphql.schema import schema
-from app.core.config import settings
-from app.core.database import SessionLocal
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from strawberry.fastapi import GraphQLRouter
+
+from app.api.graphql.schema import schema
+from app.core.config import settings
+from app.core.database import SessionLocal
 
 
 # Context getter for GraphQL

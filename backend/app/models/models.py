@@ -4,10 +4,11 @@ SQLAlchemy models for the application.
 
 import uuid
 
-from app.core.database import Base
 from sqlalchemy import BigInteger, CheckConstraint, Column, ForeignKey, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
+
+from app.core.database import Base
 
 
 class Profile(Base):
@@ -24,14 +25,10 @@ class Profile(Base):
     updated_at = Column(Text, nullable=False)
 
     # Relationships
-    accounts = relationship(
-        "Account", back_populates="user", cascade="all, delete-orphan"
-    )
+    accounts = relationship("Account", back_populates="user", cascade="all, delete-orphan")
     children = relationship("Profile", backref="parent", remote_side=[id])
 
-    __table_args__ = (
-        CheckConstraint("role IN ('parent', 'child')", name="check_role"),
-    )
+    __table_args__ = (CheckConstraint("role IN ('parent', 'child')", name="check_role"),)
 
 
 class Account(Base):
@@ -82,9 +79,7 @@ class Transaction(Base):
     account = relationship("Account", back_populates="transactions")
 
     __table_args__ = (
-        CheckConstraint(
-            "type IN ('deposit', 'withdraw', 'reward')", name="check_transaction_type"
-        ),
+        CheckConstraint("type IN ('deposit', 'withdraw', 'reward')", name="check_transaction_type"),
     )
 
 
@@ -109,7 +104,5 @@ class WithdrawalRequest(Base):
     account = relationship("Account", back_populates="withdrawal_requests")
 
     __table_args__ = (
-        CheckConstraint(
-            "status IN ('pending', 'approved', 'rejected')", name="check_status"
-        ),
+        CheckConstraint("status IN ('pending', 'approved', 'rejected')", name="check_status"),
     )
