@@ -2,6 +2,9 @@
 Kodomo Wallet API - FastAPI application with GraphQL.
 """
 
+from collections.abc import AsyncGenerator
+from typing import Any
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from strawberry.fastapi import GraphQLRouter
@@ -18,19 +21,27 @@ from app.services.business_services import (
 
 
 # Context getter for GraphQL - provides services via dependency injection
-async def get_context():
-    """Provide database session and services to GraphQL context"""
+async def get_context() -> AsyncGenerator[dict[str, Any]]:
+    """
+    Provide database session and services to GraphQL context.
+
+    Uses async generator to ensure proper resource cleanup.
+    The session will be automatically closed after the request completes.
+
+    Yields:
+        dict: Context containing database session and injected services
+    """
     db = SessionLocal()
     try:
         injector = create_injector(db)
-        return {
+        yield {
             "db": db,
             "profile_service": injector.get(ProfileService),
             "account_service": injector.get(AccountService),
             "transaction_service": injector.get(TransactionService),
         }
     finally:
-        pass  # Session will be closed after the request
+        db.close()
 
 
 # GraphQL Router with context
