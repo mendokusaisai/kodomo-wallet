@@ -11,13 +11,7 @@ from strawberry.fastapi import GraphQLRouter
 
 from app.api.graphql.schema import schema
 from app.core.config import cors_settings
-from app.core.container import create_injector
-from app.core.database import SessionLocal
-from app.services.business_services import (
-    AccountService,
-    ProfileService,
-    TransactionService,
-)
+from app.core.context import GraphQLContext
 
 
 # Context getter for GraphQL - provides services via dependency injection
@@ -25,23 +19,14 @@ async def get_context() -> AsyncGenerator[dict[str, Any]]:
     """
     Provide database session and services to GraphQL context.
 
-    Uses async generator to ensure proper resource cleanup.
+    Uses GraphQLContext manager to ensure proper resource cleanup.
     The session will be automatically closed after the request completes.
 
     Yields:
         dict: Context containing database session and injected services
     """
-    db = SessionLocal()
-    try:
-        injector = create_injector(db)
-        yield {
-            "db": db,
-            "profile_service": injector.get(ProfileService),
-            "account_service": injector.get(AccountService),
-            "transaction_service": injector.get(TransactionService),
-        }
-    finally:
-        db.close()
+    async with GraphQLContext() as ctx:
+        yield ctx.to_dict()
 
 
 # GraphQL Router with context
