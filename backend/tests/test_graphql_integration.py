@@ -167,7 +167,7 @@ class TestResolverIntegration:
 
     def test_create_deposit_account_not_found(self, in_memory_db, services):
         """Test creating deposit for non-existent account"""
-        with pytest.raises(ValueError, match="Account not found"):
+        with pytest.raises(Exception, match="Account .* not found"):
             resolvers.create_deposit(
                 str(uuid.uuid4()), 1000, in_memory_db, services["transaction"], "Test"
             )

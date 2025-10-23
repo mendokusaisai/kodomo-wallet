@@ -7,6 +7,11 @@ from strawberry.types import Info
 
 from app.api.graphql import resolvers
 from app.api.graphql.types import Account, Profile, Transaction
+from app.core.exceptions import (
+    DomainException,
+    InvalidAmountException,
+    ResourceNotFoundException,
+)
 
 
 @strawberry.type
@@ -64,8 +69,12 @@ class Mutation:
             return resolvers.create_deposit(
                 account_id, amount, db, transaction_service, description
             )
-        except ValueError as e:
-            raise Exception(str(e)) from e
+        except ResourceNotFoundException as e:
+            raise Exception(f"Resource not found: {e.message}") from e
+        except InvalidAmountException as e:
+            raise Exception(f"Invalid amount: {e.message}") from e
+        except DomainException as e:
+            raise Exception(f"Domain error: {e.message}") from e
 
 
 # Create schema

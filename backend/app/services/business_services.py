@@ -8,6 +8,7 @@ from datetime import UTC, datetime
 
 from injector import inject
 
+from app.core.exceptions import InvalidAmountException, ResourceNotFoundException
 from app.models.models import Account, Profile, Transaction
 from app.repositories.interfaces import (
     AccountRepository,
@@ -60,13 +61,17 @@ class TransactionService:
         self, account_id: str, amount: int, description: str | None = None
     ) -> Transaction:
         """Create a deposit transaction and update account balance"""
+        # Validate amount
+        if amount <= 0:
+            raise InvalidAmountException(amount, "Amount must be greater than zero")
+
         # Get account
         account = self.account_repo.get_by_id(account_id)
         if not account:
-            raise ValueError("Account not found")
+            raise ResourceNotFoundException("Account", account_id)
 
-        # Update balance
-        new_balance = int(account.balance) + amount
+        # Update balance (type: ignore for SQLAlchemy Column type)
+        new_balance = int(account.balance) + amount  # type: ignore[arg-type]
         self.account_repo.update_balance(account, new_balance)
 
         # Create transaction

@@ -11,6 +11,7 @@ from datetime import UTC, datetime
 import pytest
 from injector import Binder, Injector, Module
 
+from app.core.exceptions import InvalidAmountException, ResourceNotFoundException
 from app.models.models import Account, Profile
 from app.repositories.interfaces import (
     AccountRepository,
@@ -87,14 +88,16 @@ def mock_transaction_repository():
 
 
 @pytest.fixture
-def injector_with_mocks(mock_profile_repo, mock_account_repository, mock_transaction_repo):
+def injector_with_mocks(
+    mock_profile_repository, mock_account_repository, mock_transaction_repository
+):
     """Create an injector with mock repositories"""
     return Injector(
         [
             TestRepositoryModule(
-                mock_profile_repo,
+                mock_profile_repository,
                 mock_account_repository,
-                mock_transaction_repo,
+                mock_transaction_repository,
             ),
             TestServiceModule(),
         ]
@@ -159,18 +162,22 @@ class TestProfileService:
         assert result is None
 
     def test_get_profile_uses_repository(
-        self, mock_profile_repo, mock_account_repository, mock_transaction_repo, sample_profile
+        self,
+        mock_profile_repository,
+        mock_account_repository,
+        mock_transaction_repository,
+        sample_profile,
     ):
         """Test that ProfileService uses the injected repository"""
         # Setup: Create service with specific repository
-        mock_profile_repo.add(sample_profile)
+        mock_profile_repository.add(sample_profile)
 
         injector = Injector(
             [
                 TestRepositoryModule(
-                    mock_profile_repo,
+                    mock_profile_repository,
                     mock_account_repository,
-                    mock_transaction_repo,
+                    mock_transaction_repository,
                 ),
                 TestServiceModule(),
             ]
@@ -288,19 +295,23 @@ class TestTransactionService:
     """Test suite for TransactionService"""
 
     def test_get_account_transactions_success(
-        self, injector_with_mocks, mock_account_repository, mock_transaction_repo, sample_account
+        self,
+        injector_with_mocks,
+        mock_account_repository,
+        mock_transaction_repository,
+        sample_account,
     ):
         """Test successfully retrieving account transactions"""
         # Setup: Add account and transactions
         mock_account_repository.add(sample_account)
-        mock_transaction_repo.create(
+        mock_transaction_repository.create(
             account_id=str(sample_account.id),
             transaction_type="deposit",
             amount=1000,
             description="Test 1",
             created_at=str(datetime.now(UTC)),
         )
-        mock_transaction_repo.create(
+        mock_transaction_repository.create(
             account_id=str(sample_account.id),
             transaction_type="withdraw",
             amount=500,
@@ -316,13 +327,17 @@ class TestTransactionService:
         assert len(results) == 2
 
     def test_get_account_transactions_with_limit(
-        self, injector_with_mocks, mock_account_repository, mock_transaction_repo, sample_account
+        self,
+        injector_with_mocks,
+        mock_account_repository,
+        mock_transaction_repository,
+        sample_account,
     ):
         """Test retrieving transactions with limit"""
         # Setup: Add account and multiple transactions
         mock_account_repository.add(sample_account)
         for i in range(5):
-            mock_transaction_repo.create(
+            mock_transaction_repository.create(
                 account_id=str(sample_account.id),
                 transaction_type="deposit",
                 amount=1000 * (i + 1),
@@ -338,7 +353,11 @@ class TestTransactionService:
         assert len(results) == 3
 
     def test_create_deposit_success(
-        self, injector_with_mocks, mock_account_repository, mock_transaction_repo, sample_account
+        self,
+        injector_with_mocks,
+        mock_account_repository,
+        mock_transaction_repository,
+        sample_account,
     ):
         """Test successfully creating a deposit"""
         # Setup: Add account to repository
@@ -366,7 +385,7 @@ class TestTransactionService:
         assert int(updated_account.balance) == initial_balance + 500  # type: ignore[arg-type]
 
         # Verify transaction was recorded
-        transactions = mock_transaction_repo.get_by_account_id(str(sample_account.id))
+        transactions = mock_transaction_repository.get_by_account_id(str(sample_account.id))
         assert len(transactions) == 1
         assert int(transactions[0].amount) == 500  # type: ignore[arg-type]
 
@@ -374,12 +393,17 @@ class TestTransactionService:
         """Test creating deposit for non-existent account raises error"""
         service = injector_with_mocks.get(TransactionService)
 
-        with pytest.raises(ValueError, match="Account not found"):
+        with pytest.raises(ResourceNotFoundException) as exc_info:
             service.create_deposit(
                 account_id="non-existent-id",
                 amount=500,
                 description="Test deposit",
             )
+
+        # Verify exception details
+        assert exc_info.value.resource_type == "Account"
+        assert exc_info.value.resource_id == "non-existent-id"
+        assert "not found" in str(exc_info.value)
 
     def test_create_deposit_updates_balance_correctly(
         self, injector_with_mocks, mock_account_repository, sample_account
@@ -419,8 +443,48 @@ class TestTransactionService:
         assert transaction is not None
         assert transaction.description is None
 
+    def test_create_deposit_with_negative_amount(
+        self, injector_with_mocks, mock_account_repository, sample_account
+    ):
+        """Test creating deposit with negative amount raises error"""
+        # Setup
+        mock_account_repository.add(sample_account)
+
+        # Test
+        service = injector_with_mocks.get(TransactionService)
+        with pytest.raises(InvalidAmountException) as exc_info:
+            service.create_deposit(
+                account_id=str(sample_account.id),
+                amount=-100,
+                description="Invalid deposit",
+            )
+
+        # Verify exception details
+        assert exc_info.value.amount == -100
+        assert "greater than zero" in exc_info.value.reason
+
+    def test_create_deposit_with_zero_amount(
+        self, injector_with_mocks, mock_account_repository, sample_account
+    ):
+        """Test creating deposit with zero amount raises error"""
+        # Setup
+        mock_account_repository.add(sample_account)
+
+        # Test
+        service = injector_with_mocks.get(TransactionService)
+        with pytest.raises(InvalidAmountException) as exc_info:
+            service.create_deposit(
+                account_id=str(sample_account.id),
+                amount=0,
+                description="Zero deposit",
+            )
+
+        # Verify exception details
+        assert exc_info.value.amount == 0
+        assert "greater than zero" in exc_info.value.reason
+
     def test_service_uses_correct_repositories(
-        self, mock_account_repository, mock_transaction_repo, sample_account
+        self, mock_account_repository, mock_transaction_repository, sample_account
     ):
         """Test that TransactionService uses both injected repositories"""
         # Setup
@@ -432,7 +496,7 @@ class TestTransactionService:
                 TestRepositoryModule(
                     MockProfileRepository(),
                     mock_account_repository,
-                    mock_transaction_repo,
+                    mock_transaction_repository,
                 ),
                 TestServiceModule(),
             ]
@@ -444,4 +508,4 @@ class TestTransactionService:
 
         # Verify that both repositories were used
         assert mock_account_repository.get_by_id(str(sample_account.id)) is not None
-        assert len(mock_transaction_repo.get_by_account_id(str(sample_account.id))) == 1
+        assert len(mock_transaction_repository.get_by_account_id(str(sample_account.id))) == 1
