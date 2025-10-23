@@ -3,15 +3,10 @@ GraphQL schema definition using Strawberry.
 """
 
 import strawberry
+from strawberry.types import Info
 
 from app.api.graphql import resolvers
 from app.api.graphql.types import Account, Profile, Transaction
-from app.core.database import SessionLocal
-
-
-def get_context():
-    """Get database session for context"""
-    return {"db": SessionLocal()}
 
 
 @strawberry.type
@@ -19,22 +14,35 @@ class Query:
     """GraphQL Query definitions"""
 
     @strawberry.field
-    def me(self, info, user_id: str) -> Profile | None:
+    def me(
+        self,
+        info: Info,
+        user_id: str,
+    ) -> Profile | None:
         """Get current user profile"""
-        db = info.context["db"]
-        return resolvers.get_profile_by_id(db, user_id)
+        profile_service = info.context["profile_service"]
+        return resolvers.get_profile_by_id(user_id, profile_service)
 
     @strawberry.field
-    def accounts(self, info, user_id: str) -> list[Account]:
+    def accounts(
+        self,
+        info: Info,
+        user_id: str,
+    ) -> list[Account]:
         """Get accounts for a user"""
-        db = info.context["db"]
-        return resolvers.get_accounts_by_user_id(db, user_id)
+        account_service = info.context["account_service"]
+        return resolvers.get_accounts_by_user_id(user_id, account_service)
 
     @strawberry.field
-    def transactions(self, info, account_id: str, limit: int = 50) -> list[Transaction]:
+    def transactions(
+        self,
+        info: Info,
+        account_id: str,
+        limit: int = 50,
+    ) -> list[Transaction]:
         """Get transactions for an account"""
-        db = info.context["db"]
-        return resolvers.get_transactions_by_account_id(db, account_id, limit)
+        transaction_service = info.context["transaction_service"]
+        return resolvers.get_transactions_by_account_id(account_id, transaction_service, limit)
 
 
 @strawberry.type
@@ -43,12 +51,19 @@ class Mutation:
 
     @strawberry.mutation
     def deposit(
-        self, info, account_id: str, amount: int, description: str | None = None
+        self,
+        info: Info,
+        account_id: str,
+        amount: int,
+        description: str | None = None,
     ) -> Transaction:
         """Create a deposit transaction"""
         db = info.context["db"]
+        transaction_service = info.context["transaction_service"]
         try:
-            return resolvers.create_deposit(db, account_id, amount, description)
+            return resolvers.create_deposit(
+                account_id, amount, db, transaction_service, description
+            )
         except ValueError as e:
             raise Exception(str(e)) from e
 

@@ -1,70 +1,53 @@
 """
 GraphQL resolvers for queries and mutations.
-"""
 
-from datetime import UTC, datetime
-from decimal import Decimal
+These resolvers use Service layer dependencies without knowing about database details.
+"""
 
 from sqlalchemy.orm import Session
 
 from app.api.graphql.types import Account, Profile, Transaction
-from app.models.models import Account as AccountModel
-from app.models.models import Profile as ProfileModel
-from app.models.models import Transaction as TransactionModel
+from app.services.business_services import (
+    AccountService,
+    ProfileService,
+    TransactionService,
+)
 
 
-def get_profile_by_id(db: Session, user_id: str) -> Profile | None:
+def get_profile_by_id(
+    user_id: str,
+    profile_service: ProfileService,
+) -> Profile | None:
     """Get user profile by ID"""
-    profile = db.query(ProfileModel).filter(ProfileModel.id == user_id).first()
-    if not profile:
-        return None
-
-    return profile
+    return profile_service.get_profile(user_id)
 
 
-def get_accounts_by_user_id(db: Session, user_id: str) -> list[Account]:
+def get_accounts_by_user_id(
+    user_id: str,
+    account_service: AccountService,
+) -> list[Account]:
     """Get all accounts for a user"""
-    accounts = db.query(AccountModel).filter(AccountModel.user_id == user_id).all()
-    return list(accounts)
+    return account_service.get_user_accounts(user_id)
 
 
 def get_transactions_by_account_id(
-    db: Session, account_id: str, limit: int = 50
+    account_id: str,
+    transaction_service: TransactionService,
+    limit: int = 50,
 ) -> list[Transaction]:
     """Get transactions for an account"""
-    transactions = (
-        db.query(TransactionModel)
-        .filter(TransactionModel.account_id == account_id)
-        .order_by(TransactionModel.created_at.desc())
-        .limit(limit)
-        .all()
-    )
-    return list(transactions)
+    return transaction_service.get_account_transactions(account_id, limit)
 
 
 def create_deposit(
-    db: Session, account_id: str, amount: int, description: str | None = None
+    account_id: str,
+    amount: int,
+    db: Session,
+    transaction_service: TransactionService,
+    description: str | None = None,
 ) -> Transaction:
-    """Create a deposit transaction"""
-    # Get account
-    account = db.query(AccountModel).filter(AccountModel.id == account_id).first()
-    if not account:
-        raise ValueError("Account not found")
-
-    # Update balance
-    account.balance += amount
-
-    # Create transaction
-    transaction = TransactionModel(
-        account_id=account_id,
-        type="deposit",
-        amount=amount,
-        description=description,
-        created_at=datetime.now(UTC),
-    )
-
-    db.add(transaction)
+    """Create a deposit transaction and commit"""
+    transaction = transaction_service.create_deposit(account_id, amount, description)
+    # Commit at resolver level
     db.commit()
-    db.refresh(transaction)
-
     return transaction

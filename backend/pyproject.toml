@@ -9,6 +9,7 @@ dependencies = [
     "bcrypt>=5.0.0",
     "fastapi>=0.119.1",
     "httpx>=0.28.1",
+    "injector>=0.22.0",
     "passlib>=1.7.4",
     "psycopg2-binary>=2.9.11",
     "python-dotenv>=1.1.1",
