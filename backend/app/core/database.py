@@ -2,25 +2,18 @@
 Database configuration and connection setup.
 """
 
-import os
-
-from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
-# .envファイルの読み込み
-load_dotenv()
-
-# データベースURL
-DATABASE_URL = os.getenv("DATABASE_URL")
-
-if not DATABASE_URL:
-    raise ValueError("DATABASE_URL environment variable is not set")
+from app.core.config import database_settings
 
 # SQLAlchemyエンジンの作成
+if not database_settings.database_url:
+    raise ValueError("DATABASE_URL environment variable is not set")
+
 engine = create_engine(
-    DATABASE_URL,
+    database_settings.database_url,
     pool_pre_ping=True,  # 接続の健全性チェック
     pool_size=10,
     max_overflow=20,

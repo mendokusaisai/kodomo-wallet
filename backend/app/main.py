@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from strawberry.fastapi import GraphQLRouter
 
 from app.api.graphql.schema import schema
-from app.core.config import settings
+from app.core.config import cors_settings
 from app.core.container import create_injector
 from app.core.database import SessionLocal
 from app.services.business_services import (
@@ -46,7 +46,7 @@ app = FastAPI(
 # CORS configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS,
+    allow_origins=cors_settings.cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
