@@ -73,7 +73,8 @@ class GraphQLContext:
         """
         Exit the context manager.
 
-        Ensures database session is properly closed, even if an error occurred.
+        Commits the transaction if no exception occurred, otherwise rolls back.
+        Ensures database session is properly closed in all cases.
 
         Args:
             exc_type: Exception type (if any)
@@ -81,8 +82,16 @@ class GraphQLContext:
             exc_tb: Exception traceback (if any)
         """
         if self._db is not None:
-            self._db.close()
-            self._db = None
+            try:
+                if exc_type is None:
+                    # No exception: commit the transaction
+                    self._db.commit()
+                else:
+                    # Exception occurred: rollback the transaction
+                    self._db.rollback()
+            finally:
+                self._db.close()
+                self._db = None
         self._injector = None
         self.profile_service = None
         self.account_service = None

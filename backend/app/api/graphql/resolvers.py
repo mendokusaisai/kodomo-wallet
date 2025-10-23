@@ -4,8 +4,6 @@ GraphQL resolvers for queries and mutations.
 These resolvers use Service layer dependencies without knowing about database details.
 """
 
-from sqlalchemy.orm import Session
-
 from app.api.graphql.types import Account, Profile, Transaction
 from app.services.business_services import (
     AccountService,
@@ -42,12 +40,8 @@ def get_transactions_by_account_id(
 def create_deposit(
     account_id: str,
     amount: int,
-    db: Session,
     transaction_service: TransactionService,
     description: str | None = None,
 ) -> Transaction:
-    """Create a deposit transaction and commit"""
-    transaction = transaction_service.create_deposit(account_id, amount, description)
-    # Commit at resolver level
-    db.commit()
-    return transaction
+    """Create a deposit transaction"""
+    return transaction_service.create_deposit(account_id, amount, description)

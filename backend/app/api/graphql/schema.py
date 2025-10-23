@@ -63,12 +63,9 @@ class Mutation:
         description: str | None = None,
     ) -> Transaction:
         """Create a deposit transaction"""
-        db = info.context["db"]
         transaction_service = info.context["transaction_service"]
         try:
-            return resolvers.create_deposit(
-                account_id, amount, db, transaction_service, description
-            )
+            return resolvers.create_deposit(account_id, amount, transaction_service, description)
         except ResourceNotFoundException as e:
             raise Exception(f"Resource not found: {e.message}") from e
         except InvalidAmountException as e:

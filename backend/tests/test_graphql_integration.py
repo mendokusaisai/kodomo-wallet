@@ -153,7 +153,7 @@ class TestResolverIntegration:
         initial_balance = sample_data["account"].balance
 
         transaction = resolvers.create_deposit(
-            account_id, 3000, in_memory_db, services["transaction"], "Test deposit"
+            account_id, 3000, services["transaction"], "Test deposit"
         )
 
         assert transaction is not None
@@ -161,25 +161,25 @@ class TestResolverIntegration:
         assert transaction.amount == 3000
         assert transaction.description == "Test deposit"
 
-        # Verify balance was updated
+        # Verify balance was updated (commit is now done by context manager in real usage)
+        in_memory_db.commit()
         in_memory_db.refresh(sample_data["account"])
         assert sample_data["account"].balance == initial_balance + 3000
 
     def test_create_deposit_account_not_found(self, in_memory_db, services):
         """Test creating deposit for non-existent account"""
         with pytest.raises(Exception, match="Account .* not found"):
-            resolvers.create_deposit(
-                str(uuid.uuid4()), 1000, in_memory_db, services["transaction"], "Test"
-            )
+            resolvers.create_deposit(str(uuid.uuid4()), 1000, services["transaction"], "Test")
 
     def test_create_deposit_updates_transaction_list(self, in_memory_db, sample_data, services):
         """Test that deposit creates a queryable transaction"""
         account_id = str(sample_data["account"].id)
 
         # Create deposit
-        resolvers.create_deposit(
-            account_id, 2000, in_memory_db, services["transaction"], "New deposit"
-        )
+        resolvers.create_deposit(account_id, 2000, services["transaction"], "New deposit")
+
+        # Commit to make transaction visible (in real usage, done by context manager)
+        in_memory_db.commit()
 
         # Query transactions
         transactions = resolvers.get_transactions_by_account_id(account_id, services["transaction"])
@@ -192,15 +192,13 @@ class TestResolverIntegration:
         account_id = str(sample_data["account"].id)
         initial_balance = sample_data["account"].balance
 
-        resolvers.create_deposit(
-            account_id, 1000, in_memory_db, services["transaction"], "Deposit 1"
-        )
-        resolvers.create_deposit(
-            account_id, 2000, in_memory_db, services["transaction"], "Deposit 2"
-        )
-        resolvers.create_deposit(
-            account_id, 3000, in_memory_db, services["transaction"], "Deposit 3"
-        )
+        resolvers.create_deposit(account_id, 1000, services["transaction"], "Deposit 1")
+        resolvers.create_deposit(account_id, 2000, services["transaction"], "Deposit 2")
+
+        resolvers.create_deposit(account_id, 3000, services["transaction"], "Deposit 3")
+
+        # Commit to update balance (in real usage, done by context manager)
+        in_memory_db.commit()
 
         # Verify final balance
         in_memory_db.refresh(sample_data["account"])

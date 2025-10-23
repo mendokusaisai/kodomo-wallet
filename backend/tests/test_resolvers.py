@@ -264,9 +264,7 @@ class TestGetTransactionsByAccountId:
 class TestCreateDeposit:
     """Tests for create_deposit resolver"""
 
-    def test_create_deposit_success(
-        self, mock_transaction_service, mock_db_session, sample_transaction
-    ):
+    def test_create_deposit_success(self, mock_transaction_service, sample_transaction):
         """Test successful deposit creation"""
         # Arrange
         account_id = str(sample_transaction.account_id)
@@ -278,7 +276,6 @@ class TestCreateDeposit:
         result = resolvers.create_deposit(
             account_id,
             amount,
-            mock_db_session,
             mock_transaction_service,
             description=description,
         )
@@ -288,11 +285,8 @@ class TestCreateDeposit:
         mock_transaction_service.create_deposit.assert_called_once_with(
             account_id, amount, description
         )
-        mock_db_session.commit.assert_called_once()
 
-    def test_create_deposit_without_description(
-        self, mock_transaction_service, mock_db_session, sample_transaction
-    ):
+    def test_create_deposit_without_description(self, mock_transaction_service, sample_transaction):
         """Test deposit creation without description"""
         # Arrange
         account_id = str(sample_transaction.account_id)
@@ -300,31 +294,26 @@ class TestCreateDeposit:
         mock_transaction_service.create_deposit.return_value = sample_transaction
 
         # Act
-        result = resolvers.create_deposit(
-            account_id, amount, mock_db_session, mock_transaction_service
-        )
+        result = resolvers.create_deposit(account_id, amount, mock_transaction_service)
 
         # Assert
         assert result == sample_transaction
         mock_transaction_service.create_deposit.assert_called_once_with(account_id, amount, None)
-        mock_db_session.commit.assert_called_once()
 
-    def test_create_deposit_commits_transaction(
-        self, mock_transaction_service, mock_db_session, sample_transaction
-    ):
-        """Test that deposit creation commits the database transaction"""
+    def test_create_deposit_commits_transaction(self, mock_transaction_service, sample_transaction):
+        """Test that deposit creation is handled by context manager (no explicit commit in resolver)"""
         # Arrange
         account_id = str(sample_transaction.account_id)
         amount = 1000
         mock_transaction_service.create_deposit.return_value = sample_transaction
 
         # Act
-        resolvers.create_deposit(account_id, amount, mock_db_session, mock_transaction_service)
+        result = resolvers.create_deposit(account_id, amount, mock_transaction_service)
 
-        # Assert
-        mock_db_session.commit.assert_called_once()
+        # Assert - resolver doesn't commit, that's context manager's job
+        assert result == sample_transaction
 
-    def test_create_deposit_with_service_exception(self, mock_transaction_service, mock_db_session):
+    def test_create_deposit_with_service_exception(self, mock_transaction_service):
         """Test deposit creation when service raises an exception"""
         # Arrange
         account_id = str(uuid.uuid4())
@@ -333,15 +322,34 @@ class TestCreateDeposit:
 
         # Act & Assert
         with pytest.raises(ValueError, match="Account not found"):
-            resolvers.create_deposit(account_id, amount, mock_db_session, mock_transaction_service)
+            resolvers.create_deposit(account_id, amount, mock_transaction_service)
 
-        # Verify commit was not called due to exception
-        mock_db_session.commit.assert_not_called()
+    def test_create_deposit_with_large_amount(self, mock_transaction_service, sample_transaction):
+        """Test successful deposit creation"""
+        # Arrange
+        account_id = str(sample_transaction.account_id)
+        amount = 1000
+        description = "Test deposit"
+        mock_transaction_service.create_deposit.return_value = sample_transaction
 
-    def test_create_deposit_with_large_amount(
-        self, mock_transaction_service, mock_db_session, sample_transaction
+        # Act
+        result = resolvers.create_deposit(
+            account_id,
+            amount,
+            mock_transaction_service,
+            description=description,
+        )
+
+        # Assert
+        assert result == sample_transaction
+        mock_transaction_service.create_deposit.assert_called_once_with(
+            account_id, amount, description
+        )
+
+    def test_create_deposit_with_large_amount_original(
+        self, mock_transaction_service, sample_transaction
     ):
-        """Test deposit creation with large amount"""
+        """Test deposit creation with large amount (original test kept for coverage)"""
         # Arrange
         account_id = str(sample_transaction.account_id)
         amount = 1000000
@@ -359,7 +367,6 @@ class TestCreateDeposit:
         result = resolvers.create_deposit(
             account_id,
             amount,
-            mock_db_session,
             mock_transaction_service,
             description="Large deposit",
         )
@@ -370,4 +377,3 @@ class TestCreateDeposit:
         mock_transaction_service.create_deposit.assert_called_once_with(
             account_id, amount, "Large deposit"
         )
-        mock_db_session.commit.assert_called_once()
