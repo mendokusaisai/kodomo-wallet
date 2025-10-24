@@ -4,11 +4,12 @@ GraphQL resolvers for queries and mutations.
 These resolvers use Service layer dependencies without knowing about database details.
 """
 
-from app.api.graphql.types import Account, Profile, Transaction
+from app.api.graphql.types import Account, Profile, Transaction, WithdrawalRequest
 from app.services.business_services import (
     AccountService,
     ProfileService,
     TransactionService,
+    WithdrawalRequestService,
 )
 
 
@@ -101,3 +102,37 @@ def invite_child_to_auth(
 ) -> Profile:
     """Invite child to create authentication account via email"""
     return profile_service.invite_child_to_auth(child_id, email)
+
+
+def get_pending_withdrawal_requests(
+    parent_id: str,
+    withdrawal_request_service: WithdrawalRequestService,
+) -> list[WithdrawalRequest]:
+    """Get pending withdrawal requests for a parent's children"""
+    return withdrawal_request_service.get_pending_requests_for_parent(parent_id)
+
+
+def create_withdrawal_request(
+    account_id: str,
+    amount: int,
+    withdrawal_request_service: WithdrawalRequestService,
+    description: str | None = None,
+) -> WithdrawalRequest:
+    """Create a withdrawal request (child initiates)"""
+    return withdrawal_request_service.create_withdrawal_request(account_id, amount, description)
+
+
+def approve_withdrawal_request(
+    request_id: str,
+    withdrawal_request_service: WithdrawalRequestService,
+) -> WithdrawalRequest:
+    """Approve a withdrawal request (parent approves)"""
+    return withdrawal_request_service.approve_withdrawal_request(request_id)
+
+
+def reject_withdrawal_request(
+    request_id: str,
+    withdrawal_request_service: WithdrawalRequestService,
+) -> WithdrawalRequest:
+    """Reject a withdrawal request (parent rejects)"""
+    return withdrawal_request_service.reject_withdrawal_request(request_id)

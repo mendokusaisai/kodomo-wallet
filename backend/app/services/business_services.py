@@ -9,11 +9,12 @@ from datetime import UTC, datetime
 from injector import inject
 
 from app.core.exceptions import InvalidAmountException, ResourceNotFoundException
-from app.models.models import Account, Profile, Transaction
+from app.models.models import Account, Profile, Transaction, WithdrawalRequest
 from app.repositories.interfaces import (
     AccountRepository,
     ProfileRepository,
     TransactionRepository,
+    WithdrawalRequestRepository,
 )
 
 
@@ -264,3 +265,102 @@ class TransactionService:
         )
 
         return transaction
+
+
+class WithdrawalRequestService:
+    """Service for withdrawal request business logic"""
+
+    @inject
+    def __init__(
+        self,
+        withdrawal_request_repo: WithdrawalRequestRepository,
+        account_repo: AccountRepository,
+        transaction_service: TransactionService,
+    ):
+        self.withdrawal_request_repo = withdrawal_request_repo
+        self.account_repo = account_repo
+        self.transaction_service = transaction_service
+
+    def create_withdrawal_request(
+        self, account_id: str, amount: int, description: str | None = None
+    ) -> WithdrawalRequest:
+        """Create a withdrawal request (child initiates)"""
+        # Validate amount
+        if amount <= 0:
+            raise InvalidAmountException(amount, "Amount must be greater than zero")
+
+        # Get account
+        account = self.account_repo.get_by_id(account_id)
+        if not account:
+            raise ResourceNotFoundException("Account", account_id)
+
+        # Check if balance is sufficient (for informational purposes)
+        current_balance = int(account.balance)  # type: ignore[arg-type]
+        if current_balance < amount:
+            raise InvalidAmountException(
+                amount, f"Insufficient balance. Current: {current_balance}, Required: {amount}"
+            )
+
+        # Create withdrawal request
+        request = self.withdrawal_request_repo.create(
+            account_id=account_id,
+            amount=amount,
+            description=description,
+            created_at=datetime.now(UTC),
+        )
+
+        return request
+
+    def get_pending_requests_for_parent(self, parent_id: str) -> list[WithdrawalRequest]:
+        """Get all pending withdrawal requests for a parent's children"""
+        return self.withdrawal_request_repo.get_pending_by_parent(parent_id)
+
+    def approve_withdrawal_request(self, request_id: str) -> WithdrawalRequest:
+        """Approve a withdrawal request and create the withdraw transaction"""
+        # Get request
+        request = self.withdrawal_request_repo.get_by_id(request_id)
+        if not request:
+            raise ResourceNotFoundException("WithdrawalRequest", request_id)
+
+        # Check if already processed
+        if request.status != "pending":  # type: ignore[comparison-overlap]
+            raise InvalidAmountException(0, f"Request already {request.status}")
+
+        # Create withdraw transaction
+        try:
+            self.transaction_service.create_withdraw(
+                account_id=str(request.account_id),
+                amount=int(request.amount),  # type: ignore[arg-type]
+                description=request.description,  # type: ignore[arg-type]
+            )
+        except Exception as e:
+            # Update status to rejected if withdrawal fails
+            self.withdrawal_request_repo.update_status(
+                request, "rejected", datetime.now(UTC)
+            )
+            raise e
+
+        # Update request status
+        updated_request = self.withdrawal_request_repo.update_status(
+            request, "approved", datetime.now(UTC)
+        )
+
+        return updated_request
+
+    def reject_withdrawal_request(self, request_id: str) -> WithdrawalRequest:
+        """Reject a withdrawal request"""
+        # Get request
+        request = self.withdrawal_request_repo.get_by_id(request_id)
+        if not request:
+            raise ResourceNotFoundException("WithdrawalRequest", request_id)
+
+        # Check if already processed
+        if request.status != "pending":  # type: ignore[comparison-overlap]
+            raise InvalidAmountException(0, f"Request already {request.status}")
+
+        # Update request status
+        updated_request = self.withdrawal_request_repo.update_status(
+            request, "rejected", datetime.now(UTC)
+        )
+
+        return updated_request

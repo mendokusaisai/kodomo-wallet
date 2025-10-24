@@ -5,7 +5,7 @@ Repository interfaces (Abstract Base Classes) for data access.
 from abc import ABC, abstractmethod
 from datetime import datetime
 
-from app.models.models import Account, Profile, Transaction
+from app.models.models import Account, Profile, Transaction, WithdrawalRequest
 
 
 class ProfileRepository(ABC):
@@ -84,4 +84,36 @@ class TransactionRepository(ABC):
         created_at: datetime,
     ) -> Transaction:
         """Create a new transaction"""
+        pass
+
+
+class WithdrawalRequestRepository(ABC):
+    """Interface for WithdrawalRequest data access"""
+
+    @abstractmethod
+    def get_by_id(self, request_id: str) -> WithdrawalRequest | None:
+        """Get withdrawal request by ID"""
+        pass
+
+    @abstractmethod
+    def get_pending_by_parent(self, parent_id: str) -> list[WithdrawalRequest]:
+        """Get all pending withdrawal requests for a parent's children"""
+        pass
+
+    @abstractmethod
+    def create(
+        self,
+        account_id: str,
+        amount: int,
+        description: str | None,
+        created_at: datetime,
+    ) -> WithdrawalRequest:
+        """Create a new withdrawal request"""
+        pass
+
+    @abstractmethod
+    def update_status(
+        self, request: WithdrawalRequest, status: str, updated_at: datetime
+    ) -> WithdrawalRequest:
+        """Update withdrawal request status"""
         pass

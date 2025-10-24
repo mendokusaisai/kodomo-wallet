@@ -48,8 +48,8 @@ export const GET_TRANSACTIONS = gql`
 `;
 
 export const GET_WITHDRAWAL_REQUESTS = gql`
-  query GetWithdrawalRequests($accountId: String) {
-    withdrawalRequests(accountId: $accountId) {
+  query GetWithdrawalRequests($parentId: String!) {
+    withdrawalRequests(parentId: $parentId) {
       id
       accountId
       amount
@@ -166,8 +166,8 @@ export const CREATE_WITHDRAWAL_REQUEST = gql`
 `;
 
 export const APPROVE_WITHDRAWAL = gql`
-  mutation ApproveWithdrawal($requestId: String!) {
-    approveWithdrawal(requestId: $requestId) {
+  mutation ApproveWithdrawalRequest($requestId: String!) {
+    approveWithdrawalRequest(requestId: $requestId) {
       id
       status
       updatedAt
@@ -176,8 +176,8 @@ export const APPROVE_WITHDRAWAL = gql`
 `;
 
 export const REJECT_WITHDRAWAL = gql`
-  mutation RejectWithdrawal($requestId: String!) {
-    rejectWithdrawal(requestId: $requestId) {
+  mutation RejectWithdrawalRequest($requestId: String!) {
+    rejectWithdrawalRequest(requestId: $requestId) {
       id
       status
       updatedAt

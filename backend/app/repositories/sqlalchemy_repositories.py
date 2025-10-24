@@ -7,11 +7,12 @@ from datetime import datetime
 
 from sqlalchemy.orm import Session
 
-from app.models.models import Account, Profile, Transaction
+from app.models.models import Account, Profile, Transaction, WithdrawalRequest
 from app.repositories.interfaces import (
     AccountRepository,
     ProfileRepository,
     TransactionRepository,
+    WithdrawalRequestRepository,
 )
 
 
@@ -156,3 +157,64 @@ class SQLAlchemyTransactionRepository(TransactionRepository):
         self.db.flush()
         self.db.refresh(transaction)
         return transaction
+
+
+class SQLAlchemyWithdrawalRequestRepository(WithdrawalRequestRepository):
+    """SQLAlchemy implementation of WithdrawalRequestRepository"""
+
+    def __init__(self, db: Session):
+        self.db = db
+
+    def get_by_id(self, request_id: str) -> WithdrawalRequest | None:
+        """Get withdrawal request by ID"""
+        return (
+            self.db.query(WithdrawalRequest)
+            .filter(WithdrawalRequest.id == uuid.UUID(request_id))
+            .first()
+        )
+
+    def get_pending_by_parent(self, parent_id: str) -> list[WithdrawalRequest]:
+        """Get all pending withdrawal requests for a parent's children"""
+        from app.models.models import Account, Profile
+
+        return list(
+            self.db.query(WithdrawalRequest)
+            .join(Account, WithdrawalRequest.account_id == Account.id)
+            .join(Profile, Account.user_id == Profile.id)
+            .filter(Profile.parent_id == uuid.UUID(parent_id))
+            .filter(WithdrawalRequest.status == "pending")
+            .order_by(WithdrawalRequest.created_at.desc())
+            .all()
+        )
+
+    def create(
+        self,
+        account_id: str,
+        amount: int,
+        description: str | None,
+        created_at: datetime,
+    ) -> WithdrawalRequest:
+        """Create a new withdrawal request"""
+        request = WithdrawalRequest(
+            id=uuid.uuid4(),
+            account_id=uuid.UUID(account_id),
+            amount=amount,
+            description=description,
+            status="pending",
+            created_at=str(created_at),
+            updated_at=str(created_at),
+        )
+        self.db.add(request)
+        self.db.flush()
+        self.db.refresh(request)
+        return request
+
+    def update_status(
+        self, request: WithdrawalRequest, status: str, updated_at: datetime
+    ) -> WithdrawalRequest:
+        """Update withdrawal request status"""
+        request.status = status  # type: ignore
+        request.updated_at = str(updated_at)  # type: ignore
+        self.db.flush()
+        self.db.refresh(request)
+        return request

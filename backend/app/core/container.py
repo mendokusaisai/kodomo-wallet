@@ -15,16 +15,19 @@ from app.repositories.interfaces import (
     AccountRepository,
     ProfileRepository,
     TransactionRepository,
+    WithdrawalRequestRepository,
 )
 from app.repositories.sqlalchemy_repositories import (
     SQLAlchemyAccountRepository,
     SQLAlchemyProfileRepository,
     SQLAlchemyTransactionRepository,
+    SQLAlchemyWithdrawalRequestRepository,
 )
 from app.services.business_services import (
     AccountService,
     ProfileService,
     TransactionService,
+    WithdrawalRequestService,
 )
 
 
@@ -57,6 +60,11 @@ class RepositoryModule(Module):
             to=SQLAlchemyTransactionRepository(self.db),
             scope=singleton,
         )
+        binder.bind(
+            WithdrawalRequestRepository,
+            to=SQLAlchemyWithdrawalRequestRepository(self.db),
+            scope=singleton,
+        )
 
 
 class ServiceModule(Module):
@@ -72,6 +80,7 @@ class ServiceModule(Module):
         binder.bind(ProfileService, scope=singleton)
         binder.bind(AccountService, scope=singleton)
         binder.bind(TransactionService, scope=singleton)
+        binder.bind(WithdrawalRequestService, scope=singleton)
 
 
 def create_injector(db: Session) -> Injector:
@@ -110,3 +119,9 @@ def get_transaction_service(db: Session) -> TransactionService:
     """Get TransactionService instance with injected dependencies"""
     injector = create_injector(db)
     return injector.get(TransactionService)
+
+
+def get_withdrawal_request_service(db: Session) -> WithdrawalRequestService:
+    """Get WithdrawalRequestService instance with injected dependencies"""
+    injector = create_injector(db)
+    return injector.get(WithdrawalRequestService)
