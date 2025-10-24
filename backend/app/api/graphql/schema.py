@@ -231,6 +231,25 @@ class Mutation:
         except DomainException as e:
             raise Exception(f"Domain error: {e.message}") from e
 
+    @strawberry.mutation
+    def update_goal(
+        self,
+        info: Info,
+        account_id: str,
+        goal_name: str | None = None,
+        goal_amount: int | None = None,
+    ) -> Account:
+        """Update savings goal for an account"""
+        account_service = info.context["account_service"]
+        try:
+            return resolvers.update_goal(account_id, goal_name, goal_amount, account_service)
+        except ResourceNotFoundException as e:
+            raise Exception(f"Resource not found: {e.message}") from e
+        except InvalidAmountException as e:
+            raise Exception(f"Invalid amount: {e.message}") from e
+        except DomainException as e:
+            raise Exception(f"Domain error: {e.message}") from e
+
 
 # Create schema
 schema = strawberry.Schema(query=Query, mutation=Mutation)

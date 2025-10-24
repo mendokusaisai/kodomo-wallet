@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { CreateChildDialog } from "@/components/create-child-dialog";
 import { DepositDialog } from "@/components/deposit-dialog";
+import GoalDialog from "@/components/goal-dialog";
 import { LinkChildToAuthDialog } from "@/components/link-child-to-auth-dialog";
 import { LogoutButton } from "@/components/logout-button";
 import { TransactionHistory } from "@/components/transaction-history";
@@ -219,27 +220,38 @@ export default function DashboardPage() {
 										</div>
 									)}
 								{/* 貯金目標 */}
-								{account.goalName && account.goalAmount && (
-									<div className="mt-4">
-										<div className="flex justify-between items-center mb-2">
-											<p className="text-sm font-medium text-gray-700">
-												目標: {account.goalName}
+								<div className="mt-4">
+									{account.goalName && account.goalAmount ? (
+										<>
+											<div className="flex justify-between items-center mb-2">
+												<p className="text-sm font-medium text-gray-700">
+													目標: {account.goalName}
+												</p>
+												<p className="text-sm font-bold text-blue-600">
+													{goalProgress}%
+												</p>
+											</div>
+											<div className="w-full bg-gray-200 rounded-full h-2.5">
+												<div
+													className="bg-blue-600 h-2.5 rounded-full transition-all"
+													style={{ width: `${Math.min(goalProgress, 100)}%` }}
+												/>
+											</div>
+											<p className="text-xs text-gray-500 mt-1">
+												目標金額: ¥{account.goalAmount.toLocaleString()}
 											</p>
-											<p className="text-sm font-bold text-blue-600">
-												{goalProgress}%
-											</p>
-										</div>
-										<div className="w-full bg-gray-200 rounded-full h-2.5">
-											<div
-												className="bg-blue-600 h-2.5 rounded-full transition-all"
-												style={{ width: `${Math.min(goalProgress, 100)}%` }}
-											/>
-										</div>
-										<p className="text-xs text-gray-500 mt-1">
-											目標金額: ¥{account.goalAmount.toLocaleString()}
-										</p>
+										</>
+									) : null}
+
+									{/* 目標設定ボタン */}
+									<div className="mt-2">
+										<GoalDialog
+											accountId={account.id}
+											currentGoalName={account.goalName}
+											currentGoalAmount={account.goalAmount}
+										/>
 									</div>
-								)}
+								</div>
 
 								{/* トランザクション履歴 */}
 								<TransactionHistory accountId={account.id} />

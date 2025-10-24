@@ -186,6 +186,26 @@ class AccountService:
 
         return accounts
 
+    def update_goal(
+        self, account_id: str, goal_name: str | None, goal_amount: int | None
+    ) -> Account:
+        """Update savings goal for an account"""
+        # Get account
+        account = self.account_repo.get_by_id(account_id)
+        if not account:
+            raise ResourceNotFoundException("Account", account_id)
+
+        # Validate goal amount if provided
+        if goal_amount is not None and goal_amount < 0:
+            raise InvalidAmountException(goal_amount, "Goal amount must be non-negative")
+
+        # Update goal fields
+        account.goal_name = goal_name  # type: ignore
+        account.goal_amount = goal_amount  # type: ignore
+        account.updated_at = str(datetime.now(UTC))  # type: ignore
+
+        return account
+
 
 class TransactionService:
     """Service for transaction-related business logic"""

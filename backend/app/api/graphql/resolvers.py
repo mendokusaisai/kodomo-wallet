@@ -136,3 +136,13 @@ def reject_withdrawal_request(
 ) -> WithdrawalRequest:
     """Reject a withdrawal request (parent rejects)"""
     return withdrawal_request_service.reject_withdrawal_request(request_id)
+
+
+def update_goal(
+    account_id: str,
+    goal_name: str | None,
+    goal_amount: int | None,
+    account_service: AccountService,
+) -> Account:
+    """Update savings goal for an account"""
+    return account_service.update_goal(account_id, goal_name, goal_amount)
