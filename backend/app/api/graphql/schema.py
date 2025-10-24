@@ -6,7 +6,7 @@ import strawberry
 from strawberry.types import Info
 
 from app.api.graphql import resolvers
-from app.api.graphql.types import Account, Profile, Transaction, WithdrawalRequest
+from app.api.graphql.types import Account, Profile, RecurringDeposit, Transaction, WithdrawalRequest
 from app.core.exceptions import (
     DomainException,
     InvalidAmountException,
@@ -27,6 +27,16 @@ class Query:
         """Get current user profile"""
         profile_service = info.context["profile_service"]
         return resolvers.get_profile_by_id(user_id, profile_service)
+
+    @strawberry.field
+    def children_count(
+        self,
+        info: Info,
+        parent_id: str,
+    ) -> int:
+        """Get count of children for a parent"""
+        profile_service = info.context["profile_service"]
+        return resolvers.get_children_count(parent_id, profile_service)
 
     @strawberry.field
     def accounts(
@@ -59,6 +69,26 @@ class Query:
         """Get pending withdrawal requests for a parent's children"""
         withdrawal_request_service = info.context["withdrawal_request_service"]
         return resolvers.get_pending_withdrawal_requests(parent_id, withdrawal_request_service)
+
+    @strawberry.field
+    def recurring_deposit(
+        self,
+        info: Info,
+        account_id: str,
+        current_user_id: str,
+    ) -> RecurringDeposit | None:
+        """Get recurring deposit settings for an account (parent only)"""
+        recurring_deposit_service = info.context["recurring_deposit_service"]
+        try:
+            return resolvers.get_recurring_deposit(
+                account_id, current_user_id, recurring_deposit_service
+            )
+        except ResourceNotFoundException as e:
+            raise Exception(f"Resource not found: {e.message}") from e
+        except InvalidAmountException as e:
+            raise Exception(f"Permission denied: {e.message}") from e
+        except DomainException as e:
+            raise Exception(f"Domain error: {e.message}") from e
 
 
 @strawberry.type
@@ -247,6 +277,87 @@ class Mutation:
             raise Exception(f"Resource not found: {e.message}") from e
         except InvalidAmountException as e:
             raise Exception(f"Invalid amount: {e.message}") from e
+        except DomainException as e:
+            raise Exception(f"Domain error: {e.message}") from e
+
+    @strawberry.mutation
+    def update_profile(
+        self,
+        info: Info,
+        user_id: str,
+        current_user_id: str,
+        name: str | None = None,
+        avatar_url: str | None = None,
+    ) -> Profile:
+        """Update user profile (self or parent can edit child)"""
+        profile_service = info.context["profile_service"]
+        try:
+            return resolvers.update_profile(
+                user_id, current_user_id, name, avatar_url, profile_service
+            )
+        except ResourceNotFoundException as e:
+            raise Exception(f"Resource not found: {e.message}") from e
+        except DomainException as e:
+            raise Exception(f"Domain error: {e.message}") from e
+
+    @strawberry.mutation
+    def delete_child(
+        self,
+        info: Info,
+        parent_id: str,
+        child_id: str,
+    ) -> bool:
+        """Delete a child profile (parent only)"""
+        profile_service = info.context["profile_service"]
+        try:
+            return resolvers.delete_child(parent_id, child_id, profile_service)
+        except ResourceNotFoundException as e:
+            raise Exception(f"Resource not found: {e.message}") from e
+        except InvalidAmountException as e:
+            raise Exception(f"Invalid operation: {e.message}") from e
+        except DomainException as e:
+            raise Exception(f"Domain error: {e.message}") from e
+
+    @strawberry.mutation
+    def create_or_update_recurring_deposit(
+        self,
+        info: Info,
+        account_id: str,
+        current_user_id: str,
+        amount: int,
+        day_of_month: int,
+        is_active: bool = True,
+    ) -> RecurringDeposit:
+        """Create or update recurring deposit settings (parent only)"""
+        recurring_deposit_service = info.context["recurring_deposit_service"]
+        try:
+            return resolvers.create_or_update_recurring_deposit(
+                account_id, current_user_id, amount, day_of_month, recurring_deposit_service, is_active
+            )
+        except ResourceNotFoundException as e:
+            raise Exception(f"Resource not found: {e.message}") from e
+        except InvalidAmountException as e:
+            raise Exception(f"Invalid input: {e.message}") from e
+        except DomainException as e:
+            raise Exception(f"Domain error: {e.message}") from e
+
+    @strawberry.mutation
+    def delete_recurring_deposit(
+        self,
+        info: Info,
+        account_id: str,
+        current_user_id: str,
+    ) -> bool:
+        """Delete recurring deposit settings (parent only)"""
+        recurring_deposit_service = info.context["recurring_deposit_service"]
+        try:
+            return resolvers.delete_recurring_deposit(
+                account_id, current_user_id, recurring_deposit_service
+            )
+        except ResourceNotFoundException as e:
+            raise Exception(f"Resource not found: {e.message}") from e
+        except InvalidAmountException as e:
+            raise Exception(f"Permission denied: {e.message}") from e
         except DomainException as e:
             raise Exception(f"Domain error: {e.message}") from e
 

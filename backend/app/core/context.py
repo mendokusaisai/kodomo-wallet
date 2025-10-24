@@ -17,6 +17,7 @@ from app.core.database import SessionLocal
 from app.services.business_services import (
     AccountService,
     ProfileService,
+    RecurringDepositService,
     TransactionService,
     WithdrawalRequestService,
 )
@@ -44,6 +45,7 @@ class GraphQLContext:
         self.account_service: AccountService | None = None
         self.transaction_service: TransactionService | None = None
         self.withdrawal_request_service: WithdrawalRequestService | None = None
+        self.recurring_deposit_service: RecurringDepositService | None = None
 
     @property
     def db(self) -> Session:
@@ -69,6 +71,7 @@ class GraphQLContext:
         self.account_service = self._injector.get(AccountService)
         self.transaction_service = self._injector.get(TransactionService)
         self.withdrawal_request_service = self._injector.get(WithdrawalRequestService)
+        self.recurring_deposit_service = self._injector.get(RecurringDepositService)
 
         return self
 
@@ -100,6 +103,7 @@ class GraphQLContext:
         self.account_service = None
         self.transaction_service = None
         self.withdrawal_request_service = None
+        self.recurring_deposit_service = None
 
     async def __aenter__(self) -> GraphQLContext:
         """
@@ -134,4 +138,5 @@ class GraphQLContext:
             "account_service": self.account_service,
             "transaction_service": self.transaction_service,
             "withdrawal_request_service": self.withdrawal_request_service,
+            "recurring_deposit_service": self.recurring_deposit_service,
         }

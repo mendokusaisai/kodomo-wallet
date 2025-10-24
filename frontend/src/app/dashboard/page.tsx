@@ -1,6 +1,8 @@
 "use client";
 
 import { useQuery } from "@apollo/client/react";
+import { Settings } from "lucide-react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { CreateChildDialog } from "@/components/create-child-dialog";
@@ -97,13 +99,35 @@ export default function DashboardPage() {
 			<div className="max-w-7xl mx-auto">
 				{/* ヘッダー */}
 				<div className="mb-8 flex justify-between items-start">
-					<div>
-						<h1 className="text-3xl font-bold text-gray-900">
-							こんにちは、{meData?.me?.name}さん
-						</h1>
-						<p className="text-gray-600 mt-2">
-							ロール: {meData?.me?.role === "parent" ? "親" : "子供"}
-						</p>
+					<div className="flex items-center gap-4">
+						{/* アバター表示 */}
+						{meData?.me?.avatarUrl ? (
+							<div className="w-16 h-16 rounded-full overflow-hidden bg-gray-200">
+								<Image
+									src={meData.me.avatarUrl}
+									alt={meData.me.name}
+									width={64}
+									height={64}
+									className="w-full h-full object-cover"
+									onError={(e) => {
+										e.currentTarget.style.display = "none";
+									}}
+									unoptimized
+								/>
+							</div>
+						) : (
+							<div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-2xl font-bold">
+								{meData?.me?.name?.charAt(0) || "?"}
+							</div>
+						)}
+						<div>
+							<h1 className="text-3xl font-bold text-gray-900">
+								こんにちは、{meData?.me?.name}さん
+							</h1>
+							<p className="text-gray-600 mt-2">
+								ロール: {meData?.me?.role === "parent" ? "親" : "子供"}
+							</p>
+						</div>
 					</div>
 					<div className="flex gap-3">
 						{/* 親の場合は子ども追加ボタンを表示 */}
@@ -116,6 +140,10 @@ export default function DashboardPage() {
 								+ 子どもを追加
 							</Button>
 						)}
+						{/* 設定ページへのリンク */}
+						<Button onClick={() => router.push("/settings")} variant="outline">
+							設定
+						</Button>
 						<LogoutButton />
 					</div>
 				</div>{" "}
@@ -134,10 +162,34 @@ export default function DashboardPage() {
 								{/* アカウント所有者名 */}
 								{account.user && (
 									<div className="mb-3 pb-3 border-b border-gray-200">
-										<p className="text-sm text-gray-500">アカウント所有者</p>
-										<p className="text-lg font-semibold text-gray-900">
-											{account.user.name}
+										<p className="text-sm text-gray-500 mb-2">
+											アカウント所有者
 										</p>
+										<div className="flex items-center gap-3">
+											{/* アバター表示 */}
+											{account.user.avatarUrl ? (
+												<div className="w-12 h-12 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
+													<Image
+														src={account.user.avatarUrl}
+														alt={account.user.name}
+														width={48}
+														height={48}
+														className="w-full h-full object-cover"
+														onError={(e) => {
+															e.currentTarget.style.display = "none";
+														}}
+														unoptimized
+													/>
+												</div>
+											) : (
+												<div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-lg font-bold flex-shrink-0">
+													{account.user.name?.charAt(0) || "?"}
+												</div>
+											)}
+											<p className="text-lg font-semibold text-gray-900">
+												{account.user.name}
+											</p>
+										</div>
 									</div>
 								)}
 								{/* 残高 */}
@@ -219,6 +271,25 @@ export default function DashboardPage() {
 											</Button>
 										</div>
 									)}
+
+								{/* 子どもアカウント設定ボタン（親のみ表示） */}
+								{meData?.me?.role === "parent" && account.user && (
+									<div className="mb-4">
+										<Button
+											onClick={() => {
+												if (account.user) {
+													router.push(`/settings/${account.user.id}`);
+												}
+											}}
+											variant="outline"
+											className="w-full border-gray-300 text-gray-700 hover:bg-gray-50"
+										>
+											<Settings className="w-4 h-4 mr-2" />
+											プロフィール設定
+										</Button>
+									</div>
+								)}
+
 								{/* 貯金目標 */}
 								<div className="mt-4">
 									{account.goalName && account.goalAmount ? (

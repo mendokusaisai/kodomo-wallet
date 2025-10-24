@@ -4,10 +4,11 @@ GraphQL resolvers for queries and mutations.
 These resolvers use Service layer dependencies without knowing about database details.
 """
 
-from app.api.graphql.types import Account, Profile, Transaction, WithdrawalRequest
+from app.api.graphql.types import Account, Profile, RecurringDeposit, Transaction, WithdrawalRequest
 from app.services.business_services import (
     AccountService,
     ProfileService,
+    RecurringDepositService,
     TransactionService,
     WithdrawalRequestService,
 )
@@ -19,6 +20,15 @@ def get_profile_by_id(
 ) -> Profile | None:
     """Get user profile by ID"""
     return profile_service.get_profile(user_id)
+
+
+def get_children_count(
+    parent_id: str,
+    profile_service: ProfileService,
+) -> int:
+    """Get count of children for a parent"""
+    children = profile_service.get_children(parent_id)
+    return len(children)
 
 
 def get_accounts_by_user_id(
@@ -146,3 +156,55 @@ def update_goal(
 ) -> Account:
     """Update savings goal for an account"""
     return account_service.update_goal(account_id, goal_name, goal_amount)
+
+
+def update_profile(
+    user_id: str,
+    current_user_id: str,
+    name: str | None,
+    avatar_url: str | None,
+    profile_service: ProfileService,
+) -> Profile:
+    """Update user profile (self or parent can edit child)"""
+    return profile_service.update_profile(user_id, current_user_id, name, avatar_url)
+
+
+def delete_child(
+    parent_id: str,
+    child_id: str,
+    profile_service: ProfileService,
+) -> bool:
+    """Delete a child profile (parent only)"""
+    return profile_service.delete_child(parent_id, child_id)
+
+
+def get_recurring_deposit(
+    account_id: str,
+    current_user_id: str,
+    recurring_deposit_service: RecurringDepositService,
+) -> RecurringDeposit | None:
+    """Get recurring deposit settings for an account (parent only)"""
+    return recurring_deposit_service.get_recurring_deposit(account_id, current_user_id)
+
+
+def create_or_update_recurring_deposit(
+    account_id: str,
+    current_user_id: str,
+    amount: int,
+    day_of_month: int,
+    recurring_deposit_service: RecurringDepositService,
+    is_active: bool = True,
+) -> RecurringDeposit:
+    """Create or update recurring deposit settings (parent only)"""
+    return recurring_deposit_service.create_or_update_recurring_deposit(
+        account_id, current_user_id, amount, day_of_month, is_active
+    )
+
+
+def delete_recurring_deposit(
+    account_id: str,
+    current_user_id: str,
+    recurring_deposit_service: RecurringDepositService,
+) -> bool:
+    """Delete recurring deposit settings (parent only)"""
+    return recurring_deposit_service.delete_recurring_deposit(account_id, current_user_id)

@@ -9,10 +9,11 @@ from datetime import UTC, datetime
 from injector import inject
 
 from app.core.exceptions import InvalidAmountException, ResourceNotFoundException
-from app.models.models import Account, Profile, Transaction, WithdrawalRequest
+from app.models.models import Account, Profile, RecurringDeposit, Transaction, WithdrawalRequest
 from app.repositories.interfaces import (
     AccountRepository,
     ProfileRepository,
+    RecurringDepositRepository,
     TransactionRepository,
     WithdrawalRequestRepository,
 )
@@ -40,6 +41,46 @@ class ProfileService:
         """Get profile by auth user ID"""
         return self.profile_repo.get_by_auth_user_id(auth_user_id)
 
+    def update_profile(
+        self,
+        user_id: str,
+        current_user_id: str,
+        name: str | None = None,
+        avatar_url: str | None = None,
+    ) -> Profile:
+        """Update user profile (self or parent can edit child)"""
+        # Get target profile
+        profile = self.profile_repo.get_by_id(user_id)
+        if not profile:
+            raise ResourceNotFoundException("Profile", user_id)
+
+        # Get current user profile
+        current_user = self.profile_repo.get_by_id(current_user_id)
+        if not current_user:
+            raise ResourceNotFoundException("Current user", current_user_id)
+
+        # Check permissions: user can edit themselves or parent can edit their child
+        if user_id != current_user_id:
+            # Only parents can edit other profiles
+            if str(current_user.role) != "parent":  # type: ignore
+                raise InvalidAmountException(0, "You don't have permission to edit this profile")
+
+            # Parent can only edit their own children
+            if str(profile.role) != "child" or str(profile.parent_id) != current_user_id:  # type: ignore
+                raise InvalidAmountException(
+                    0, "You can only edit profiles of your own children"
+                )
+
+        # Update fields if provided
+        if name is not None:
+            profile.name = name  # type: ignore
+        if avatar_url is not None:
+            profile.avatar_url = avatar_url  # type: ignore
+
+        profile.updated_at = str(datetime.now(UTC))  # type: ignore
+
+        return profile
+
     def create_child(
         self, parent_id: str, child_name: str, initial_balance: int = 0, email: str | None = None
     ) -> Profile:
@@ -58,6 +99,34 @@ class ProfileService:
         )
 
         return child_profile
+
+    def delete_child(self, parent_id: str, child_id: str) -> bool:
+        """Delete a child profile and all associated data"""
+        # 親が存在するか確認
+        parent = self.profile_repo.get_by_id(parent_id)
+        if not parent or parent.role != "parent":
+            raise ResourceNotFoundException("Parent", parent_id)
+
+        # 子どもが存在するか確認
+        child = self.profile_repo.get_by_id(child_id)
+        if not child or child.role != "child":
+            raise ResourceNotFoundException("Child", child_id)
+
+        # 子どもが実際にこの親のものか確認
+        if str(child.parent_id) != parent_id:
+            raise InvalidAmountException(0, "Child does not belong to this parent")
+
+        # 子どもに紐づくアカウントを取得
+        accounts = self.account_repo.get_by_user_id(child_id)
+
+        # アカウントを削除（トランザクション、出金リクエストもカスケード削除される）
+        for account in accounts:
+            self.account_repo.delete(str(account.id))
+
+        # プロフィールを削除
+        self.profile_repo.delete(child_id)
+
+        return True
 
     def link_child_to_auth(self, child_id: str, auth_user_id: str) -> Profile:
         """Link child profile to authentication account"""
@@ -384,3 +453,140 @@ class WithdrawalRequestService:
         )
 
         return updated_request
+
+
+class RecurringDepositService:
+    """Service for recurring deposit-related business logic"""
+
+    @inject
+    def __init__(
+        self,
+        recurring_deposit_repo: RecurringDepositRepository,
+        account_repo: AccountRepository,
+        profile_repo: ProfileRepository,
+    ):
+        self.recurring_deposit_repo = recurring_deposit_repo
+        self.account_repo = account_repo
+        self.profile_repo = profile_repo
+
+    def get_recurring_deposit(
+        self, account_id: str, current_user_id: str
+    ) -> RecurringDeposit | None:
+        """Get recurring deposit settings (parent only)"""
+        # Get account
+        account = self.account_repo.get_by_id(account_id)
+        if not account:
+            raise ResourceNotFoundException("Account", account_id)
+
+        # Get account owner's profile
+        profile = self.profile_repo.get_by_id(str(account.user_id))
+        if not profile:
+            raise ResourceNotFoundException("Profile", str(account.user_id))
+
+        # Only parent can view recurring deposit settings
+        if str(profile.role) == "parent":
+            # Parent viewing their own account (not typical, but allow it)
+            if str(account.user_id) != current_user_id:
+                raise InvalidAmountException(0, "You don't have permission to view this")
+        elif str(profile.role) == "child":
+            # Must be the parent of this child
+            if str(profile.parent_id) != current_user_id:
+                raise InvalidAmountException(
+                    0, "You can only view recurring deposits for your own children"
+                )
+        else:
+            raise InvalidAmountException(0, "Invalid role")
+
+        return self.recurring_deposit_repo.get_by_account_id(account_id)
+
+    def create_or_update_recurring_deposit(
+        self,
+        account_id: str,
+        current_user_id: str,
+        amount: int,
+        day_of_month: int,
+        is_active: bool = True,
+    ) -> RecurringDeposit:
+        """Create or update recurring deposit settings (parent only)"""
+        # Validate amount
+        if amount <= 0:
+            raise InvalidAmountException(amount, "Amount must be positive")
+
+        # Validate day of month
+        if day_of_month < 1 or day_of_month > 31:
+            raise InvalidAmountException(day_of_month, "Day must be between 1 and 31")
+
+        # Get account
+        account = self.account_repo.get_by_id(account_id)
+        if not account:
+            raise ResourceNotFoundException("Account", account_id)
+
+        # Get account owner's profile
+        profile = self.profile_repo.get_by_id(str(account.user_id))
+        if not profile:
+            raise ResourceNotFoundException("Profile", str(account.user_id))
+
+        # Only parent can modify recurring deposit settings
+        if str(profile.role) == "parent":
+            # Parent modifying their own account (not typical, but allow it)
+            if str(account.user_id) != current_user_id:
+                raise InvalidAmountException(0, "You don't have permission to modify this")
+        elif str(profile.role) == "child":
+            # Must be the parent of this child
+            if str(profile.parent_id) != current_user_id:
+                raise InvalidAmountException(
+                    0, "You can only modify recurring deposits for your own children"
+                )
+        else:
+            raise InvalidAmountException(0, "Invalid role")
+
+        # Check if recurring deposit already exists
+        existing = self.recurring_deposit_repo.get_by_account_id(account_id)
+
+        now = datetime.now(UTC)
+
+        if existing:
+            # Update existing
+            return self.recurring_deposit_repo.update(
+                existing, amount, day_of_month, is_active, now
+            )
+        else:
+            # Create new
+            return self.recurring_deposit_repo.create(
+                account_id, amount, day_of_month, now
+            )
+
+    def delete_recurring_deposit(
+        self, account_id: str, current_user_id: str
+    ) -> bool:
+        """Delete recurring deposit settings (parent only)"""
+        # Get account
+        account = self.account_repo.get_by_id(account_id)
+        if not account:
+            raise ResourceNotFoundException("Account", account_id)
+
+        # Get account owner's profile
+        profile = self.profile_repo.get_by_id(str(account.user_id))
+        if not profile:
+            raise ResourceNotFoundException("Profile", str(account.user_id))
+
+        # Only parent can delete recurring deposit settings
+        if str(profile.role) == "parent":
+            # Parent deleting their own account (not typical, but allow it)
+            if str(account.user_id) != current_user_id:
+                raise InvalidAmountException(0, "You don't have permission to delete this")
+        elif str(profile.role) == "child":
+            # Must be the parent of this child
+            if str(profile.parent_id) != current_user_id:
+                raise InvalidAmountException(
+                    0, "You can only delete recurring deposits for your own children"
+                )
+        else:
+            raise InvalidAmountException(0, "Invalid role")
+
+        # Get recurring deposit
+        recurring_deposit = self.recurring_deposit_repo.get_by_account_id(account_id)
+        if not recurring_deposit:
+            raise ResourceNotFoundException("RecurringDeposit", account_id)
+
+        return self.recurring_deposit_repo.delete(recurring_deposit)

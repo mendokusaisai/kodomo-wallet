@@ -14,18 +14,21 @@ from sqlalchemy.orm import Session
 from app.repositories.interfaces import (
     AccountRepository,
     ProfileRepository,
+    RecurringDepositRepository,
     TransactionRepository,
     WithdrawalRequestRepository,
 )
 from app.repositories.sqlalchemy_repositories import (
     SQLAlchemyAccountRepository,
     SQLAlchemyProfileRepository,
+    SQLAlchemyRecurringDepositRepository,
     SQLAlchemyTransactionRepository,
     SQLAlchemyWithdrawalRequestRepository,
 )
 from app.services.business_services import (
     AccountService,
     ProfileService,
+    RecurringDepositService,
     TransactionService,
     WithdrawalRequestService,
 )
@@ -65,6 +68,11 @@ class RepositoryModule(Module):
             to=SQLAlchemyWithdrawalRequestRepository(self.db),
             scope=singleton,
         )
+        binder.bind(
+            RecurringDepositRepository,
+            to=SQLAlchemyRecurringDepositRepository(self.db),
+            scope=singleton,
+        )
 
 
 class ServiceModule(Module):
@@ -81,6 +89,7 @@ class ServiceModule(Module):
         binder.bind(AccountService, scope=singleton)
         binder.bind(TransactionService, scope=singleton)
         binder.bind(WithdrawalRequestService, scope=singleton)
+        binder.bind(RecurringDepositService, scope=singleton)
 
 
 def create_injector(db: Session) -> Injector:
@@ -125,3 +134,9 @@ def get_withdrawal_request_service(db: Session) -> WithdrawalRequestService:
     """Get WithdrawalRequestService instance with injected dependencies"""
     injector = create_injector(db)
     return injector.get(WithdrawalRequestService)
+
+
+def get_recurring_deposit_service(db: Session) -> RecurringDepositService:
+    """Get RecurringDepositService instance with injected dependencies"""
+    injector = create_injector(db)
+    return injector.get(RecurringDepositService)

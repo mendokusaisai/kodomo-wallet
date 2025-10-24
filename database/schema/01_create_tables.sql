@@ -7,7 +7,7 @@ CREATE TABLE profiles (
   id UUID REFERENCES auth.users ON DELETE CASCADE PRIMARY KEY,
   name TEXT NOT NULL,
   role TEXT NOT NULL CHECK (role IN ('parent', 'child')),
-  parent_id UUID REFERENCES profiles(id),
+  parent_id UUID REFERENCES profiles(id) ON DELETE RESTRICT,
   avatar_url TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL

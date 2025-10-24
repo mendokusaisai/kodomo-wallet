@@ -9,8 +9,16 @@ export const GET_ME = gql`
       name
       role
       avatarUrl
+      email
+      parentId
       createdAt
     }
+  }
+`;
+
+export const GET_CHILDREN_COUNT = gql`
+  query GetChildrenCount($parentId: String!) {
+    childrenCount(parentId: $parentId)
   }
 `;
 
@@ -30,6 +38,8 @@ export const GET_ACCOUNTS = gql`
 				name
 				role
 				authUserId
+				avatarUrl
+				email
 			}
 		}
 	}
@@ -55,6 +65,20 @@ export const GET_WITHDRAWAL_REQUESTS = gql`
       amount
       description
       status
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
+export const GET_RECURRING_DEPOSIT = gql`
+  query GetRecurringDeposit($accountId: String!, $currentUserId: String!) {
+    recurringDeposit(accountId: $accountId, currentUserId: $currentUserId) {
+      id
+      accountId
+      amount
+      dayOfMonth
+      isActive
       createdAt
       updatedAt
     }
@@ -201,5 +225,69 @@ export const UPDATE_GOAL = gql`
       goalAmount
       updatedAt
     }
+  }
+`;
+
+export const UPDATE_PROFILE = gql`
+  mutation UpdateProfile(
+    $userId: String!
+    $currentUserId: String!
+    $name: String
+    $avatarUrl: String
+  ) {
+    updateProfile(
+      userId: $userId
+      currentUserId: $currentUserId
+      name: $name
+      avatarUrl: $avatarUrl
+    ) {
+      id
+      name
+      avatarUrl
+      updatedAt
+    }
+  }
+`;
+
+export const DELETE_CHILD = gql`
+  mutation DeleteChild($parentId: String!, $childId: String!) {
+    deleteChild(parentId: $parentId, childId: $childId)
+  }
+`;
+
+export const CREATE_OR_UPDATE_RECURRING_DEPOSIT = gql`
+  mutation CreateOrUpdateRecurringDeposit(
+    $accountId: String!
+    $currentUserId: String!
+    $amount: Int!
+    $dayOfMonth: Int!
+    $isActive: Boolean
+  ) {
+    createOrUpdateRecurringDeposit(
+      accountId: $accountId
+      currentUserId: $currentUserId
+      amount: $amount
+      dayOfMonth: $dayOfMonth
+      isActive: $isActive
+    ) {
+      id
+      accountId
+      amount
+      dayOfMonth
+      isActive
+      updatedAt
+    }
+  }
+`;
+
+export const DELETE_RECURRING_DEPOSIT = gql`
+  mutation DeleteRecurringDeposit(
+    $accountId: String!
+    $currentUserId: String!
+  ) {
+    deleteRecurringDeposit(
+      accountId: $accountId
+      currentUserId: $currentUserId
+    )
   }
 `;

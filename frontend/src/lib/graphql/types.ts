@@ -7,6 +7,8 @@ export interface Profile {
 	avatarUrl?: string;
 	createdAt: string;
 	authUserId?: string | null; // 認証アカウントID (認証なし子どもの場合null)
+	email?: string | null; // メールアドレス（未認証子どもの場合に事前登録）
+	parentId?: string | null; // 親のID（子どもの場合のみ）
 }
 
 export interface Account {
@@ -40,6 +42,16 @@ export interface WithdrawalRequest {
 	updatedAt: string;
 }
 
+export interface RecurringDeposit {
+	id: string;
+	accountId: string;
+	amount: number;
+	dayOfMonth: number;
+	isActive: boolean;
+	createdAt: string;
+	updatedAt: string;
+}
+
 // Query のレスポンス型
 export interface GetMeResponse {
 	me: Profile | null;
@@ -55,6 +67,10 @@ export interface GetTransactionsResponse {
 
 export interface GetWithdrawalRequestsResponse {
 	withdrawalRequests: WithdrawalRequest[];
+}
+
+export interface GetRecurringDepositResponse {
+	recurringDeposit: RecurringDeposit | null;
 }
 
 // Mutation のレスポンス型
@@ -76,4 +92,12 @@ export interface RejectWithdrawalResponse {
 
 export interface UpdateGoalResponse {
 	updateGoal: Account;
+}
+
+export interface CreateOrUpdateRecurringDepositResponse {
+	createOrUpdateRecurringDeposit: RecurringDeposit;
+}
+
+export interface DeleteRecurringDepositResponse {
+	deleteRecurringDeposit: boolean;
 }

@@ -18,7 +18,7 @@ class Profile(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     auth_user_id = Column(UUID(as_uuid=True), nullable=True, unique=True)  # 認証アカウントID（NULL可）
-    email = Column(Text, nullable=True)  # メールアドレス（未認証子どもの場合に事前登録）
+    email = Column(Text, nullable=True)  # メールアドレス
     name = Column(Text, nullable=False)
     role = Column(Text, nullable=False)
     parent_id = Column(UUID(as_uuid=True), ForeignKey("profiles.id"), nullable=True)
@@ -58,6 +58,9 @@ class Account(Base):
     )
     withdrawal_requests = relationship(
         "WithdrawalRequest", back_populates="account", cascade="all, delete-orphan"
+    )
+    recurring_deposits = relationship(
+        "RecurringDeposit", back_populates="account", cascade="all, delete-orphan"
     )
 
 
@@ -107,4 +110,30 @@ class WithdrawalRequest(Base):
 
     __table_args__ = (
         CheckConstraint("status IN ('pending', 'approved', 'rejected')", name="check_status"),
+    )
+
+
+class RecurringDeposit(Base):
+    """Recurring deposit model (automatic monthly allowance)"""
+
+    __tablename__ = "recurring_deposits"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    account_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("accounts.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    amount = Column(BigInteger, nullable=False)
+    day_of_month = Column(BigInteger, nullable=False)
+    is_active = Column(Text, default="true", nullable=False)
+    created_at = Column(Text, nullable=False)
+    updated_at = Column(Text, nullable=False)
+
+    # Relationships
+    account = relationship("Account", back_populates="recurring_deposits")
+
+    __table_args__ = (
+        CheckConstraint("amount > 0", name="check_amount_positive"),
+        CheckConstraint("day_of_month >= 1 AND day_of_month <= 31", name="check_day_of_month_range"),
     )
