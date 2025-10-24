@@ -56,6 +56,16 @@ def create_deposit(
     return transaction_service.create_deposit(account_id, amount, description)
 
 
+def create_withdraw(
+    account_id: str,
+    amount: int,
+    transaction_service: TransactionService,
+    description: str | None = None,
+) -> Transaction:
+    """Create a withdraw transaction"""
+    return transaction_service.create_withdraw(account_id, amount, description)
+
+
 def create_child_profile(
     parent_id: str,
     child_name: str,

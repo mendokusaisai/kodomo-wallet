@@ -66,8 +66,21 @@ export const GET_WITHDRAWAL_REQUESTS = gql`
 // ==================== Mutation ====================
 
 export const DEPOSIT = gql`
-	mutation Deposit($accountId: String!, $amount: Int!, $description: String) {
+	mutation Deposit($accountId: String!, $amount: Int!, $description: String!) {
 		deposit(accountId: $accountId, amount: $amount, description: $description) {
+			id
+			accountId
+			type
+			amount
+			description
+			createdAt
+		}
+	}
+`;
+
+export const WITHDRAW = gql`
+	mutation Withdraw($accountId: String!, $amount: Int!, $description: String!) {
+		withdraw(accountId: $accountId, amount: $amount, description: $description) {
 			id
 			accountId
 			type

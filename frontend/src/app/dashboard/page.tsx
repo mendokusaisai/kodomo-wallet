@@ -9,6 +9,7 @@ import { LinkChildToAuthDialog } from "@/components/link-child-to-auth-dialog";
 import { LogoutButton } from "@/components/logout-button";
 import { TransactionHistory } from "@/components/transaction-history";
 import { Button } from "@/components/ui/button";
+import { WithdrawDialog } from "@/components/withdraw-dialog";
 import { GET_ACCOUNTS, GET_ME } from "@/lib/graphql/queries";
 import type {
 	Account,
@@ -21,11 +22,13 @@ export default function DashboardPage() {
 	const router = useRouter();
 	const [userId, setUserId] = useState<string | null>(null);
 	const [depositDialogOpen, setDepositDialogOpen] = useState(false);
+	const [withdrawDialogOpen, setWithdrawDialogOpen] = useState(false);
 	const [createChildDialogOpen, setCreateChildDialogOpen] = useState(false);
 	const [linkAuthDialogOpen, setLinkAuthDialogOpen] = useState(false);
 	const [selectedAccount, setSelectedAccount] = useState<{
 		id: string;
 		name: string;
+		balance: number;
 	} | null>(null);
 	const [selectedChild, setSelectedChild] = useState<{
 		id: string;
@@ -144,18 +147,39 @@ export default function DashboardPage() {
 
 								{/* 入金ボタン（親のみ表示） */}
 								{meData?.me?.role === "parent" && (
-									<div className="mb-4">
+									<div className="mb-2">
 										<Button
 											onClick={() => {
 												setSelectedAccount({
 													id: account.id,
 													name: `口座 (残高: ¥${account.balance.toLocaleString()})`,
+													balance: account.balance,
 												});
 												setDepositDialogOpen(true);
 											}}
 											className="w-full"
 										>
 											入金する
+										</Button>
+									</div>
+								)}
+
+								{/* 出金ボタン（親のみ表示） */}
+								{meData?.me?.role === "parent" && (
+									<div className="mb-4">
+										<Button
+											onClick={() => {
+												setSelectedAccount({
+													id: account.id,
+													name: `口座 (残高: ¥${account.balance.toLocaleString()})`,
+													balance: account.balance,
+												});
+												setWithdrawDialogOpen(true);
+											}}
+											className="w-full bg-red-600 hover:bg-red-700"
+											variant="destructive"
+										>
+											出金する
 										</Button>
 									</div>
 								)}
@@ -231,6 +255,16 @@ export default function DashboardPage() {
 						onOpenChange={setDepositDialogOpen}
 						accountId={selectedAccount.id}
 						accountName={selectedAccount.name}
+					/>
+				)}
+				{/* 出金ダイアログ */}
+				{selectedAccount && (
+					<WithdrawDialog
+						open={withdrawDialogOpen}
+						onOpenChange={setWithdrawDialogOpen}
+						accountId={selectedAccount.id}
+						accountName={selectedAccount.name}
+						currentBalance={selectedAccount.balance}
 					/>
 				)}
 				{/* 子ども追加ダイアログ */}

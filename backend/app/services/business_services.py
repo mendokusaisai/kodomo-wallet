@@ -229,3 +229,38 @@ class TransactionService:
         )
 
         return transaction
+
+    def create_withdraw(
+        self, account_id: str, amount: int, description: str | None = None
+    ) -> Transaction:
+        """Create a withdraw transaction and update account balance"""
+        # Validate amount
+        if amount <= 0:
+            raise InvalidAmountException(amount, "Amount must be greater than zero")
+
+        # Get account
+        account = self.account_repo.get_by_id(account_id)
+        if not account:
+            raise ResourceNotFoundException("Account", account_id)
+
+        # Check if balance is sufficient
+        current_balance = int(account.balance)  # type: ignore[arg-type]
+        if current_balance < amount:
+            raise InvalidAmountException(
+                amount, f"Insufficient balance. Current: {current_balance}, Required: {amount}"
+            )
+
+        # Update balance
+        new_balance = current_balance - amount
+        self.account_repo.update_balance(account, new_balance)
+
+        # Create transaction
+        transaction = self.transaction_repo.create(
+            account_id=account_id,
+            transaction_type="withdraw",
+            amount=amount,
+            description=description,
+            created_at=datetime.now(UTC),
+        )
+
+        return transaction

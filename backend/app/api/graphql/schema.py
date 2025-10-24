@@ -75,6 +75,25 @@ class Mutation:
             raise Exception(f"Domain error: {e.message}") from e
 
     @strawberry.mutation
+    def withdraw(
+        self,
+        info: Info,
+        account_id: str,
+        amount: int,
+        description: str | None = None,
+    ) -> Transaction:
+        """Create a withdraw transaction"""
+        transaction_service = info.context["transaction_service"]
+        try:
+            return resolvers.create_withdraw(account_id, amount, transaction_service, description)
+        except ResourceNotFoundException as e:
+            raise Exception(f"Resource not found: {e.message}") from e
+        except InvalidAmountException as e:
+            raise Exception(f"Invalid amount: {e.message}") from e
+        except DomainException as e:
+            raise Exception(f"Domain error: {e.message}") from e
+
+    @strawberry.mutation
     def create_child(
         self,
         info: Info,
