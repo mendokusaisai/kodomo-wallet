@@ -64,7 +64,7 @@ export function DepositDialog({
 	});
 
 	const [depositMutation] = useMutation(DEPOSIT, {
-		refetchQueries: ["GetAccounts"],
+		refetchQueries: ["GetAccounts", "GetTransactions"],
 		awaitRefetchQueries: true,
 	});
 

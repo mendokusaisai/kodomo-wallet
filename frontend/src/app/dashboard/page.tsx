@@ -7,6 +7,7 @@ import { CreateChildDialog } from "@/components/create-child-dialog";
 import { DepositDialog } from "@/components/deposit-dialog";
 import { LinkChildToAuthDialog } from "@/components/link-child-to-auth-dialog";
 import { LogoutButton } from "@/components/logout-button";
+import { TransactionHistory } from "@/components/transaction-history";
 import { Button } from "@/components/ui/button";
 import { GET_ACCOUNTS, GET_ME } from "@/lib/graphql/queries";
 import type {
@@ -196,13 +197,17 @@ export default function DashboardPage() {
 											<div
 												className="bg-blue-600 h-2.5 rounded-full transition-all"
 												style={{ width: `${Math.min(goalProgress, 100)}%` }}
-											></div>
+											/>
 										</div>
 										<p className="text-xs text-gray-500 mt-1">
 											目標金額: ¥{account.goalAmount.toLocaleString()}
 										</p>
 									</div>
 								)}
+
+								{/* トランザクション履歴 */}
+								<TransactionHistory accountId={account.id} />
+
 								{/* アカウント情報 */}
 								<div className="mt-4 pt-4 border-t border-gray-200">
 									<p className="text-xs text-gray-500">
