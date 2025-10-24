@@ -3,8 +3,8 @@ import { gql } from "@apollo/client";
 // ==================== Query ====================
 
 export const GET_ME = gql`
-  query GetMe {
-    me {
+  query GetMe($userId: String!) {
+    me(userId: $userId) {
       id
       name
       role
@@ -15,20 +15,24 @@ export const GET_ME = gql`
 `;
 
 export const GET_ACCOUNTS = gql`
-  query GetAccounts {
-    accounts {
-      id
-      userId
-      balance
-      currency
-      goalName
-      goalAmount
-      createdAt
-      updatedAt
-    }
-  }
+	query GetAccounts($userId: String!) {
+		accounts(userId: $userId) {
+			id
+			userId
+			balance
+			currency
+			goalName
+			goalAmount
+			createdAt
+			updatedAt
+			user {
+				id
+				name
+				role
+			}
+		}
+	}
 `;
-
 export const GET_TRANSACTIONS = gql`
   query GetTransactions($accountId: String!) {
     transactions(accountId: $accountId) {

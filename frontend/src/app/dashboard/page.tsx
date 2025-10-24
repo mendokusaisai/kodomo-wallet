@@ -1,24 +1,62 @@
 "use client";
 
 import { useQuery } from "@apollo/client/react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { DepositDialog } from "@/components/deposit-dialog";
+import { LogoutButton } from "@/components/logout-button";
+import { Button } from "@/components/ui/button";
 import { GET_ACCOUNTS, GET_ME } from "@/lib/graphql/queries";
 import type {
 	Account,
 	GetAccountsResponse,
 	GetMeResponse,
 } from "@/lib/graphql/types";
+import { getUser } from "@/lib/supabase/auth";
 
 export default function DashboardPage() {
+	const router = useRouter();
+	const [userId, setUserId] = useState<string | null>(null);
+	const [depositDialogOpen, setDepositDialogOpen] = useState(false);
+	const [selectedAccount, setSelectedAccount] = useState<{
+		id: string;
+		name: string;
+	} | null>(null);
+
+	// Supabaseからユーザー情報を取得
+	useEffect(() => {
+		const fetchUser = async () => {
+			try {
+				const user = await getUser();
+				if (!user) {
+					router.push("/login");
+					return;
+				}
+				setUserId(user.id);
+			} catch (error) {
+				console.error("ユーザー取得エラー:", error);
+				router.push("/login");
+			}
+		};
+		fetchUser();
+	}, [router]);
+
 	const {
 		data: meData,
 		loading: meLoading,
 		error: meError,
-	} = useQuery<GetMeResponse>(GET_ME);
+	} = useQuery<GetMeResponse>(GET_ME, {
+		variables: { userId },
+		skip: !userId,
+	});
 	const {
 		data: accountsData,
 		loading: accountsLoading,
 		error: accountsError,
-	} = useQuery<GetAccountsResponse>(GET_ACCOUNTS);
+	} = useQuery<GetAccountsResponse>(GET_ACCOUNTS, {
+		variables: { userId },
+		skip: !userId,
+	});
 
 	if (meLoading || accountsLoading) {
 		return (
@@ -43,13 +81,16 @@ export default function DashboardPage() {
 		<div className="min-h-screen bg-gray-50 p-8">
 			<div className="max-w-7xl mx-auto">
 				{/* ヘッダー */}
-				<div className="mb-8">
-					<h1 className="text-3xl font-bold text-gray-900">
-						こんにちは、{meData?.me?.name}さん
-					</h1>
-					<p className="text-gray-600 mt-2">
-						ロール: {meData?.me?.role === "parent" ? "親" : "子供"}
-					</p>
+				<div className="mb-8 flex justify-between items-start">
+					<div>
+						<h1 className="text-3xl font-bold text-gray-900">
+							こんにちは、{meData?.me?.name}さん
+						</h1>
+						<p className="text-gray-600 mt-2">
+							ロール: {meData?.me?.role === "parent" ? "親" : "子供"}
+						</p>
+					</div>
+					<LogoutButton />
 				</div>
 
 				{/* アカウント一覧 */}
@@ -64,14 +105,37 @@ export default function DashboardPage() {
 								key={account.id}
 								className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow"
 							>
+								{/* アカウント所有者名 */}
+								{account.user && (
+									<div className="mb-3 pb-3 border-b border-gray-200">
+										<p className="text-sm text-gray-500">アカウント所有者</p>
+										<p className="text-lg font-semibold text-gray-900">
+											{account.user.name}
+										</p>
+									</div>
+								)}
 								{/* 残高 */}
 								<div className="mb-4">
 									<p className="text-sm text-gray-600 mb-1">残高</p>
 									<p className="text-3xl font-bold text-gray-900">
 										¥{account.balance.toLocaleString()}
 									</p>
+								</div>{" "}
+								{/* 入金ボタン */}
+								<div className="mb-4">
+									<Button
+										onClick={() => {
+											setSelectedAccount({
+												id: account.id,
+												name: `口座 (残高: ¥${account.balance.toLocaleString()})`,
+											});
+											setDepositDialogOpen(true);
+										}}
+										className="w-full"
+									>
+										入金する
+									</Button>
 								</div>
-
 								{/* 貯金目標 */}
 								{account.goalName && account.goalAmount && (
 									<div className="mt-4">
@@ -94,7 +158,6 @@ export default function DashboardPage() {
 										</p>
 									</div>
 								)}
-
 								{/* アカウント情報 */}
 								<div className="mt-4 pt-4 border-t border-gray-200">
 									<p className="text-xs text-gray-500">
@@ -111,6 +174,16 @@ export default function DashboardPage() {
 					<div className="bg-white rounded-lg shadow-md p-8 text-center">
 						<p className="text-gray-600">アカウントがありません</p>
 					</div>
+				)}
+
+				{/* 入金ダイアログ */}
+				{selectedAccount && (
+					<DepositDialog
+						open={depositDialogOpen}
+						onOpenChange={setDepositDialogOpen}
+						accountId={selectedAccount.id}
+						accountName={selectedAccount.name}
+					/>
 				)}
 			</div>
 		</div>

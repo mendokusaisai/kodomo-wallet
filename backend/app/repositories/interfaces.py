@@ -16,6 +16,11 @@ class ProfileRepository(ABC):
         """Get profile by ID"""
         pass
 
+    @abstractmethod
+    def get_children(self, parent_id: str) -> list[Profile]:
+        """Get all children profiles for a parent"""
+        pass
+
 
 class AccountRepository(ABC):
     """Interface for Account data access"""

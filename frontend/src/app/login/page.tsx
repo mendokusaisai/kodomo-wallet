@@ -1,55 +1,76 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useId, useState } from "react";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { signIn } from "@/lib/supabase/auth";
 
 export default function LoginPage() {
+	const router = useRouter();
+	const searchParams = useSearchParams();
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
-	const [loading, setLoading] = useState(false);
-	const [error, setError] = useState<string | null>(null);
-	const router = useRouter();
-	const supabase = createClient();
+	const [isLoading, setIsLoading] = useState(false);
+	const emailId = useId();
+	const passwordId = useId();
 
-	const handleLogin = async (e: React.FormEvent) => {
+	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
-		setLoading(true);
-		setError(null);
+		setIsLoading(true);
 
-		const { error } = await supabase.auth.signInWithPassword({
-			email,
-			password,
-		});
-
-		if (error) {
-			setError(error.message);
-		} else {
-			router.push("/dashboard");
+		try {
+			await signIn(email, password);
+			toast.success("ログインしました");
+			// リダイレクトパラメータがある場合はそのページへ、なければダッシュボードへ
+			const redirect = searchParams.get("redirect") || "/dashboard";
+			router.push(redirect);
 			router.refresh();
+		} catch (error) {
+			console.error("ログインエラー:", error);
+			toast.error("ログインに失敗しました", {
+				description: "メールアドレスとパスワードを確認してください",
+			});
+		} finally {
+			setIsLoading(false);
 		}
-		setLoading(false);
 	};
 
-	// テストユーザーで自動ログイン
-	const handleQuickLogin = async (testEmail: string) => {
-		setEmail(testEmail);
-		setPassword("password123");
-		setLoading(true);
-		setError(null);
-
-		const { error } = await supabase.auth.signInWithPassword({
-			email: testEmail,
-			password: "password123",
-		});
-
-		if (error) {
-			setError(error.message);
-		} else {
-			router.push("/dashboard");
+	// テストユーザーでログイン
+	const handleTestLogin = async () => {
+		setIsLoading(true);
+		try {
+			await signIn("kodomo-test@outlook.com", "password123");
+			toast.success("ログインしました");
+			const redirect = searchParams.get("redirect") || "/dashboard";
+			router.push(redirect);
 			router.refresh();
+		} catch (error) {
+			console.error("ログインエラー:", error);
+			toast.error("ログインに失敗しました");
+		} finally {
+			setIsLoading(false);
 		}
-		setLoading(false);
+	};
+
+	// 子どもアカウントでログイン
+	const handleChildLogin = async () => {
+		setIsLoading(true);
+		try {
+			await signIn("child@test.com", "password123");
+			toast.success("ログインしました");
+			const redirect = searchParams.get("redirect") || "/dashboard";
+			router.push(redirect);
+			router.refresh();
+		} catch (error) {
+			console.error("ログインエラー:", error);
+			toast.error("ログインに失敗しました");
+		} finally {
+			setIsLoading(false);
+		}
 	};
 
 	return (
@@ -64,98 +85,76 @@ export default function LoginPage() {
 						<p className="text-gray-600">親子で楽しく学べるおこづかい管理</p>
 					</div>
 
-					{/* エラーメッセージ */}
-					{error && (
-						<div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-							<p className="text-sm text-red-600">{error}</p>
-						</div>
-					)}
-
 					{/* ログインフォーム */}
-					<form onSubmit={handleLogin} className="space-y-4">
+					<form onSubmit={handleSubmit} className="space-y-4">
 						<div>
-							<label
-								htmlFor="email"
-								className="block text-sm font-medium text-gray-700 mb-1"
-							>
-								メールアドレス
-							</label>
-							<input
-								id="email"
+							<Label htmlFor={emailId}>メールアドレス</Label>
+							<Input
+								id={emailId}
 								type="email"
 								value={email}
 								onChange={(e) => setEmail(e.target.value)}
-								className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
 								placeholder="your@email.com"
 								required
+								className="mt-1"
 							/>
 						</div>
 
 						<div>
-							<label
-								htmlFor="password"
-								className="block text-sm font-medium text-gray-700 mb-1"
-							>
-								パスワード
-							</label>
-							<input
-								id="password"
+							<Label htmlFor={passwordId}>パスワード</Label>
+							<Input
+								id={passwordId}
 								type="password"
 								value={password}
 								onChange={(e) => setPassword(e.target.value)}
-								className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
 								placeholder="••••••••"
 								required
+								className="mt-1"
 							/>
 						</div>
 
-						<button
-							type="submit"
-							disabled={loading}
-							className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
-						>
-							{loading ? "処理中..." : "ログイン"}
-						</button>
+						<Button type="submit" disabled={isLoading} className="w-full">
+							{isLoading ? "処理中..." : "ログイン"}
+						</Button>
 					</form>
 
-					{/* テストユーザークイックログイン */}
-					<div className="mt-8 pt-6 border-t border-gray-200">
-						<p className="text-xs text-gray-500 text-center mb-3">
-							テストアカウントでログイン
-						</p>
+					{/* テストユーザーログイン */}
+					<div className="mt-6">
 						<div className="space-y-2">
-							<button
+							<Button
 								type="button"
-								onClick={() => handleQuickLogin("parent@test.com")}
-								disabled={loading}
-								className="w-full bg-green-100 hover:bg-green-200 text-green-800 font-medium py-2 px-4 rounded-lg transition-colors text-sm disabled:opacity-50"
+								onClick={handleTestLogin}
+								disabled={isLoading}
+								variant="outline"
+								className="w-full border-dashed bg-green-50 hover:bg-green-100 text-green-800 border-green-200"
 							>
-								👨‍👩‍👧 親アカウント
-							</button>
-							<button
+								👨 親アカウントでログイン
+							</Button>
+							<Button
 								type="button"
-								onClick={() => handleQuickLogin("child1@test.com")}
-								disabled={loading}
-								className="w-full bg-purple-100 hover:bg-purple-200 text-purple-800 font-medium py-2 px-4 rounded-lg transition-colors text-sm disabled:opacity-50"
+								onClick={handleChildLogin}
+								disabled={isLoading}
+								variant="outline"
+								className="w-full border-dashed bg-purple-50 hover:bg-purple-100 text-purple-800 border-purple-200"
 							>
-								👦 子供アカウント1
-							</button>
-							<button
-								type="button"
-								onClick={() => handleQuickLogin("child2@test.com")}
-								disabled={loading}
-								className="w-full bg-pink-100 hover:bg-pink-200 text-pink-800 font-medium py-2 px-4 rounded-lg transition-colors text-sm disabled:opacity-50"
-							>
-								👧 子供アカウント2
-							</button>
+								👦 子どもアカウントでログイン
+							</Button>
 						</div>
 					</div>
-				</div>
 
-				{/* フッター */}
-				<p className="text-center text-sm text-gray-600 mt-4">
-					開発中のため、テストアカウントのみ利用可能です
-				</p>
+					{/* サインアップリンク */}
+					<div className="mt-6 text-center">
+						<p className="text-sm text-gray-600">
+							アカウントをお持ちでない方は{" "}
+							<Link
+								href="/signup"
+								className="text-blue-600 hover:text-blue-500 font-medium"
+							>
+								新規登録
+							</Link>
+						</p>
+					</div>
+				</div>
 			</div>
 		</div>
 	);

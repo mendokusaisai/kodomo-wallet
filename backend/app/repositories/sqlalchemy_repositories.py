@@ -25,6 +25,12 @@ class SQLAlchemyProfileRepository(ProfileRepository):
         """Get profile by ID"""
         return self.db.query(Profile).filter(Profile.id == uuid.UUID(user_id)).first()
 
+    def get_children(self, parent_id: str) -> list[Profile]:
+        """Get all children profiles for a parent"""
+        return list(
+            self.db.query(Profile).filter(Profile.parent_id == uuid.UUID(parent_id)).all()
+        )
+
 
 class SQLAlchemyAccountRepository(AccountRepository):
     """SQLAlchemy implementation of AccountRepository"""

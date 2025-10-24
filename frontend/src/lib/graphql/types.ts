@@ -17,6 +17,7 @@ export interface Account {
 	goalAmount?: number;
 	createdAt: string;
 	updatedAt: string;
+	user?: Profile; // アカウント所有者の情報
 }
 
 export interface Transaction {

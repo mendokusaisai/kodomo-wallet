@@ -23,9 +23,18 @@ def get_profile_by_id(
 def get_accounts_by_user_id(
     user_id: str,
     account_service: AccountService,
+    profile_service: ProfileService,
 ) -> list[Account]:
-    """Get all accounts for a user"""
-    return account_service.get_user_accounts(user_id)
+    """Get all accounts for a user and their children (if parent)"""
+    accounts = account_service.get_family_accounts(user_id)
+
+    # 各アカウントにユーザー情報を付与
+    for account in accounts:
+        user_profile = profile_service.get_profile(str(account.user_id))
+        if user_profile:
+            account.user = user_profile
+
+    return accounts
 
 
 def get_transactions_by_account_id(

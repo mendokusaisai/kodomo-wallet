@@ -36,7 +36,8 @@ class Query:
     ) -> list[Account]:
         """Get accounts for a user"""
         account_service = info.context["account_service"]
-        return resolvers.get_accounts_by_user_id(user_id, account_service)
+        profile_service = info.context["profile_service"]
+        return resolvers.get_accounts_by_user_id(user_id, account_service, profile_service)
 
     @strawberry.field
     def transactions(

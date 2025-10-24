@@ -28,17 +28,42 @@ class ProfileService:
         """Get user profile by ID"""
         return self.profile_repo.get_by_id(user_id)
 
+    def get_children(self, parent_id: str) -> list[Profile]:
+        """Get all children for a parent"""
+        return self.profile_repo.get_children(parent_id)
+
 
 class AccountService:
     """Service for account-related business logic"""
 
     @inject
-    def __init__(self, account_repo: AccountRepository):
+    def __init__(
+        self, account_repo: AccountRepository, profile_repo: ProfileRepository
+    ):
         self.account_repo = account_repo
+        self.profile_repo = profile_repo
 
     def get_user_accounts(self, user_id: str) -> list[Account]:
         """Get all accounts for a user"""
         return self.account_repo.get_by_user_id(user_id)
+
+    def get_family_accounts(self, user_id: str) -> list[Account]:
+        """Get accounts for user. If parent, only return children's accounts"""
+        # Get user profile to check role
+        profile = self.profile_repo.get_by_id(user_id)
+
+        if profile and profile.role == "parent":
+            # Parents only see their children's accounts, not their own
+            accounts = []
+            children = self.profile_repo.get_children(user_id)
+            for child in children:
+                child_accounts = self.account_repo.get_by_user_id(str(child.id))
+                accounts.extend(child_accounts)
+        else:
+            # Children see their own accounts
+            accounts = self.account_repo.get_by_user_id(user_id)
+
+        return accounts
 
 
 class TransactionService:

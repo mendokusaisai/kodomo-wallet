@@ -29,6 +29,7 @@ class Account:
     goal_amount: int | None
     created_at: str
     updated_at: str
+    user: Profile | None = None  # アカウント所有者の情報
 
 
 @strawberry.type
