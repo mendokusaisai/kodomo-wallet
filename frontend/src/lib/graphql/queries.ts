@@ -29,6 +29,7 @@ export const GET_ACCOUNTS = gql`
 				id
 				name
 				role
+				authUserId
 			}
 		}
 	}
@@ -62,17 +63,72 @@ export const GET_WITHDRAWAL_REQUESTS = gql`
 
 // ==================== Mutation ====================
 
+// ==================== Mutation ====================
+
 export const DEPOSIT = gql`
-  mutation Deposit($accountId: String!, $amount: Int!, $description: String!) {
-    deposit(accountId: $accountId, amount: $amount, description: $description) {
-      id
-      accountId
-      type
-      amount
-      description
-      createdAt
-    }
-  }
+	mutation Deposit($accountId: String!, $amount: Int!, $description: String) {
+		deposit(accountId: $accountId, amount: $amount, description: $description) {
+			id
+			accountId
+			type
+			amount
+			description
+			createdAt
+		}
+	}
+`;
+
+export const CREATE_CHILD = gql`
+	mutation CreateChild(
+		$parentId: String!
+		$childName: String!
+		$initialBalance: Int
+	) {
+		createChild(
+			parentId: $parentId
+			childName: $childName
+			initialBalance: $initialBalance
+		) {
+			id
+			name
+			role
+			createdAt
+		}
+	}
+`;
+
+export const LINK_CHILD_TO_AUTH = gql`
+	mutation LinkChildToAuth($childId: String!, $authUserId: String!) {
+		linkChildToAuth(childId: $childId, authUserId: $authUserId) {
+			id
+			name
+			role
+			createdAt
+		}
+	}
+`;
+
+export const LINK_CHILD_TO_AUTH_BY_EMAIL = gql`
+	mutation LinkChildToAuthByEmail($childId: String!, $email: String!) {
+		linkChildToAuthByEmail(childId: $childId, email: $email) {
+			id
+			name
+			role
+			createdAt
+		}
+	}
+`;
+
+export const INVITE_CHILD_TO_AUTH = gql`
+	mutation InviteChildToAuth($childId: String!, $email: String!) {
+		inviteChildToAuth(childId: $childId, email: $email) {
+			id
+			name
+			email
+			role
+			createdAt
+		}
+	}
 `;
 
 export const CREATE_WITHDRAWAL_REQUEST = gql`

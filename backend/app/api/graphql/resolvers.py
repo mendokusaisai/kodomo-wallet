@@ -54,3 +54,40 @@ def create_deposit(
 ) -> Transaction:
     """Create a deposit transaction"""
     return transaction_service.create_deposit(account_id, amount, description)
+
+
+def create_child_profile(
+    parent_id: str,
+    child_name: str,
+    profile_service: ProfileService,
+    initial_balance: int = 0,
+) -> Profile:
+    """Create a child profile without authentication"""
+    return profile_service.create_child(parent_id, child_name, initial_balance)
+
+
+def link_child_to_auth_account(
+    child_id: str,
+    auth_user_id: str,
+    profile_service: ProfileService,
+) -> Profile:
+    """Link child profile to authentication account"""
+    return profile_service.link_child_to_auth(child_id, auth_user_id)
+
+
+def link_child_to_auth_by_email(
+    child_id: str,
+    email: str,
+    profile_service: ProfileService,
+) -> Profile:
+    """Link child profile to authentication account by email"""
+    return profile_service.link_child_to_auth_by_email(child_id, email)
+
+
+def invite_child_to_auth(
+    child_id: str,
+    email: str,
+    profile_service: ProfileService,
+) -> Profile:
+    """Invite child to create authentication account via email"""
+    return profile_service.invite_child_to_auth(child_id, email)

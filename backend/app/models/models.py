@@ -17,6 +17,8 @@ class Profile(Base):
     __tablename__ = "profiles"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    auth_user_id = Column(UUID(as_uuid=True), nullable=True, unique=True)  # 認証アカウントID（NULL可）
+    email = Column(Text, nullable=True)  # メールアドレス（未認証子どもの場合に事前登録）
     name = Column(Text, nullable=False)
     role = Column(Text, nullable=False)
     parent_id = Column(UUID(as_uuid=True), ForeignKey("profiles.id"), nullable=True)

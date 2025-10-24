@@ -31,6 +31,58 @@ class SQLAlchemyProfileRepository(ProfileRepository):
             self.db.query(Profile).filter(Profile.parent_id == uuid.UUID(parent_id)).all()
         )
 
+    def get_by_auth_user_id(self, auth_user_id: str) -> Profile | None:
+        """Get profile by auth user ID"""
+        return (
+            self.db.query(Profile)
+            .filter(Profile.auth_user_id == uuid.UUID(auth_user_id))
+            .first()
+        )
+
+    def get_by_email(self, email: str) -> Profile | None:
+        """Get unauthenticated profile by email (auth_user_id is NULL)"""
+        return (
+            self.db.query(Profile)
+            .filter(Profile.email == email)
+            .filter(Profile.auth_user_id.is_(None))  # 未認証のみ
+            .first()
+        )
+
+    def create_child(self, name: str, parent_id: str, email: str | None = None) -> Profile:
+        """Create a child profile without authentication"""
+        from datetime import UTC, datetime
+
+        profile = Profile(
+            id=uuid.uuid4(),
+            auth_user_id=None,  # 認証なし
+            email=email,  # メールアドレス（任意）
+            name=name,
+            role="child",
+            parent_id=uuid.UUID(parent_id),
+            created_at=str(datetime.now(UTC)),
+            updated_at=str(datetime.now(UTC)),
+        )
+        self.db.add(profile)
+        self.db.flush()
+        return profile
+
+    def link_to_auth(self, profile_id: str, auth_user_id: str) -> Profile:
+        """Link existing profile to auth account"""
+        from datetime import UTC, datetime
+
+        profile = self.get_by_id(profile_id)
+        if not profile:
+            raise ValueError(f"Profile {profile_id} not found")
+
+        # 既に認証アカウントが紐づいている場合はエラー
+        if profile.auth_user_id:
+            raise ValueError(f"Profile {profile_id} already linked to auth account")
+
+        profile.auth_user_id = uuid.UUID(auth_user_id)
+        profile.updated_at = str(datetime.now(UTC))
+        self.db.flush()
+        return profile
+
 
 class SQLAlchemyAccountRepository(AccountRepository):
     """SQLAlchemy implementation of AccountRepository"""
@@ -50,6 +102,22 @@ class SQLAlchemyAccountRepository(AccountRepository):
         """Update account balance"""
         account.balance = new_balance
         self.db.flush()
+
+    def create(self, user_id: str, balance: int, currency: str) -> Account:
+        """Create a new account"""
+        from datetime import UTC, datetime
+
+        account = Account(
+            id=uuid.uuid4(),
+            user_id=uuid.UUID(user_id),
+            balance=balance,
+            currency=currency,
+            created_at=str(datetime.now(UTC)),
+            updated_at=str(datetime.now(UTC)),
+        )
+        self.db.add(account)
+        self.db.flush()
+        return account
 
 
 class SQLAlchemyTransactionRepository(TransactionRepository):

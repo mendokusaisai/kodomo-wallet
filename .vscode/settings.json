@@ -48,5 +48,6 @@
 	},
 
 	// ESLintを無効化（Biomeを使用するため）
-	"eslint.enable": false
+	"eslint.enable": false,
+	"python-envs.defaultEnvManager": "ms-python.python:system"
 }

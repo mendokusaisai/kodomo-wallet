@@ -6,6 +6,7 @@ export interface Profile {
 	role: "parent" | "child";
 	avatarUrl?: string;
 	createdAt: string;
+	authUserId?: string | null; // 認証アカウントID (認証なし子どもの場合null)
 }
 
 export interface Account {

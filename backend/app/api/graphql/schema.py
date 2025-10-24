@@ -74,6 +74,79 @@ class Mutation:
         except DomainException as e:
             raise Exception(f"Domain error: {e.message}") from e
 
+    @strawberry.mutation
+    def create_child(
+        self,
+        info: Info,
+        parent_id: str,
+        child_name: str,
+        initial_balance: int = 0,
+    ) -> Profile:
+        """Create a child profile without authentication"""
+        profile_service = info.context["profile_service"]
+        try:
+            return resolvers.create_child_profile(
+                parent_id, child_name, profile_service, initial_balance
+            )
+        except ResourceNotFoundException as e:
+            raise Exception(f"Resource not found: {e.message}") from e
+        except DomainException as e:
+            raise Exception(f"Domain error: {e.message}") from e
+
+    @strawberry.mutation
+    def link_child_to_auth(
+        self,
+        info: Info,
+        child_id: str,
+        auth_user_id: str,
+    ) -> Profile:
+        """Link child profile to authentication account"""
+        profile_service = info.context["profile_service"]
+        try:
+            return resolvers.link_child_to_auth_account(child_id, auth_user_id, profile_service)
+        except ResourceNotFoundException as e:
+            raise Exception(f"Resource not found: {e.message}") from e
+        except InvalidAmountException as e:
+            raise Exception(f"Invalid operation: {e.message}") from e
+        except DomainException as e:
+            raise Exception(f"Domain error: {e.message}") from e
+
+    @strawberry.mutation
+    def link_child_to_auth_by_email(
+        self,
+        info: Info,
+        child_id: str,
+        email: str,
+    ) -> Profile:
+        """Link child profile to authentication account by email address"""
+        profile_service = info.context["profile_service"]
+        try:
+            return resolvers.link_child_to_auth_by_email(child_id, email, profile_service)
+        except ResourceNotFoundException as e:
+            raise Exception(f"Resource not found: {e.message}") from e
+        except InvalidAmountException as e:
+            raise Exception(f"Invalid operation: {e.message}") from e
+        except DomainException as e:
+            raise Exception(f"Domain error: {e.message}") from e
+
+    @strawberry.mutation
+    def invite_child_to_auth(
+        self,
+        info: Info,
+        child_id: str,
+        email: str,
+    ) -> Profile:
+        """Send invitation email to child to create authentication account"""
+        profile_service = info.context["profile_service"]
+        try:
+            return resolvers.invite_child_to_auth(child_id, email, profile_service)
+        except ResourceNotFoundException as e:
+            raise Exception(f"Resource not found: {e.message}") from e
+        except InvalidAmountException as e:
+            raise Exception(f"Failed to send invitation: {e.message}") from e
+        except DomainException as e:
+            raise Exception(f"Domain error: {e.message}") from e
+
 
 # Create schema
 schema = strawberry.Schema(query=Query, mutation=Mutation)

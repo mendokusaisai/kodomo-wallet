@@ -15,6 +15,7 @@ class Profile:
     avatar_url: str | None
     created_at: str
     updated_at: str
+    auth_user_id: str | None = None  # 認証アカウントID (認証なし子どもの場合None)
 
 
 @strawberry.type

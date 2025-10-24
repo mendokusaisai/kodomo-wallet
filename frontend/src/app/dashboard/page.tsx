@@ -3,7 +3,9 @@
 import { useQuery } from "@apollo/client/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { CreateChildDialog } from "@/components/create-child-dialog";
 import { DepositDialog } from "@/components/deposit-dialog";
+import { LinkChildToAuthDialog } from "@/components/link-child-to-auth-dialog";
 import { LogoutButton } from "@/components/logout-button";
 import { Button } from "@/components/ui/button";
 import { GET_ACCOUNTS, GET_ME } from "@/lib/graphql/queries";
@@ -18,7 +20,13 @@ export default function DashboardPage() {
 	const router = useRouter();
 	const [userId, setUserId] = useState<string | null>(null);
 	const [depositDialogOpen, setDepositDialogOpen] = useState(false);
+	const [createChildDialogOpen, setCreateChildDialogOpen] = useState(false);
+	const [linkAuthDialogOpen, setLinkAuthDialogOpen] = useState(false);
 	const [selectedAccount, setSelectedAccount] = useState<{
+		id: string;
+		name: string;
+	} | null>(null);
+	const [selectedChild, setSelectedChild] = useState<{
 		id: string;
 		name: string;
 	} | null>(null);
@@ -90,9 +98,20 @@ export default function DashboardPage() {
 							ロール: {meData?.me?.role === "parent" ? "親" : "子供"}
 						</p>
 					</div>
-					<LogoutButton />
-				</div>
-
+					<div className="flex gap-3">
+						{/* 親の場合は子ども追加ボタンを表示 */}
+						{meData?.me?.role === "parent" && (
+							<Button
+								onClick={() => setCreateChildDialogOpen(true)}
+								variant="outline"
+								className="border-green-500 text-green-600 hover:bg-green-50"
+							>
+								+ 子どもを追加
+							</Button>
+						)}
+						<LogoutButton />
+					</div>
+				</div>{" "}
 				{/* アカウント一覧 */}
 				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 					{accountsData?.accounts.map((account: Account) => {
@@ -120,22 +139,48 @@ export default function DashboardPage() {
 									<p className="text-3xl font-bold text-gray-900">
 										¥{account.balance.toLocaleString()}
 									</p>
-								</div>{" "}
-								{/* 入金ボタン */}
-								<div className="mb-4">
-									<Button
-										onClick={() => {
-											setSelectedAccount({
-												id: account.id,
-												name: `口座 (残高: ¥${account.balance.toLocaleString()})`,
-											});
-											setDepositDialogOpen(true);
-										}}
-										className="w-full"
-									>
-										入金する
-									</Button>
 								</div>
+
+								{/* 入金ボタン（親のみ表示） */}
+								{meData?.me?.role === "parent" && (
+									<div className="mb-4">
+										<Button
+											onClick={() => {
+												setSelectedAccount({
+													id: account.id,
+													name: `口座 (残高: ¥${account.balance.toLocaleString()})`,
+												});
+												setDepositDialogOpen(true);
+											}}
+											className="w-full"
+										>
+											入金する
+										</Button>
+									</div>
+								)}
+
+								{/* 認証アカウント移行ボタン（認証なし子どものみ表示） */}
+								{meData?.me?.role === "parent" &&
+									account.user &&
+									!account.user.authUserId && (
+										<div className="mb-4">
+											<Button
+												onClick={() => {
+													if (account.user) {
+														setSelectedChild({
+															id: account.user.id,
+															name: account.user.name,
+														});
+														setLinkAuthDialogOpen(true);
+													}
+												}}
+												variant="outline"
+												className="w-full border-purple-500 text-purple-600 hover:bg-purple-50"
+											>
+												📧 招待メールを送信
+											</Button>
+										</div>
+									)}
 								{/* 貯金目標 */}
 								{account.goalName && account.goalAmount && (
 									<div className="mt-4">
@@ -168,14 +213,12 @@ export default function DashboardPage() {
 						);
 					})}
 				</div>
-
 				{/* アカウントが無い場合 */}
 				{accountsData?.accounts.length === 0 && (
 					<div className="bg-white rounded-lg shadow-md p-8 text-center">
 						<p className="text-gray-600">アカウントがありません</p>
 					</div>
 				)}
-
 				{/* 入金ダイアログ */}
 				{selectedAccount && (
 					<DepositDialog
@@ -183,6 +226,23 @@ export default function DashboardPage() {
 						onOpenChange={setDepositDialogOpen}
 						accountId={selectedAccount.id}
 						accountName={selectedAccount.name}
+					/>
+				)}
+				{/* 子ども追加ダイアログ */}
+				{userId && (
+					<CreateChildDialog
+						open={createChildDialogOpen}
+						onOpenChange={setCreateChildDialogOpen}
+						parentId={userId}
+					/>
+				)}
+				{/* 認証アカウント移行ダイアログ */}
+				{selectedChild && (
+					<LinkChildToAuthDialog
+						open={linkAuthDialogOpen}
+						onOpenChange={setLinkAuthDialogOpen}
+						childId={selectedChild.id}
+						childName={selectedChild.name}
 					/>
 				)}
 			</div>
