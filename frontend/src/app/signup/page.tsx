@@ -57,13 +57,17 @@ export default function SignUpPage() {
 	};
 
 	return (
-		<div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+		<div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 p-4">
 			<div className="w-full max-w-md">
-				<div className="bg-white rounded-2xl shadow-xl p-8">
+				<div className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl p-6 md:p-8">
 					{/* ヘッダー */}
-					<div className="text-center mb-8">
-						<h1 className="text-3xl font-bold text-gray-900 mb-2">新規登録</h1>
-						<p className="text-gray-600">Kodomo Walletへようこそ</p>
+					<div className="text-center mb-6 md:mb-8">
+						<h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+							新規登録
+						</h1>
+						<p className="text-sm md:text-base text-gray-600 dark:text-gray-400">
+							Kodomo Walletへようこそ
+						</p>
 					</div>
 
 					{/* サインアップフォーム */}
@@ -106,7 +110,7 @@ export default function SignUpPage() {
 								minLength={6}
 								className="mt-1"
 							/>
-							<p className="text-xs text-gray-500 mt-1">
+							<p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
 								6文字以上で入力してください
 							</p>
 						</div>
@@ -132,15 +136,20 @@ export default function SignUpPage() {
 
 					{/* ログインリンク */}
 					<div className="mt-6 text-center text-sm">
-						<span className="text-gray-600">既にアカウントをお持ちの方は </span>
-						<Link href="/login" className="text-blue-600 hover:text-blue-500">
+						<span className="text-gray-600 dark:text-gray-400">
+							既にアカウントをお持ちの方は{" "}
+						</span>
+						<Link
+							href="/login"
+							className="text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300"
+						>
 							ログイン
 						</Link>
 					</div>
 				</div>
 
 				{/* フッター */}
-				<p className="text-center text-sm text-gray-600 mt-4">
+				<p className="text-center text-xs md:text-sm text-gray-600 dark:text-gray-400 mt-4">
 					登録すると、利用規約とプライバシーポリシーに同意したものとみなされます
 				</p>
 			</div>

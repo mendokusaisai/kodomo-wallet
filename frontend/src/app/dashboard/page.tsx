@@ -6,10 +6,12 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { CreateChildDialog } from "@/components/create-child-dialog";
+import { DashboardSkeleton } from "@/components/dashboard-skeleton";
 import { DepositDialog } from "@/components/deposit-dialog";
 import GoalDialog from "@/components/goal-dialog";
 import { LinkChildToAuthDialog } from "@/components/link-child-to-auth-dialog";
 import { LogoutButton } from "@/components/logout-button";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { TransactionHistory } from "@/components/transaction-history";
 import { Button } from "@/components/ui/button";
 import { WithdrawDialog } from "@/components/withdraw-dialog";
@@ -76,17 +78,13 @@ export default function DashboardPage() {
 	});
 
 	if (meLoading || accountsLoading) {
-		return (
-			<div className="min-h-screen flex items-center justify-center">
-				<div className="text-lg">読み込み中...</div>
-			</div>
-		);
+		return <DashboardSkeleton />;
 	}
 
 	if (meError || accountsError) {
 		return (
-			<div className="min-h-screen flex items-center justify-center">
-				<div className="text-red-600">
+			<div className="min-h-screen flex items-center justify-center p-4">
+				<div className="text-red-600 text-center">
 					<h2 className="text-xl font-bold mb-2">エラーが発生しました</h2>
 					<p>{meError?.message || accountsError?.message}</p>
 				</div>
@@ -95,14 +93,14 @@ export default function DashboardPage() {
 	}
 
 	return (
-		<div className="min-h-screen bg-gray-50 p-8">
+		<div className="min-h-screen bg-gray-50 dark:bg-gray-950 p-4 md:p-6 lg:p-8">
 			<div className="max-w-7xl mx-auto">
 				{/* ヘッダー */}
-				<div className="mb-8 flex justify-between items-start">
-					<div className="flex items-center gap-4">
+				<div className="mb-6 md:mb-8 flex flex-col sm:flex-row justify-between items-start gap-4">
+					<div className="flex items-center gap-3 md:gap-4">
 						{/* アバター表示 */}
 						{meData?.me?.avatarUrl ? (
-							<div className="w-16 h-16 rounded-full overflow-hidden bg-gray-200">
+							<div className="w-12 h-12 md:w-16 md:h-16 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
 								<Image
 									src={meData.me.avatarUrl}
 									alt={meData.me.name}
@@ -116,39 +114,44 @@ export default function DashboardPage() {
 								/>
 							</div>
 						) : (
-							<div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-2xl font-bold">
+							<div className="w-12 h-12 md:w-16 md:h-16 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-lg md:text-2xl font-bold flex-shrink-0">
 								{meData?.me?.name?.charAt(0) || "?"}
 							</div>
 						)}
 						<div>
-							<h1 className="text-3xl font-bold text-gray-900">
+							<h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-gray-100">
 								こんにちは、{meData?.me?.name}さん
 							</h1>
-							<p className="text-gray-600 mt-2">
+							<p className="text-sm md:text-base text-gray-600 dark:text-gray-400 mt-1">
 								ロール: {meData?.me?.role === "parent" ? "親" : "子供"}
 							</p>
 						</div>
 					</div>
-					<div className="flex gap-3">
+					<div className="flex gap-2 md:gap-3 w-full sm:w-auto">
 						{/* 親の場合は子ども追加ボタンを表示 */}
 						{meData?.me?.role === "parent" && (
 							<Button
 								onClick={() => setCreateChildDialogOpen(true)}
 								variant="outline"
-								className="border-green-500 text-green-600 hover:bg-green-50"
+								className="border-green-500 text-green-600 hover:bg-green-50 dark:hover:bg-green-950 flex-1 sm:flex-none text-sm md:text-base"
 							>
 								+ 子どもを追加
 							</Button>
 						)}
 						{/* 設定ページへのリンク */}
-						<Button onClick={() => router.push("/settings")} variant="outline">
+						<Button
+							onClick={() => router.push("/settings")}
+							variant="outline"
+							className="flex-1 sm:flex-none text-sm md:text-base"
+						>
 							設定
 						</Button>
+						<ThemeToggle />
 						<LogoutButton />
 					</div>
 				</div>{" "}
 				{/* アカウント一覧 */}
-				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+				<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
 					{accountsData?.accounts.map((account: Account) => {
 						const goalProgress = account.goalAmount
 							? Math.round((account.balance / account.goalAmount) * 100)
@@ -157,18 +160,18 @@ export default function DashboardPage() {
 						return (
 							<div
 								key={account.id}
-								className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow"
+								className="bg-white dark:bg-gray-900 rounded-lg shadow-md p-4 md:p-6 hover:shadow-lg transition-shadow"
 							>
 								{/* アカウント所有者名 */}
 								{account.user && (
-									<div className="mb-3 pb-3 border-b border-gray-200">
-										<p className="text-sm text-gray-500 mb-2">
+									<div className="mb-3 pb-3 border-b border-gray-200 dark:border-gray-700">
+										<p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 mb-2">
 											アカウント所有者
 										</p>
-										<div className="flex items-center gap-3">
+										<div className="flex items-center gap-2 md:gap-3">
 											{/* アバター表示 */}
 											{account.user.avatarUrl ? (
-												<div className="w-12 h-12 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
+												<div className="w-10 h-10 md:w-12 md:h-12 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
 													<Image
 														src={account.user.avatarUrl}
 														alt={account.user.name}
@@ -182,11 +185,11 @@ export default function DashboardPage() {
 													/>
 												</div>
 											) : (
-												<div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-lg font-bold flex-shrink-0">
+												<div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-base md:text-lg font-bold flex-shrink-0">
 													{account.user.name?.charAt(0) || "?"}
 												</div>
 											)}
-											<p className="text-lg font-semibold text-gray-900">
+											<p className="text-base md:text-lg font-semibold text-gray-900 dark:text-gray-100 truncate">
 												{account.user.name}
 											</p>
 										</div>
@@ -194,8 +197,10 @@ export default function DashboardPage() {
 								)}
 								{/* 残高 */}
 								<div className="mb-4">
-									<p className="text-sm text-gray-600 mb-1">残高</p>
-									<p className="text-3xl font-bold text-gray-900">
+									<p className="text-xs md:text-sm text-gray-600 dark:text-gray-400 mb-1">
+										残高
+									</p>
+									<p className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-gray-100">
 										¥{account.balance.toLocaleString()}
 									</p>
 								</div>

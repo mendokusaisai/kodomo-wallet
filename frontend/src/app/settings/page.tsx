@@ -10,6 +10,7 @@ import { LogoutButton } from "@/components/logout-button";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
 	GET_CHILDREN_COUNT,
 	GET_ME,
@@ -19,6 +20,7 @@ import type { GetMeResponse } from "@/lib/graphql/types";
 import { getUser } from "@/lib/supabase/auth";
 import { createClient } from "@/lib/supabase/client";
 import { deleteAvatar, uploadAvatar } from "@/lib/supabase/storage";
+import { showError, showSuccess, showWarning } from "@/lib/toast";
 
 export default function SettingsPage() {
 	const router = useRouter();
@@ -78,11 +80,11 @@ export default function SettingsPage() {
 
 	const [updateProfile, { loading: updating }] = useMutation(UPDATE_PROFILE, {
 		onCompleted: () => {
-			alert("プロフィールを更新しました");
+			showSuccess("プロフィールを更新しました");
 			refetch();
 		},
 		onError: (error: { message: string }) => {
-			alert(`更新に失敗しました: ${error.message}`);
+			showError("更新に失敗しました", error.message);
 		},
 	});
 
@@ -120,8 +122,9 @@ export default function SettingsPage() {
 				fileInputRef.current.value = "";
 			}
 		} catch (error) {
-			alert(
-				`更新に失敗しました: ${error instanceof Error ? error.message : "不明なエラー"}`,
+			showError(
+				"更新に失敗しました",
+				error instanceof Error ? error.message : "不明なエラー",
 			);
 		}
 	};
@@ -132,13 +135,13 @@ export default function SettingsPage() {
 
 		// ファイルサイズチェック（5MB以下）
 		if (file.size > 5 * 1024 * 1024) {
-			alert("ファイルサイズは5MB以下にしてください");
+			showError("ファイルサイズは5MB以下にしてください");
 			return;
 		}
 
 		// ファイルタイプチェック
 		if (!file.type.startsWith("image/")) {
-			alert("画像ファイルを選択してください");
+			showError("画像ファイルを選択してください");
 			return;
 		}
 
@@ -157,8 +160,9 @@ export default function SettingsPage() {
 		if (meData?.me?.role === "parent") {
 			const childrenCount = childrenCountData?.childrenCount || 0;
 			if (childrenCount > 0) {
-				alert(
-					`アカウントを削除できません。\n\nこのアカウントには${childrenCount}人の子どもアカウントが紐づいています。\n先にすべての子どもアカウントを削除してから、再度お試しください。`,
+				showWarning(
+					"アカウントを削除できません",
+					`このアカウントには${childrenCount}人の子どもアカウントが紐づいています。先にすべての子どもアカウントを削除してから、再度お試しください。`,
 				);
 				return;
 			}
@@ -170,27 +174,37 @@ export default function SettingsPage() {
 
 			if (error) throw error;
 
-			alert("アカウントを削除しました");
+			showSuccess("アカウントを削除しました");
 			router.push("/login");
 		} catch (error) {
 			console.error("削除エラー:", error);
-			alert("アカウントの削除に失敗しました。サポートにお問い合わせください。");
+			showError(
+				"アカウントの削除に失敗しました",
+				"サポートにお問い合わせください",
+			);
 		}
 	};
 
 	if (meLoading) {
 		return (
-			<div className="min-h-screen flex items-center justify-center">
-				<div className="text-lg">読み込み中...</div>
+			<div className="min-h-screen bg-gray-50 dark:bg-gray-950 p-4 md:p-6 lg:p-8">
+				<div className="max-w-2xl mx-auto space-y-6">
+					<div className="flex items-center gap-4">
+						<Skeleton className="h-10 w-20" />
+						<Skeleton className="h-8 w-32" />
+					</div>
+					<Skeleton className="h-64 w-full rounded-lg" />
+					<Skeleton className="h-48 w-full rounded-lg" />
+				</div>
 			</div>
 		);
 	}
 
 	return (
-		<div className="min-h-screen bg-gray-50 p-8">
+		<div className="min-h-screen bg-gray-50 dark:bg-gray-950 p-4 md:p-6 lg:p-8">
 			<div className="max-w-2xl mx-auto">
 				{/* ヘッダー */}
-				<div className="mb-8 flex items-center justify-between">
+				<div className="mb-6 md:mb-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
 					<div className="flex items-center gap-4">
 						<Button
 							variant="outline"
@@ -200,16 +214,20 @@ export default function SettingsPage() {
 							<ArrowLeft className="w-4 h-4 mr-2" />
 							戻る
 						</Button>
-						<h1 className="text-3xl font-bold text-gray-900">設定</h1>
+						<h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-gray-100">
+							設定
+						</h1>
 					</div>
 					<LogoutButton />
 				</div>
 
 				{/* プロフィール編集セクション */}
-				<div className="bg-white rounded-lg shadow-md p-6 mb-6">
+				<div className="bg-white dark:bg-gray-900 rounded-lg shadow-md p-4 md:p-6 mb-6">
 					<div className="flex items-center gap-3 mb-6">
-						<User className="w-6 h-6 text-blue-600" />
-						<h2 className="text-xl font-bold text-gray-900">プロフィール</h2>
+						<User className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+						<h2 className="text-lg md:text-xl font-bold text-gray-900 dark:text-gray-100">
+							プロフィール
+						</h2>
 					</div>
 
 					<form onSubmit={handleUpdateProfile} className="space-y-4">
@@ -236,7 +254,7 @@ export default function SettingsPage() {
 									onChange={handleFileChange}
 									className="cursor-pointer"
 								/>
-								<p className="text-xs text-gray-500">
+								<p className="text-xs text-gray-500 dark:text-gray-400">
 									JPG、PNG、GIF形式の画像ファイル（最大5MB）
 								</p>
 							</div>
@@ -253,12 +271,13 @@ export default function SettingsPage() {
 										width={64}
 										height={64}
 										className="rounded-full object-cover"
+										unoptimized
 										onError={(e) => {
 											e.currentTarget.style.display = "none";
 										}}
 									/>
 									{avatarPreview && (
-										<p className="text-sm text-blue-600">
+										<p className="text-sm text-blue-600 dark:text-blue-400">
 											新しい画像（保存後に反映されます）
 										</p>
 									)}
@@ -278,24 +297,28 @@ export default function SettingsPage() {
 				</div>
 
 				{/* アカウント情報セクション */}
-				<div className="bg-white rounded-lg shadow-md p-6 mb-6">
-					<h2 className="text-xl font-bold text-gray-900 mb-4">
+				<div className="bg-white dark:bg-gray-900 rounded-lg shadow-md p-4 md:p-6 mb-6">
+					<h2 className="text-lg md:text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">
 						アカウント情報
 					</h2>
 					<div className="space-y-3">
 						<div>
-							<p className="text-sm text-gray-600">ロール</p>
-							<p className="text-lg font-semibold">
+							<p className="text-sm text-gray-600 dark:text-gray-400">ロール</p>
+							<p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
 								{meData?.me?.role === "parent" ? "親" : "子ども"}
 							</p>
 						</div>
 						<div>
-							<p className="text-sm text-gray-600">ユーザーID</p>
-							<p className="text-xs font-mono text-gray-700">{userId}</p>
+							<p className="text-sm text-gray-600 dark:text-gray-400">
+								ユーザーID
+							</p>
+							<p className="text-xs font-mono text-gray-700 dark:text-gray-300 break-all">
+								{userId}
+							</p>
 						</div>
 						<div>
-							<p className="text-sm text-gray-600">作成日</p>
-							<p className="text-sm">
+							<p className="text-sm text-gray-600 dark:text-gray-400">作成日</p>
+							<p className="text-sm text-gray-900 dark:text-gray-100">
 								{meData?.me?.createdAt
 									? new Date(meData.me.createdAt).toLocaleDateString("ja-JP")
 									: "-"}
@@ -305,18 +328,20 @@ export default function SettingsPage() {
 				</div>
 
 				{/* 危険な操作セクション */}
-				<div className="bg-white rounded-lg shadow-md p-6 border-2 border-red-200">
+				<div className="bg-white dark:bg-gray-900 rounded-lg shadow-md p-4 md:p-6 border-2 border-red-200 dark:border-red-900">
 					<div className="flex items-center gap-3 mb-4">
-						<Trash2 className="w-6 h-6 text-red-600" />
-						<h2 className="text-xl font-bold text-red-900">危険な操作</h2>
+						<Trash2 className="w-6 h-6 text-red-600 dark:text-red-400" />
+						<h2 className="text-lg md:text-xl font-bold text-red-900 dark:text-red-400">
+							危険な操作
+						</h2>
 					</div>
 
 					<div className="space-y-4">
-						<div className="bg-red-50 border border-red-200 rounded-lg p-4">
-							<h3 className="font-semibold text-red-900 mb-2">
+						<div className="bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-900 rounded-lg p-4">
+							<h3 className="font-semibold text-red-900 dark:text-red-400 mb-2">
 								アカウントの削除
 							</h3>
-							<p className="text-sm text-red-700 mb-4">
+							<p className="text-sm text-red-700 dark:text-red-300 mb-4">
 								アカウントを削除すると、すべてのデータが完全に削除されます。この操作は取り消せません。
 							</p>
 							{meData?.me && userId && (

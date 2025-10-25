@@ -13,6 +13,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { CREATE_WITHDRAWAL_REQUEST } from "@/lib/graphql/queries";
+import { showError, showSuccess } from "@/lib/toast";
 
 interface WithdrawalRequestDialogProps {
 	accountId: string;
@@ -32,12 +33,13 @@ export default function WithdrawalRequestDialog({
 		{
 			refetchQueries: ["GetWithdrawalRequests"],
 			onCompleted: () => {
+				showSuccess("出金申請を送信しました", "承認をお待ちください");
 				setAmount("");
 				setDescription("");
 				setOpen(false);
 			},
 			onError: (error) => {
-				alert(`出金申請に失敗しました: ${error.message}`);
+				showError("出金申請に失敗しました", error.message);
 			},
 		},
 	);
@@ -45,14 +47,14 @@ export default function WithdrawalRequestDialog({
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
 
-		const amountNum = parseInt(amount);
-		if (isNaN(amountNum) || amountNum <= 0) {
-			alert("有効な金額を入力してください");
+		const amountNum = Number.parseInt(amount);
+		if (Number.isNaN(amountNum) || amountNum <= 0) {
+			showError("有効な金額を入力してください");
 			return;
 		}
 
 		if (amountNum > currentBalance) {
-			alert("残高不足です");
+			showError("残高不足です", "申請金額が残高を超えています");
 			return;
 		}
 

@@ -3,9 +3,11 @@
 import { useMutation, useQuery } from "@apollo/client/react";
 import { Calendar, DollarSign, Save, Trash2 } from "lucide-react";
 import { useEffect, useId, useState } from "react";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
 	CREATE_OR_UPDATE_RECURRING_DEPOSIT,
 	DELETE_RECURRING_DEPOSIT,
@@ -18,6 +20,7 @@ import type {
 	GetAccountsResponse,
 	GetRecurringDepositResponse,
 } from "@/lib/graphql/types";
+import { showError, showSuccess } from "@/lib/toast";
 
 interface RecurringDepositSettingsProps {
 	childUserId: string;
@@ -76,11 +79,11 @@ export default function RecurringDepositSettings({
 			CREATE_OR_UPDATE_RECURRING_DEPOSIT,
 			{
 				onCompleted: () => {
-					alert("定期お小遣い設定を保存しました");
+					showSuccess("定期お小遣い設定を保存しました");
 					refetch();
 				},
 				onError: (error: { message: string }) => {
-					alert(`保存に失敗しました: ${error.message}`);
+					showError("保存に失敗しました", error.message);
 				},
 			},
 		);
@@ -89,31 +92,31 @@ export default function RecurringDepositSettings({
 	const [deleteRecurringDeposit, { loading: deleting }] =
 		useMutation<DeleteRecurringDepositResponse>(DELETE_RECURRING_DEPOSIT, {
 			onCompleted: () => {
-				alert("定期お小遣い設定を削除しました");
+				showSuccess("定期お小遣い設定を削除しました");
 				setAmount(0);
 				setDayOfMonth(1);
 				setIsActive(true);
 				refetch();
 			},
 			onError: (error: { message: string }) => {
-				alert(`削除に失敗しました: ${error.message}`);
+				showError("削除に失敗しました", error.message);
 			},
 		});
 
 	const handleSave = async (e: React.FormEvent) => {
 		e.preventDefault();
 		if (!accountId) {
-			alert("アカウントが見つかりません");
+			showError("アカウントが見つかりません");
 			return;
 		}
 
 		if (amount <= 0) {
-			alert("金額は1円以上を指定してください");
+			showError("金額は1円以上を指定してください");
 			return;
 		}
 
 		if (dayOfMonth < 1 || dayOfMonth > 31) {
-			alert("日付は1〜31の範囲で指定してください");
+			showError("日付は1〜31の範囲で指定してください");
 			return;
 		}
 
@@ -130,15 +133,6 @@ export default function RecurringDepositSettings({
 
 	const handleDelete = async () => {
 		if (!accountId) return;
-
-		if (
-			!confirm(
-				`${childName}の定期お小遣い設定を削除しますか？\nこの操作は取り消せません。`,
-			)
-		) {
-			return;
-		}
-
 		await deleteRecurringDeposit({
 			variables: {
 				accountId,
@@ -228,15 +222,17 @@ export default function RecurringDepositSettings({
 					</Button>
 
 					{hasExistingSettings && (
-						<Button
-							type="button"
+						<ConfirmDialog
+							title="設定を削除"
+							description={`${childName}の定期お小遣い設定を削除しますか？この操作は取り消せません。`}
+							confirmLabel="削除"
+							onConfirm={handleDelete}
 							variant="destructive"
-							onClick={handleDelete}
 							disabled={deleting}
 						>
 							<Trash2 className="w-4 h-4 mr-2" />
 							{deleting ? "削除中..." : "削除"}
-						</Button>
+						</ConfirmDialog>
 					)}
 				</div>
 			</form>

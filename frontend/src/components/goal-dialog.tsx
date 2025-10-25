@@ -3,6 +3,7 @@
 import { useMutation } from "@apollo/client/react";
 import { Target } from "lucide-react";
 import { useState } from "react";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -14,6 +15,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { UPDATE_GOAL } from "@/lib/graphql/queries";
+import { showError, showSuccess } from "@/lib/toast";
 
 interface GoalDialogProps {
 	accountId: string;
@@ -35,19 +37,20 @@ export default function GoalDialog({
 	const [updateGoal, { loading }] = useMutation(UPDATE_GOAL, {
 		refetchQueries: ["GetAccounts"],
 		onCompleted: () => {
+			showSuccess("目標を設定しました");
 			setOpen(false);
 		},
 		onError: (error: { message: string }) => {
-			alert(`目標設定に失敗しました: ${error.message}`);
+			showError("目標設定に失敗しました", error.message);
 		},
 	});
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
 
-		const amountNum = goalAmount ? parseInt(goalAmount) : null;
+		const amountNum = goalAmount ? Number.parseInt(goalAmount) : null;
 		if (amountNum !== null && (Number.isNaN(amountNum) || amountNum < 0)) {
-			alert("有効な金額を入力してください");
+			showError("有効な金額を入力してください");
 			return;
 		}
 
@@ -61,17 +64,16 @@ export default function GoalDialog({
 	};
 
 	const handleClearGoal = async () => {
-		if (confirm("目標をクリアしますか？")) {
-			await updateGoal({
-				variables: {
-					accountId,
-					goalName: null,
-					goalAmount: null,
-				},
-			});
-			setGoalName("");
-			setGoalAmount("");
-		}
+		await updateGoal({
+			variables: {
+				accountId,
+				goalName: null,
+				goalAmount: null,
+			},
+		});
+		setGoalName("");
+		setGoalAmount("");
+		showSuccess("目標をクリアしました");
 	};
 
 	return (
@@ -115,20 +117,22 @@ export default function GoalDialog({
 					<div className="flex gap-2">
 						<Button
 							type="submit"
-							className="flex-1 bg-purple-600 hover:bg-purple-700"
+							className="flex-1 bg-purple-600 hover:bg-purple-700 dark:bg-purple-700 dark:hover:bg-purple-600"
 							disabled={loading}
 						>
 							{loading ? "保存中..." : "保存"}
 						</Button>
 						{(currentGoalName || currentGoalAmount) && (
-							<Button
-								type="button"
+							<ConfirmDialog
+								title="目標をクリア"
+								description="目標をクリアしますか？この操作は取り消せません。"
+								confirmLabel="クリア"
+								onConfirm={handleClearGoal}
 								variant="outline"
-								onClick={handleClearGoal}
 								disabled={loading}
 							>
 								クリア
-							</Button>
+							</ConfirmDialog>
 						)}
 					</div>
 				</form>
