@@ -7,18 +7,15 @@
 	"python.analysis.typeCheckingMode": "standard",
 
 	// Biome設定（フォーマッター・リンター）
-	"biome.lsp.bin": "C:\\Users\\mendo\\Desktop\\workspace\\kodomo-wallet\\frontend\\node_modules\\@biomejs\\cli-win32-x64\\biome.exe",
+	"biome.lsp.bin": "${workspaceFolder}/../frontend/node_modules/@biomejs/cli-win32-x64/biome.exe",
 	"biome.enabled": true,
-	"biome.rename": true,
 
 	// エディター設定
-	"editor.defaultFormatter": "biomejs.biome",
 	"editor.formatOnSave": true,
 	"editor.codeActionsOnSave": {
 		"source.organizeImports": "never",
 		"source.fixAll": "never",
-		"source.fixAll.eslint": "never",
-		"source.fixAll.biome": "explicit"
+		"source.fixAll.eslint": "never"
 	},
 
 	// 言語別フォーマッター設定
@@ -32,22 +29,47 @@
 	},
 	"[typescript]": {
 		"editor.defaultFormatter": "biomejs.biome",
-		"editor.formatOnSave": true
+		"editor.formatOnSave": true,
+		"editor.codeActionsOnSave": {
+			"source.fixAll": "explicit",
+			"source.organizeImports.biome": "explicit",
+			"source.fixAll.biome": "explicit"
+		}
 	},
 	"[typescriptreact]": {
 		"editor.defaultFormatter": "biomejs.biome",
-		"editor.formatOnSave": true
+		"editor.formatOnSave": true,
+		"editor.codeActionsOnSave": {
+			"source.fixAll": "explicit",
+			"source.organizeImports.biome": "explicit",
+			"source.fixAll.biome": "explicit"
+		}
 	},
 	"[json]": {
 		"editor.defaultFormatter": "biomejs.biome",
-		"editor.formatOnSave": true
+		"editor.formatOnSave": true,
+		"editor.codeActionsOnSave": {
+			"source.fixAll": "explicit",
+			"source.organizeImports.biome": "explicit",
+			"source.fixAll.biome": "explicit"
+		}
 	},
 	"[jsonc]": {
 		"editor.defaultFormatter": "biomejs.biome",
-		"editor.formatOnSave": true
+		"editor.formatOnSave": true,
+		"editor.codeActionsOnSave": {
+			"source.fixAll": "explicit",
+			"source.organizeImports.biome": "explicit",
+			"source.fixAll.biome": "explicit"
+		}
 	},
-
-	// ESLintを無効化（Biomeを使用するため）
-	"eslint.enable": false,
-	"python-envs.defaultEnvManager": "ms-python.python:system"
+	"[python]": {
+		"editor.defaultFormatter": "charliermarsh.ruff",
+		"editor.formatOnSave": true,
+		"editor.codeActionsOnSave": {
+			"source.fixAll": "explicit",
+			"source.organizeImports.ruff": "explicit",
+			"source.fixAll.ruff": "explicit"
+		}
+	}
 }

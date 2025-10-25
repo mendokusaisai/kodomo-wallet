@@ -1,5 +1,5 @@
 """
-Kodomo Wallet API - FastAPI application with GraphQL.
+Kodomo Wallet API - FastAPIアプリケーション（GraphQL対応）
 """
 
 from collections.abc import AsyncGenerator
@@ -14,32 +14,32 @@ from app.core.config import cors_settings
 from app.core.context import GraphQLContext
 
 
-# Context getter for GraphQL - provides services via dependency injection
+# GraphQLコンテキスト取得関数 - 依存性注入によりサービスを提供
 async def get_context() -> AsyncGenerator[dict[str, Any]]:
     """
-    Provide database session and services to GraphQL context.
+    データベースセッションとサービスをGraphQLコンテキストに提供します。
 
-    Uses GraphQLContext manager to ensure proper resource cleanup.
-    The session will be automatically closed after the request completes.
+    GraphQLContextマネージャーを使用してリソースのクリーンアップを保証します。
+    セッションはリクエスト完了後に自動的にクローズされます。
 
     Yields:
-        dict: Context containing database session and injected services
+        dict: データベースセッションと注入されたサービスを含むコンテキスト
     """
     async with GraphQLContext() as ctx:
         yield ctx.to_dict()
 
 
-# GraphQL Router with context
+# GraphQLルーター（コンテキスト付き）
 graphql_app = GraphQLRouter(schema, context_getter=get_context)
 
-# FastAPI application
+# FastAPIアプリケーション
 app = FastAPI(
     title="Kodomo Wallet API",
     description="親子で使えるお小遣い管理アプリの GraphQL API",
     version="0.1.0",
 )
 
-# CORS configuration
+# CORS設定
 app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_settings.cors_origins,
@@ -48,13 +48,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# GraphQL endpoint
+# GraphQLエンドポイント
 app.include_router(graphql_app, prefix="/graphql")
 
 
 @app.get("/")
 def root():
-    """Root endpoint with API information"""
+    """ルートエンドポイント（API情報を返す）"""
     return {
         "message": "Kodomo Wallet API",
         "version": "0.1.0",
@@ -64,7 +64,7 @@ def root():
 
 @app.get("/health")
 def health_check():
-    """Health check endpoint"""
+    """ヘルスチェックエンドポイント"""
     return {"status": "healthy"}
 
 

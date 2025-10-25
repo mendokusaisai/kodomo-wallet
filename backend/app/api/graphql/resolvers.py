@@ -1,11 +1,11 @@
 """
-GraphQL resolvers for queries and mutations.
+クエリとミューテーションのGraphQLリゾルバー
 
-These resolvers use Service layer dependencies without knowing about database details.
+これらのリゾルバーはデータベースの詳細を知ることなく、サービス層の依存性を使用します。
 """
 
 from app.api.graphql.types import Account, Profile, RecurringDeposit, Transaction, WithdrawalRequest
-from app.services.business_services import (
+from app.services import (
     AccountService,
     ProfileService,
     RecurringDepositService,
@@ -18,7 +18,7 @@ def get_profile_by_id(
     user_id: str,
     profile_service: ProfileService,
 ) -> Profile | None:
-    """Get user profile by ID"""
+    """IDでユーザープロフィールを取得"""
     return profile_service.get_profile(user_id)
 
 
@@ -26,7 +26,7 @@ def get_children_count(
     parent_id: str,
     profile_service: ProfileService,
 ) -> int:
-    """Get count of children for a parent"""
+    """親の子供の数を取得"""
     children = profile_service.get_children(parent_id)
     return len(children)
 
@@ -36,7 +36,7 @@ def get_accounts_by_user_id(
     account_service: AccountService,
     profile_service: ProfileService,
 ) -> list[Account]:
-    """Get all accounts for a user and their children (if parent)"""
+    """ユーザーとその子供（親の場合）の全アカウントを取得"""
     accounts = account_service.get_family_accounts(user_id)
 
     # 各アカウントにユーザー情報を付与
@@ -135,9 +135,10 @@ def create_withdrawal_request(
 def approve_withdrawal_request(
     request_id: str,
     withdrawal_request_service: WithdrawalRequestService,
+    transaction_service: TransactionService,
 ) -> WithdrawalRequest:
     """Approve a withdrawal request (parent approves)"""
-    return withdrawal_request_service.approve_withdrawal_request(request_id)
+    return withdrawal_request_service.approve_withdrawal_request(request_id, transaction_service)
 
 
 def reject_withdrawal_request(

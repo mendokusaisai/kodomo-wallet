@@ -1,8 +1,8 @@
 """
-Configuration settings for the application.
+アプリケーション設定
 
-Refactored to follow Interface Segregation Principle (ISP).
-Each settings class has a single, focused responsibility.
+インターフェース分離の原則（ISP）に従ってリファクタリングされています。
+各設定クラスは単一の明確な責任を持ちます。
 """
 
 from __future__ import annotations
@@ -17,27 +17,27 @@ load_dotenv()
 
 @dataclass(frozen=True)
 class DatabaseSettings:
-    """Database configuration - only database-related settings"""
+    """データベース設定 - データベース関連の設定のみ"""
 
     database_url: str
 
     @classmethod
     def from_env(cls) -> DatabaseSettings:
-        """Load database settings from environment variables"""
+        """環境変数からデータベース設定を読み込む"""
         url = os.getenv("DATABASE_URL", "")
         return cls(database_url=url)
 
 
 @dataclass(frozen=True)
 class CORSSettings:
-    """CORS configuration - only CORS-related settings"""
+    """CORS設定 - CORS関連の設定のみ"""
 
     cors_origins: list[str]
 
     @classmethod
     def from_env(cls) -> CORSSettings:
-        """Load CORS settings from environment variables"""
-        # Could be made configurable via env var if needed
+        """環境変数からCORS設定を読み込む"""
+        # 必要に応じて環境変数で設定可能
         origins = [
             "http://localhost:3000",
             "http://127.0.0.1:3000",
@@ -47,7 +47,7 @@ class CORSSettings:
 
 @dataclass(frozen=True)
 class SecuritySettings:
-    """Security configuration - only security-related settings"""
+    """セキュリティ設定 - セキュリティ関連の設定のみ"""
 
     secret_key: str
     algorithm: str
@@ -55,7 +55,7 @@ class SecuritySettings:
 
     @classmethod
     def from_env(cls) -> SecuritySettings:
-        """Load security settings from environment variables"""
+        """環境変数からセキュリティ設定を読み込む"""
         secret = os.getenv("SECRET_KEY", "")
         algorithm = os.getenv("ALGORITHM", "HS256")
         expire_minutes = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
@@ -68,14 +68,14 @@ class SecuritySettings:
 
 @dataclass(frozen=True)
 class SupabaseSettings:
-    """Supabase configuration - only Supabase-related settings"""
+    """Supabase設定 - Supabase関連の設定のみ"""
 
     supabase_url: str
     supabase_key: str
 
     @classmethod
     def from_env(cls) -> SupabaseSettings:
-        """Load Supabase settings from environment variables"""
+        """環境変数からSupabase設定を読み込む"""
         url = os.getenv("SUPABASE_URL", "")
         key = os.getenv("SUPABASE_KEY", "")
         return cls(supabase_url=url, supabase_key=key)
@@ -83,18 +83,18 @@ class SupabaseSettings:
 
 @dataclass(frozen=True)
 class AppSettings:
-    """Application general settings - environment and app-level config"""
+    """アプリケーション全般設定 - 環境とアプリレベルの設定"""
 
     environment: str
 
     @classmethod
     def from_env(cls) -> AppSettings:
-        """Load app settings from environment variables"""
+        """環境変数からアプリ設定を読み込む"""
         env = os.getenv("ENVIRONMENT", "development")
         return cls(environment=env)
 
 
-# Singleton instances - loaded once at module import
+# シングルトンインスタンス - モジュールインポート時に1度だけ読み込まれる
 database_settings = DatabaseSettings.from_env()
 cors_settings = CORSSettings.from_env()
 security_settings = SecuritySettings.from_env()
@@ -102,15 +102,15 @@ supabase_settings = SupabaseSettings.from_env()
 app_settings = AppSettings.from_env()
 
 
-# Backward compatibility facade - for gradual migration
+# 後方互換性のためのファサード - 段階的な移行用
 class Settings:
     """
-    Backward compatibility facade.
+    後方互換性のためのファサード
 
-    This class provides the same interface as the old monolithic Settings class,
-    but delegates to the new ISP-compliant setting classes.
+    このクラスは旧モノリシックなSettingsクラスと同じインターフェースを提供しつつ、
+    新しいISP準拠の設定クラスに委譲します。
 
-    Usage: Prefer using specific settings classes (database_settings, cors_settings, etc.)
+    使い方: 可能な限り個別の設定クラス（database_settings、cors_settingsなど）を使用してください
     """
 
     @property

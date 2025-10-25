@@ -1,5 +1,5 @@
 """
-Database configuration and connection setup.
+データベース設定と接続セットアップ
 """
 
 from sqlalchemy import create_engine

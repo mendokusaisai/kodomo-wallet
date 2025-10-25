@@ -1,5 +1,5 @@
 """
-GraphQL schema definition using Strawberry.
+StrawberryによるGraphQLスキーマ定義
 """
 
 import strawberry
@@ -16,7 +16,7 @@ from app.core.exceptions import (
 
 @strawberry.type
 class Query:
-    """GraphQL Query definitions"""
+    """GraphQL クエリ定義"""
 
     @strawberry.field
     def me(
@@ -24,7 +24,7 @@ class Query:
         info: Info,
         user_id: str,
     ) -> Profile | None:
-        """Get current user profile"""
+        """現在のユーザープロフィールを取得"""
         profile_service = info.context["profile_service"]
         return resolvers.get_profile_by_id(user_id, profile_service)
 
@@ -235,8 +235,11 @@ class Mutation:
     ) -> WithdrawalRequest:
         """Approve a withdrawal request (parent approves)"""
         withdrawal_request_service = info.context["withdrawal_request_service"]
+        transaction_service = info.context["transaction_service"]
         try:
-            return resolvers.approve_withdrawal_request(request_id, withdrawal_request_service)
+            return resolvers.approve_withdrawal_request(
+                request_id, withdrawal_request_service, transaction_service
+            )
         except ResourceNotFoundException as e:
             raise Exception(f"Resource not found: {e.message}") from e
         except InvalidAmountException as e:
@@ -332,7 +335,12 @@ class Mutation:
         recurring_deposit_service = info.context["recurring_deposit_service"]
         try:
             return resolvers.create_or_update_recurring_deposit(
-                account_id, current_user_id, amount, day_of_month, recurring_deposit_service, is_active
+                account_id,
+                current_user_id,
+                amount,
+                day_of_month,
+                recurring_deposit_service,
+                is_active,
             )
         except ResourceNotFoundException as e:
             raise Exception(f"Resource not found: {e.message}") from e

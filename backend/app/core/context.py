@@ -1,8 +1,8 @@
 """
-GraphQL context management.
+GraphQLコンテキスト管理
 
-Provides a context manager class for handling GraphQL request context,
-including database session lifecycle and service injection.
+GraphQLリクエストのコンテキストを処理するコンテキストマネージャークラスを提供します。
+データベースセッションのライフサイクルとサービスの注入を含みます。
 """
 
 from __future__ import annotations
@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session
 
 from app.core.container import create_injector
 from app.core.database import SessionLocal
-from app.services.business_services import (
+from app.services import (
     AccountService,
     ProfileService,
     RecurringDepositService,
@@ -25,20 +25,20 @@ from app.services.business_services import (
 
 class GraphQLContext:
     """
-    Context manager for GraphQL requests.
+    GraphQLリクエスト用のコンテキストマネージャー
 
-    Manages the lifecycle of database sessions and injected services.
-    Ensures proper resource cleanup even when errors occur.
+    データベースセッションと注入されたサービスのライフサイクルを管理します。
+    エラーが発生した場合でも適切なリソースのクリーンアップを保証します。
 
     Attributes:
-        db: SQLAlchemy database session
-        profile_service: Injected ProfileService instance
-        account_service: Injected AccountService instance
-        transaction_service: Injected TransactionService instance
+        db: SQLAlchemyデータベースセッション
+        profile_service: 注入されたProfileServiceインスタンス
+        account_service: 注入されたAccountServiceインスタンス
+        transaction_service: 注入されたTransactionServiceインスタンス
     """
 
     def __init__(self) -> None:
-        """Initialize the context (resources are created on enter)."""
+        """コンテキストを初期化（リソースはenter時に作成されます）"""
         self._db: Session | None = None
         self._injector: Injector | None = None
         self.profile_service: ProfileService | None = None
@@ -49,24 +49,24 @@ class GraphQLContext:
 
     @property
     def db(self) -> Session:
-        """Get the database session (raises if not initialized)."""
+        """データベースセッションを取得（初期化されていない場合はエラー）"""
         if self._db is None:
             raise RuntimeError("Database session not initialized. Use context manager.")
         return self._db
 
     def __enter__(self) -> GraphQLContext:
         """
-        Enter the context manager.
+        コンテキストマネージャーに入ります。
 
-        Creates database session and initializes services.
+        データベースセッションを作成しサービスを初期化します。
 
         Returns:
-            GraphQLContext: Initialized context with all resources
+            GraphQLContext: すべてのリソースが初期化されたコンテキスト
         """
         self._db = SessionLocal()
         self._injector = create_injector(self._db)
 
-        # Inject services
+        # サービスを注入
         self.profile_service = self._injector.get(ProfileService)
         self.account_service = self._injector.get(AccountService)
         self.transaction_service = self._injector.get(TransactionService)
@@ -77,23 +77,24 @@ class GraphQLContext:
 
     def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
         """
-        Exit the context manager.
+        コンテキストマネージャーを終了します。
 
-        Commits the transaction if no exception occurred, otherwise rolls back.
-        Ensures database session is properly closed in all cases.
+        例外が発生していなければトランザクションをコミットし、
+        例外が発生していればロールバックします。
+        すべてのケースでデータベースセッションが適切にクローズされることを保証します。
 
         Args:
-            exc_type: Exception type (if any)
-            exc_val: Exception value (if any)
-            exc_tb: Exception traceback (if any)
+            exc_type: 例外の型（ある場合）
+            exc_val: 例外の値（ある場合）
+            exc_tb: 例外のトレースバック（ある場合）
         """
         if self._db is not None:
             try:
                 if exc_type is None:
-                    # No exception: commit the transaction
+                    # 例外なし: トランザクションをコミット
                     self._db.commit()
                 else:
-                    # Exception occurred: rollback the transaction
+                    # 例外発生: トランザクションをロールバック
                     self._db.rollback()
             finally:
                 self._db.close()
@@ -107,30 +108,30 @@ class GraphQLContext:
 
     async def __aenter__(self) -> GraphQLContext:
         """
-        Async enter for compatibility with async contexts.
+        非同期コンテキストとの互換性のための非同期enter
 
         Returns:
-            GraphQLContext: Initialized context
+            GraphQLContext: 初期化されたコンテキスト
         """
         return self.__enter__()
 
     async def __aexit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
         """
-        Async exit for compatibility with async contexts.
+        非同期コンテキストとの互換性のための非同期exit
 
         Args:
-            exc_type: Exception type (if any)
-            exc_val: Exception value (if any)
-            exc_tb: Exception traceback (if any)
+            exc_type: 例外の型（ある場合）
+            exc_val: 例外の値（ある場合）
+            exc_tb: 例外のトレースバック（ある場合）
         """
         self.__exit__(exc_type, exc_val, exc_tb)
 
     def to_dict(self) -> dict[str, Any]:
         """
-        Convert context to dictionary for GraphQL.
+        コンテキストをGraphQL用の辞書に変換します。
 
         Returns:
-            dict: Context as dictionary with db and services
+            dict: dbとサービスを含む辞書形式のコンテキスト
         """
         return {
             "db": self.db,

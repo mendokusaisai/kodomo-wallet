@@ -1,8 +1,8 @@
 """
-Custom exceptions for domain-specific errors.
+ドメイン固有エラーのためのカスタム例外
 
-These exceptions provide better error handling and more specific error messages
-than using generic Python exceptions.
+これらの例外は、汎用的なPython例外を使用するよりも
+優れたエラーハンドリングとより具体的なエラーメッセージを提供します。
 """
 
 from typing import Any
@@ -10,10 +10,9 @@ from typing import Any
 
 class DomainException(Exception):
     """
-    Base exception for all domain-specific errors.
+    すべてのドメイン固有エラーの基底例外
 
-    This should be caught at the API boundary to convert to appropriate
-    HTTP/GraphQL error responses.
+    APIの境界でキャッチして適切なHTTP/GraphQLエラーレスポンスに変換する必要があります。
     """
 
     def __init__(self, message: str, code: str | None = None):
@@ -24,12 +23,12 @@ class DomainException(Exception):
 
 class ResourceNotFoundException(DomainException):
     """
-    Raised when a requested resource is not found.
+    要求されたリソースが見つからない場合に発生します。
 
-    Examples:
-        - Account not found
-        - Profile not found
-        - Transaction not found
+    例:
+        - アカウントが見つからない
+        - プロフィールが見つからない
+        - トランザクションが見つからない
     """
 
     def __init__(self, resource_type: str, resource_id: str):
@@ -41,12 +40,12 @@ class ResourceNotFoundException(DomainException):
 
 class BusinessRuleViolationException(DomainException):
     """
-    Raised when a business rule is violated.
+    ビジネスルールに違反した場合に発生します。
 
-    Examples:
-        - Invalid transaction amount
-        - Invalid account state
-        - Invalid permission for operation
+    例:
+        - 無効なトランザクション金額
+        - 無効なアカウント状態
+        - 操作に対する無効な権限
     """
 
     def __init__(self, rule: str, details: str | None = None):
@@ -60,7 +59,7 @@ class BusinessRuleViolationException(DomainException):
 
 class InsufficientBalanceException(DomainException):
     """
-    Raised when an account has insufficient balance for a transaction.
+    アカウントの残高がトランザクションに対して不足している場合に発生します。
     """
 
     def __init__(self, account_id: str, required: int, available: int):
@@ -76,12 +75,12 @@ class InsufficientBalanceException(DomainException):
 
 class InvalidAmountException(DomainException):
     """
-    Raised when a transaction amount is invalid.
+    トランザクション金額が無効な場合に発生します。
 
-    Examples:
-        - Negative amount
-        - Zero amount
-        - Amount exceeds maximum
+    例:
+        - 負の金額
+        - ゼロの金額
+        - 最大値を超える金額
     """
 
     def __init__(self, amount: int, reason: str):
@@ -93,7 +92,7 @@ class InvalidAmountException(DomainException):
 
 class ValidationException(DomainException):
     """
-    Raised when input validation fails.
+    入力検証が失敗した場合に発生します。
     """
 
     def __init__(self, field: str, value: Any, reason: str):

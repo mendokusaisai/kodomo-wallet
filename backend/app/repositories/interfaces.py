@@ -1,5 +1,5 @@
 """
-Repository interfaces (Abstract Base Classes) for data access.
+データアクセスのためのRepositoryインターフェース（抽象基底クラス）
 """
 
 from abc import ABC, abstractmethod
@@ -9,79 +9,79 @@ from app.models.models import Account, Profile, RecurringDeposit, Transaction, W
 
 
 class ProfileRepository(ABC):
-    """Interface for Profile data access"""
+    """Profileのデータアクセスインターフェース"""
 
     @abstractmethod
     def get_by_id(self, user_id: str) -> Profile | None:
-        """Get profile by ID"""
+        """IDでプロフィールを取得"""
         pass
 
     @abstractmethod
     def get_children(self, parent_id: str) -> list[Profile]:
-        """Get all children profiles for a parent"""
+        """親の全ての子プロフィールを取得"""
         pass
 
     @abstractmethod
     def get_by_auth_user_id(self, auth_user_id: str) -> Profile | None:
-        """Get profile by auth user ID"""
+        """認証ユーザーIDでプロフィールを取得"""
         pass
 
     @abstractmethod
     def get_by_email(self, email: str) -> Profile | None:
-        """Get unauthenticated profile by email (auth_user_id is NULL)"""
+        """メールアドレスで未認証プロフィールを取得（auth_user_idがNULL）"""
         pass
 
     @abstractmethod
     def create_child(self, name: str, parent_id: str, email: str | None = None) -> Profile:
-        """Create a child profile without authentication"""
+        """認証なしで子プロフィールを作成"""
         pass
 
     @abstractmethod
     def link_to_auth(self, profile_id: str, auth_user_id: str) -> Profile:
-        """Link existing profile to auth account"""
+        """既存プロフィールを認証アカウントに紐付け"""
         pass
 
     @abstractmethod
     def delete(self, user_id: str) -> bool:
-        """Delete a profile"""
+        """プロフィールを削除"""
         pass
 
 
 class AccountRepository(ABC):
-    """Interface for Account data access"""
+    """Accountのデータアクセスインターフェース"""
 
     @abstractmethod
     def get_by_user_id(self, user_id: str) -> list[Account]:
-        """Get all accounts for a user"""
+        """ユーザーの全アカウントを取得"""
         pass
 
     @abstractmethod
     def get_by_id(self, account_id: str) -> Account | None:
-        """Get account by ID"""
+        """IDでアカウントを取得"""
         pass
 
     @abstractmethod
     def update_balance(self, account: Account, new_balance: int) -> None:
-        """Update account balance"""
+        """アカウント残高を更新"""
         pass
 
     @abstractmethod
     def create(self, user_id: str, balance: int, currency: str) -> Account:
-        """Create a new account"""
+        """新規アカウントを作成"""
         pass
 
     @abstractmethod
     def delete(self, account_id: str) -> bool:
-        """Delete an account"""
+        """アカウントを削除"""
         pass
 
 
 class TransactionRepository(ABC):
-    """Interface for Transaction data access"""
+    """Transactionのデータアクセスインターフェース"""
 
     @abstractmethod
     def get_by_account_id(self, account_id: str, limit: int = 50) -> list[Transaction]:
-        """Get transactions for an account"""
+        """アカウントのトランザクションを取得"""
         pass
 
     @abstractmethod
@@ -93,21 +93,21 @@ class TransactionRepository(ABC):
         description: str | None,
         created_at: datetime,
     ) -> Transaction:
-        """Create a new transaction"""
+        """新規トランザクションを作成"""
         pass
 
 
 class WithdrawalRequestRepository(ABC):
-    """Interface for WithdrawalRequest data access"""
+    """WithdrawalRequestのデータアクセスインターフェース"""
 
     @abstractmethod
     def get_by_id(self, request_id: str) -> WithdrawalRequest | None:
-        """Get withdrawal request by ID"""
+        """IDで出金リクエストを取得"""
         pass
 
     @abstractmethod
     def get_pending_by_parent(self, parent_id: str) -> list[WithdrawalRequest]:
-        """Get all pending withdrawal requests for a parent's children"""
+        """親の子供の全ての保留中出金リクエストを取得"""
         pass
 
     @abstractmethod
@@ -118,23 +118,23 @@ class WithdrawalRequestRepository(ABC):
         description: str | None,
         created_at: datetime,
     ) -> WithdrawalRequest:
-        """Create a new withdrawal request"""
+        """新規出金リクエストを作成"""
         pass
 
     @abstractmethod
     def update_status(
         self, request: WithdrawalRequest, status: str, updated_at: datetime
     ) -> WithdrawalRequest:
-        """Update withdrawal request status"""
+        """出金リクエストのステータスを更新"""
         pass
 
 
 class RecurringDepositRepository(ABC):
-    """Interface for RecurringDeposit data access"""
+    """RecurringDepositのデータアクセスインターフェース"""
 
     @abstractmethod
     def get_by_account_id(self, account_id: str) -> RecurringDeposit | None:
-        """Get recurring deposit settings by account ID"""
+        """アカウントIDで定期入金設定を取得"""
         pass
 
     @abstractmethod
@@ -145,7 +145,7 @@ class RecurringDepositRepository(ABC):
         day_of_month: int,
         created_at: datetime,
     ) -> RecurringDeposit:
-        """Create a new recurring deposit setting"""
+        """新規定期入金設定を作成"""
         pass
 
     @abstractmethod
@@ -157,10 +157,10 @@ class RecurringDepositRepository(ABC):
         is_active: bool | None,
         updated_at: datetime,
     ) -> RecurringDeposit:
-        """Update recurring deposit settings"""
+        """定期入金設定を更新"""
         pass
 
     @abstractmethod
     def delete(self, recurring_deposit: RecurringDeposit) -> bool:
-        """Delete recurring deposit settings"""
+        """定期入金設定を削除"""
         pass

@@ -12,12 +12,12 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from app.api.graphql import resolvers
 from app.models.models import Account, Base, Profile, Transaction
-from app.repositories.sqlalchemy_repositories import (
+from app.repositories.sqlalchemy import (
     SQLAlchemyAccountRepository,
     SQLAlchemyProfileRepository,
     SQLAlchemyTransactionRepository,
 )
-from app.services.business_services import (
+from app.services import (
     AccountService,
     ProfileService,
     TransactionService,
@@ -42,8 +42,8 @@ def services(in_memory_db: Session):
     account_repo = SQLAlchemyAccountRepository(in_memory_db)
     transaction_repo = SQLAlchemyTransactionRepository(in_memory_db)
 
-    profile_service = ProfileService(profile_repo)
-    account_service = AccountService(account_repo)
+    profile_service = ProfileService(profile_repo, account_repo)
+    account_service = AccountService(account_repo, profile_repo)
     transaction_service = TransactionService(transaction_repo, account_repo)
 
     return {
@@ -116,7 +116,9 @@ class TestResolverIntegration:
     def test_get_accounts_by_user_id(self, sample_data, services):
         """Test getting accounts for a user"""
         user_id = str(sample_data["profile"].id)
-        results = resolvers.get_accounts_by_user_id(user_id, services["account"])
+        results = resolvers.get_accounts_by_user_id(
+            user_id, services["account"], services["profile"]
+        )
 
         assert len(results) == 1
         assert results[0].id == sample_data["account"].id
@@ -125,7 +127,9 @@ class TestResolverIntegration:
 
     def test_get_accounts_empty(self, services):
         """Test getting accounts for non-existent user"""
-        results = resolvers.get_accounts_by_user_id(str(uuid.uuid4()), services["account"])
+        results = resolvers.get_accounts_by_user_id(
+            str(uuid.uuid4()), services["account"], services["profile"]
+        )
         assert results == []
 
     def test_get_transactions_by_account_id(self, sample_data, services):

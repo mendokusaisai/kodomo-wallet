@@ -1,5 +1,5 @@
 """
-GraphQL types for Strawberry.
+StrawberryのGraphQL型定義
 """
 
 import strawberry
@@ -7,7 +7,7 @@ import strawberry
 
 @strawberry.type
 class Profile:
-    """User profile type"""
+    """ユーザープロフィール型"""
 
     id: str
     name: str
@@ -22,7 +22,7 @@ class Profile:
 
 @strawberry.type
 class Account:
-    """Account type"""
+    """アカウント型"""
 
     id: str
     user_id: str
@@ -37,7 +37,7 @@ class Account:
 
 @strawberry.type
 class Transaction:
-    """Transaction type"""
+    """トランザクション型"""
 
     id: str
     account_id: str

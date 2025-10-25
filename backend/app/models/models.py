@@ -1,5 +1,5 @@
 """
-SQLAlchemy models for the application.
+アプリケーションのSQLAlchemyモデル
 """
 
 import uuid
@@ -12,12 +12,14 @@ from app.core.database import Base
 
 
 class Profile(Base):
-    """User profile model"""
+    """ユーザープロフィールモデル"""
 
     __tablename__ = "profiles"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    auth_user_id = Column(UUID(as_uuid=True), nullable=True, unique=True)  # 認証アカウントID（NULL可）
+    auth_user_id = Column(
+        UUID(as_uuid=True), nullable=True, unique=True
+    )  # 認証アカウントID（NULL可）
     email = Column(Text, nullable=True)  # メールアドレス
     name = Column(Text, nullable=False)
     role = Column(Text, nullable=False)
@@ -26,7 +28,7 @@ class Profile(Base):
     created_at = Column(Text, nullable=False)
     updated_at = Column(Text, nullable=False)
 
-    # Relationships
+    # リレーション
     accounts = relationship("Account", back_populates="user", cascade="all, delete-orphan")
     children = relationship("Profile", backref="parent", remote_side=[id])
 
@@ -34,7 +36,7 @@ class Profile(Base):
 
 
 class Account(Base):
-    """Account model"""
+    """アカウントモデル"""
 
     __tablename__ = "accounts"
 
@@ -51,7 +53,7 @@ class Account(Base):
     created_at = Column(Text, nullable=False)
     updated_at = Column(Text, nullable=False)
 
-    # Relationships
+    # リレーション
     user = relationship("Profile", back_populates="accounts")
     transactions = relationship(
         "Transaction", back_populates="account", cascade="all, delete-orphan"
@@ -65,7 +67,7 @@ class Account(Base):
 
 
 class Transaction(Base):
-    """Transaction model"""
+    """トランザクションモデル"""
 
     __tablename__ = "transactions"
 
@@ -80,7 +82,7 @@ class Transaction(Base):
     description = Column(Text, nullable=True)
     created_at = Column(Text, nullable=False)
 
-    # Relationships
+    # リレーション
     account = relationship("Account", back_populates="transactions")
 
     __table_args__ = (
@@ -89,7 +91,7 @@ class Transaction(Base):
 
 
 class WithdrawalRequest(Base):
-    """Withdrawal request model"""
+    """出金リクエストモデル"""
 
     __tablename__ = "withdrawal_requests"
 
@@ -105,7 +107,7 @@ class WithdrawalRequest(Base):
     created_at = Column(Text, nullable=False)
     updated_at = Column(Text, nullable=False)
 
-    # Relationships
+    # リレーション
     account = relationship("Account", back_populates="withdrawal_requests")
 
     __table_args__ = (
@@ -114,7 +116,7 @@ class WithdrawalRequest(Base):
 
 
 class RecurringDeposit(Base):
-    """Recurring deposit model (automatic monthly allowance)"""
+    """定期入金モデル（自動お小遣い）"""
 
     __tablename__ = "recurring_deposits"
 
@@ -130,10 +132,12 @@ class RecurringDeposit(Base):
     created_at = Column(Text, nullable=False)
     updated_at = Column(Text, nullable=False)
 
-    # Relationships
+    # リレーション
     account = relationship("Account", back_populates="recurring_deposits")
 
     __table_args__ = (
         CheckConstraint("amount > 0", name="check_amount_positive"),
-        CheckConstraint("day_of_month >= 1 AND day_of_month <= 31", name="check_day_of_month_range"),
+        CheckConstraint(
+            "day_of_month >= 1 AND day_of_month <= 31", name="check_day_of_month_range"
+        ),
     )

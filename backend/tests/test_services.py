@@ -23,7 +23,7 @@ from app.repositories.mock_repositories import (
     MockProfileRepository,
     MockTransactionRepository,
 )
-from app.services.business_services import (
+from app.services import (
     AccountService,
     ProfileService,
     TransactionService,

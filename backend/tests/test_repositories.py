@@ -17,7 +17,7 @@ from app.repositories.mock_repositories import (
     MockProfileRepository,
     MockTransactionRepository,
 )
-from app.repositories.sqlalchemy_repositories import (
+from app.repositories.sqlalchemy import (
     SQLAlchemyAccountRepository,
     SQLAlchemyProfileRepository,
     SQLAlchemyTransactionRepository,
