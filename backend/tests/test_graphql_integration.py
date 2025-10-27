@@ -1,17 +1,16 @@
-"""Integration tests for GraphQL resolvers.
+"""GraphQL Resolver の統合テスト
 
-Tests resolver functions with database integration.
+データベース統合を含むリゾルバー関数のテスト
 """
 
 import uuid
 from datetime import UTC, datetime
 
 import pytest
-from sqlalchemy import create_engine
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.orm import Session
 
 from app.api.graphql import resolvers
-from app.models.models import Account, Base, Profile, Transaction
+from app.models.models import Account, Profile, Transaction
 from app.repositories.sqlalchemy import (
     SQLAlchemyAccountRepository,
     SQLAlchemyProfileRepository,
@@ -25,19 +24,8 @@ from app.services import (
 
 
 @pytest.fixture
-def in_memory_db():
-    """Create an in-memory SQLite database for testing"""
-    engine = create_engine("sqlite:///:memory:")
-    Base.metadata.create_all(engine)
-    SessionLocal = sessionmaker(bind=engine)
-    session = SessionLocal()
-    yield session
-    session.close()
-
-
-@pytest.fixture
 def services(in_memory_db: Session):
-    """Create service instances with repositories"""
+    """リポジトリを含むサービスインスタンスを作成"""
     profile_repo = SQLAlchemyProfileRepository(in_memory_db)
     account_repo = SQLAlchemyAccountRepository(in_memory_db)
     transaction_repo = SQLAlchemyTransactionRepository(in_memory_db)
@@ -54,22 +42,60 @@ def services(in_memory_db: Session):
 
 
 @pytest.fixture
-def sample_data(in_memory_db: Session):
-    """Create sample data for testing"""
-    # Create profile
-    profile = Profile(
+def profile_service(services) -> ProfileService:
+    """プロフィールサービスのフィクスチャ"""
+    return services["profile"]
+
+
+@pytest.fixture
+def account_service(services) -> AccountService:
+    """アカウントサービスのフィクスチャ"""
+    return services["account"]
+
+
+@pytest.fixture
+def transaction_service(services) -> TransactionService:
+    """トランザクションサービスのフィクスチャ"""
+    return services["transaction"]
+
+
+@pytest.fixture
+def parent_profile(in_memory_db: Session) -> Profile:
+    """親プロフィール"""
+    parent_profile = Profile(
         id=uuid.uuid4(),
-        name="Test User",
+        name="Parent User",
         role="parent",
         created_at=str(datetime.now(UTC)),
         updated_at=str(datetime.now(UTC)),
     )
-    in_memory_db.add(profile)
+    in_memory_db.add(parent_profile)
+    in_memory_db.commit()
+    return parent_profile
 
-    # Create account
+
+@pytest.fixture
+def child_profile(in_memory_db: Session, parent_profile: Profile) -> Profile:
+    """子プロフィール"""
+    child_profile = Profile(
+        id=uuid.uuid4(),
+        name="Child User",
+        role="child",
+        parent_id=parent_profile.id,
+        created_at=str(datetime.now(UTC)),
+        updated_at=str(datetime.now(UTC)),
+    )
+    in_memory_db.add(child_profile)
+    in_memory_db.commit()
+    return child_profile
+
+
+@pytest.fixture
+def child_account(in_memory_db: Session, child_profile: Profile) -> Account:
+    """子アカウント"""
     account = Account(
         id=uuid.uuid4(),
-        user_id=profile.id,
+        user_id=child_profile.id,
         balance=10000,
         currency="JPY",
         goal_name="Test Goal",
@@ -78,65 +104,80 @@ def sample_data(in_memory_db: Session):
         updated_at=str(datetime.now(UTC)),
     )
     in_memory_db.add(account)
+    in_memory_db.commit()
+    return account
 
-    # Create transaction
+
+@pytest.fixture
+def transaction(in_memory_db: Session, child_account: Account) -> Transaction:
+    """子アカウントのトランザクション"""
     transaction = Transaction(
         id=uuid.uuid4(),
-        account_id=account.id,
+        account_id=child_account.id,
         type="deposit",
         amount=5000,
         description="Initial deposit",
         created_at=str(datetime.now(UTC)),
     )
     in_memory_db.add(transaction)
-
     in_memory_db.commit()
-
-    return {"profile": profile, "account": account, "transaction": transaction}
+    return transaction
 
 
 class TestResolverIntegration:
-    """Test resolver functions with database integration"""
+    """データベース統合を含むリゾルバー関数のテスト"""
 
-    def test_get_profile_by_id(self, sample_data, services):
-        """Test getting profile by ID"""
-        profile_id = str(sample_data["profile"].id)
-        result = resolvers.get_profile_by_id(profile_id, services["profile"])
+    def test_get_profile_by_id(self, parent_profile: Profile, profile_service: ProfileService):
+        """ID によるプロフィール取得のテスト"""
+        profile_id = str(parent_profile.id)
+        result = resolvers.get_profile_by_id(profile_id, profile_service)
 
         assert result is not None
-        assert result.id == sample_data["profile"].id
-        assert result.name == "Test User"
+        assert result.id == parent_profile.id
+        assert result.name == "Parent User"
         assert result.role == "parent"
 
-    def test_get_profile_not_found(self, services):
-        """Test getting non-existent profile returns None"""
-        result = resolvers.get_profile_by_id(str(uuid.uuid4()), services["profile"])
+    def test_get_profile_not_found(self, profile_service: ProfileService):
+        """存在しないプロフィールの取得で None が返ることをテスト"""
+        result = resolvers.get_profile_by_id(str(uuid.uuid4()), profile_service)
         assert result is None
 
-    def test_get_accounts_by_user_id(self, sample_data, services):
-        """Test getting accounts for a user"""
-        user_id = str(sample_data["profile"].id)
-        results = resolvers.get_accounts_by_user_id(
-            user_id, services["account"], services["profile"]
-        )
+    def test_get_accounts_by_user_id(
+        self,
+        parent_profile: Profile,
+        child_account: Account,
+        profile_service: ProfileService,
+        account_service: AccountService,
+    ):
+        """ユーザーのアカウント取得のテスト"""
+        # 親ユーザーIDを使用（親は子供のアカウントを取得）
+        user_id = str(parent_profile.id)
+        results = resolvers.get_accounts_by_user_id(user_id, account_service, profile_service)
 
         assert len(results) == 1
-        assert results[0].id == sample_data["account"].id
+        assert results[0].id == child_account.id
         assert results[0].balance == 10000
         assert results[0].currency == "JPY"
 
-    def test_get_accounts_empty(self, services):
-        """Test getting accounts for non-existent user"""
+    def test_get_accounts_empty(
+        self, account_service: AccountService, profile_service: ProfileService
+    ):
+        """存在しないユーザーのアカウント取得のテスト"""
         results = resolvers.get_accounts_by_user_id(
-            str(uuid.uuid4()), services["account"], services["profile"]
+            str(uuid.uuid4()), account_service, profile_service
         )
         assert results == []
 
-    def test_get_transactions_by_account_id(self, sample_data, services):
-        """Test getting transactions for an account"""
-        account_id = str(sample_data["account"].id)
+    def test_get_transactions_by_account_id(
+        self,
+        child_account: Account,
+        transaction: Transaction,
+        transaction_service: TransactionService,
+    ):
+        """アカウントのトランザクション取得のテスト"""
+        account_id = str(child_account.id)
         results = resolvers.get_transactions_by_account_id(
-            account_id, services["transaction"], limit=10
+            account_id, transaction_service, limit=10
         )
 
         assert len(results) == 1
@@ -144,20 +185,22 @@ class TestResolverIntegration:
         assert results[0].amount == 5000
         assert results[0].description == "Initial deposit"
 
-    def test_get_transactions_empty(self, services):
-        """Test getting transactions for non-existent account"""
+    def test_get_transactions_empty(self, transaction_service: TransactionService):
+        """存在しないアカウントのトランザクション取得のテスト"""
         results = resolvers.get_transactions_by_account_id(
-            str(uuid.uuid4()), services["transaction"], limit=10
+            str(uuid.uuid4()), transaction_service, limit=10
         )
         assert results == []
 
-    def test_create_deposit(self, in_memory_db, sample_data, services):
-        """Test creating a deposit"""
-        account_id = str(sample_data["account"].id)
-        initial_balance = sample_data["account"].balance
+    def test_create_deposit(
+        self, in_memory_db, child_account: Account, transaction_service: TransactionService
+    ):
+        """入金作成のテスト"""
+        account_id = str(child_account.id)
+        initial_balance = child_account.balance
 
         transaction = resolvers.create_deposit(
-            account_id, 3000, services["transaction"], "Test deposit"
+            account_id, 3000, transaction_service, "Test deposit"
         )
 
         assert transaction is not None
@@ -165,49 +208,60 @@ class TestResolverIntegration:
         assert transaction.amount == 3000
         assert transaction.description == "Test deposit"
 
-        # Verify balance was updated (commit is now done by context manager in real usage)
+        # 残高が更新されたことを確認（実際の使用では context manager でコミット）
         in_memory_db.commit()
-        in_memory_db.refresh(sample_data["account"])
-        assert sample_data["account"].balance == initial_balance + 3000
+        in_memory_db.refresh(child_account)
+        assert child_account.balance == initial_balance + 3000
 
-    def test_create_deposit_account_not_found(self, in_memory_db, services):
-        """Test creating deposit for non-existent account"""
+    def test_create_deposit_account_not_found(self, transaction_service: TransactionService):
+        """存在しないアカウントへの入金作成のテスト"""
         with pytest.raises(Exception, match="Account .* not found"):
-            resolvers.create_deposit(str(uuid.uuid4()), 1000, services["transaction"], "Test")
+            resolvers.create_deposit(str(uuid.uuid4()), 1000, transaction_service, "Test")
 
-    def test_create_deposit_updates_transaction_list(self, in_memory_db, sample_data, services):
-        """Test that deposit creates a queryable transaction"""
-        account_id = str(sample_data["account"].id)
+    def test_create_deposit_updates_transaction_list(
+        self,
+        in_memory_db,
+        child_account: Account,
+        transaction: Transaction,
+        transaction_service: TransactionService,
+    ):
+        """入金がクエリ可能なトランザクションを作成することをテスト"""
+        account_id = str(child_account.id)
 
-        # Create deposit
-        resolvers.create_deposit(account_id, 2000, services["transaction"], "New deposit")
+        # 入金を作成
+        resolvers.create_deposit(account_id, 2000, transaction_service, "New deposit")
 
-        # Commit to make transaction visible (in real usage, done by context manager)
+        # トランザクションを可視化するためにコミット（実際の使用では context manager で実施）
         in_memory_db.commit()
 
-        # Query transactions
-        transactions = resolvers.get_transactions_by_account_id(account_id, services["transaction"])
+        # トランザクションをクエリ
+        transactions = resolvers.get_transactions_by_account_id(account_id, transaction_service)
 
-        # Should have 2 transactions now (initial + new)
+        # 初期 + 新規で 2 件のトランザクションがあるはず
         assert len(transactions) == 2
 
-    def test_multiple_deposits(self, in_memory_db, sample_data, services):
-        """Test creating multiple deposits"""
-        account_id = str(sample_data["account"].id)
-        initial_balance = sample_data["account"].balance
+    def test_multiple_deposits(
+        self,
+        in_memory_db,
+        child_account: Account,
+        transaction: Transaction,
+        transaction_service: TransactionService,
+    ):
+        """複数回の入金作成のテスト"""
+        account_id = str(child_account.id)
+        initial_balance = child_account.balance
 
-        resolvers.create_deposit(account_id, 1000, services["transaction"], "Deposit 1")
-        resolvers.create_deposit(account_id, 2000, services["transaction"], "Deposit 2")
-
-        resolvers.create_deposit(account_id, 3000, services["transaction"], "Deposit 3")
+        resolvers.create_deposit(account_id, 1000, transaction_service, "Deposit 1")
+        resolvers.create_deposit(account_id, 2000, transaction_service, "Deposit 2")
+        resolvers.create_deposit(account_id, 3000, transaction_service, "Deposit 3")
 
         # Commit to update balance (in real usage, done by context manager)
         in_memory_db.commit()
 
         # Verify final balance
-        in_memory_db.refresh(sample_data["account"])
-        assert sample_data["account"].balance == initial_balance + 6000
+        in_memory_db.refresh(child_account)
+        assert child_account.balance == initial_balance + 6000
 
         # Verify transaction count
-        transactions = resolvers.get_transactions_by_account_id(account_id, services["transaction"])
+        transactions = resolvers.get_transactions_by_account_id(account_id, transaction_service)
         assert len(transactions) == 4  # 1 initial + 3 new

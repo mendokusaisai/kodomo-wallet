@@ -5,7 +5,7 @@
 from abc import ABC, abstractmethod
 from datetime import datetime
 
-from app.models.models import Account, Profile, RecurringDeposit, Transaction, WithdrawalRequest
+from app.domain.entities import Account, Profile, RecurringDeposit, Transaction, WithdrawalRequest
 
 
 class ProfileRepository(ABC):

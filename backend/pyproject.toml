@@ -26,6 +26,9 @@ dev = [
     "ruff>=0.8.0",
 ]
 
+[tool.uv]
+package = false
+
 [tool.ruff]
 # Python 3.14をターゲット
 target-version = "py314"
@@ -79,3 +82,17 @@ section-order = ["future", "standard-library", "third-party", "first-party", "lo
 quote-style = "double"
 indent-style = "space"
 line-ending = "auto"
+
+[tool.pytest.ini_options]
+# テストディレクトリ
+testpaths = ["tests"]
+# Pythonパスに backend ディレクトリを追加
+pythonpath = ["."]
+# テストファイルのパターン
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+# 警告フィルター
+filterwarnings = [
+    "ignore::UserWarning:strawberry.experimental.pydantic._compat",
+]

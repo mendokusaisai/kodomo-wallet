@@ -1,10 +1,15 @@
 {
 	// Python設定
 	"python-envs.pythonProjects": [],
-	"python.testing.pytestArgs": ["backend"],
+	"python.testing.pytestArgs": [
+		"tests",
+		"-v"
+	],
+	"python.testing.cwd": "${workspaceFolder}/backend",
 	"python.testing.unittestEnabled": false,
 	"python.testing.pytestEnabled": true,
 	"python.analysis.typeCheckingMode": "standard",
+	"python.defaultInterpreterPath": "${workspaceFolder}/backend/.venv/Scripts/python.exe",
 
 	// Biome設定（フォーマッター・リンター）
 	"biome.lsp.bin": "${workspaceFolder}/../frontend/node_modules/@biomejs/cli-win32-x64/biome.exe",

@@ -34,7 +34,7 @@ class Query:
         info: Info,
         parent_id: str,
     ) -> int:
-        """Get count of children for a parent"""
+        """親ユーザーの子供の人数を取得"""
         profile_service = info.context["profile_service"]
         return resolvers.get_children_count(parent_id, profile_service)
 
@@ -44,7 +44,7 @@ class Query:
         info: Info,
         user_id: str,
     ) -> list[Account]:
-        """Get accounts for a user"""
+        """ユーザーのアカウント一覧を取得（親は子のアカウントも含む）"""
         account_service = info.context["account_service"]
         profile_service = info.context["profile_service"]
         return resolvers.get_accounts_by_user_id(user_id, account_service, profile_service)
@@ -56,7 +56,7 @@ class Query:
         account_id: str,
         limit: int = 50,
     ) -> list[Transaction]:
-        """Get transactions for an account"""
+        """アカウントのトランザクション一覧を取得"""
         transaction_service = info.context["transaction_service"]
         return resolvers.get_transactions_by_account_id(account_id, transaction_service, limit)
 
@@ -66,7 +66,7 @@ class Query:
         info: Info,
         parent_id: str,
     ) -> list[WithdrawalRequest]:
-        """Get pending withdrawal requests for a parent's children"""
+        """親ユーザーの子供に対する未承認の出金リクエスト一覧を取得"""
         withdrawal_request_service = info.context["withdrawal_request_service"]
         return resolvers.get_pending_withdrawal_requests(parent_id, withdrawal_request_service)
 
@@ -77,7 +77,7 @@ class Query:
         account_id: str,
         current_user_id: str,
     ) -> RecurringDeposit | None:
-        """Get recurring deposit settings for an account (parent only)"""
+        """アカウントの定期入金設定を取得（親のみ）"""
         recurring_deposit_service = info.context["recurring_deposit_service"]
         try:
             return resolvers.get_recurring_deposit(
@@ -93,7 +93,7 @@ class Query:
 
 @strawberry.type
 class Mutation:
-    """GraphQL Mutation definitions"""
+    """GraphQL ミューテーション定義"""
 
     @strawberry.mutation
     def deposit(
@@ -103,7 +103,7 @@ class Mutation:
         amount: int,
         description: str | None = None,
     ) -> Transaction:
-        """Create a deposit transaction"""
+        """入金（deposit）トランザクションを作成"""
         transaction_service = info.context["transaction_service"]
         try:
             return resolvers.create_deposit(account_id, amount, transaction_service, description)
@@ -122,7 +122,7 @@ class Mutation:
         amount: int,
         description: str | None = None,
     ) -> Transaction:
-        """Create a withdraw transaction"""
+        """出金（withdraw）トランザクションを作成"""
         transaction_service = info.context["transaction_service"]
         try:
             return resolvers.create_withdraw(account_id, amount, transaction_service, description)
@@ -141,7 +141,7 @@ class Mutation:
         child_name: str,
         initial_balance: int = 0,
     ) -> Profile:
-        """Create a child profile without authentication"""
+        """認証なしで子プロフィールを作成"""
         profile_service = info.context["profile_service"]
         try:
             return resolvers.create_child_profile(
@@ -159,7 +159,7 @@ class Mutation:
         child_id: str,
         auth_user_id: str,
     ) -> Profile:
-        """Link child profile to authentication account"""
+        """子プロフィールを認証アカウントに紐付け"""
         profile_service = info.context["profile_service"]
         try:
             return resolvers.link_child_to_auth_account(child_id, auth_user_id, profile_service)
@@ -177,7 +177,7 @@ class Mutation:
         child_id: str,
         email: str,
     ) -> Profile:
-        """Link child profile to authentication account by email address"""
+        """メールアドレスで子プロフィールを認証アカウントに紐付け"""
         profile_service = info.context["profile_service"]
         try:
             return resolvers.link_child_to_auth_by_email(child_id, email, profile_service)
@@ -195,7 +195,7 @@ class Mutation:
         child_id: str,
         email: str,
     ) -> Profile:
-        """Send invitation email to child to create authentication account"""
+        """子に認証アカウント作成を促す招待メールを送信"""
         profile_service = info.context["profile_service"]
         try:
             return resolvers.invite_child_to_auth(child_id, email, profile_service)
@@ -214,7 +214,7 @@ class Mutation:
         amount: int,
         description: str | None = None,
     ) -> WithdrawalRequest:
-        """Create a withdrawal request (child initiates)"""
+        """出金リクエストを作成（子が発行）"""
         withdrawal_request_service = info.context["withdrawal_request_service"]
         try:
             return resolvers.create_withdrawal_request(
@@ -233,7 +233,7 @@ class Mutation:
         info: Info,
         request_id: str,
     ) -> WithdrawalRequest:
-        """Approve a withdrawal request (parent approves)"""
+        """出金リクエストを承認（親が承認）"""
         withdrawal_request_service = info.context["withdrawal_request_service"]
         transaction_service = info.context["transaction_service"]
         try:
@@ -253,7 +253,7 @@ class Mutation:
         info: Info,
         request_id: str,
     ) -> WithdrawalRequest:
-        """Reject a withdrawal request (parent rejects)"""
+        """出金リクエストを却下（親が却下）"""
         withdrawal_request_service = info.context["withdrawal_request_service"]
         try:
             return resolvers.reject_withdrawal_request(request_id, withdrawal_request_service)
@@ -272,7 +272,7 @@ class Mutation:
         goal_name: str | None = None,
         goal_amount: int | None = None,
     ) -> Account:
-        """Update savings goal for an account"""
+        """アカウントの貯金目標を更新"""
         account_service = info.context["account_service"]
         try:
             return resolvers.update_goal(account_id, goal_name, goal_amount, account_service)
@@ -292,7 +292,7 @@ class Mutation:
         name: str | None = None,
         avatar_url: str | None = None,
     ) -> Profile:
-        """Update user profile (self or parent can edit child)"""
+        """ユーザープロフィールを更新（本人または親が子を編集可能）"""
         profile_service = info.context["profile_service"]
         try:
             return resolvers.update_profile(
@@ -310,7 +310,7 @@ class Mutation:
         parent_id: str,
         child_id: str,
     ) -> bool:
-        """Delete a child profile (parent only)"""
+        """子プロフィールを削除（親のみ）"""
         profile_service = info.context["profile_service"]
         try:
             return resolvers.delete_child(parent_id, child_id, profile_service)
@@ -331,7 +331,7 @@ class Mutation:
         day_of_month: int,
         is_active: bool = True,
     ) -> RecurringDeposit:
-        """Create or update recurring deposit settings (parent only)"""
+        """定期入金設定を作成または更新（親のみ）"""
         recurring_deposit_service = info.context["recurring_deposit_service"]
         try:
             return resolvers.create_or_update_recurring_deposit(
@@ -356,7 +356,7 @@ class Mutation:
         account_id: str,
         current_user_id: str,
     ) -> bool:
-        """Delete recurring deposit settings (parent only)"""
+        """定期入金設定を削除（親のみ）"""
         recurring_deposit_service = info.context["recurring_deposit_service"]
         try:
             return resolvers.delete_recurring_deposit(
@@ -370,5 +370,5 @@ class Mutation:
             raise Exception(f"Domain error: {e.message}") from e
 
 
-# Create schema
+# スキーマの生成
 schema = strawberry.Schema(query=Query, mutation=Mutation)

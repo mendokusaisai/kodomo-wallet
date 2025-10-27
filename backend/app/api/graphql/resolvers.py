@@ -53,7 +53,7 @@ def get_transactions_by_account_id(
     transaction_service: TransactionService,
     limit: int = 50,
 ) -> list[Transaction]:
-    """Get transactions for an account"""
+    """指定したアカウントのトランザクション一覧を取得"""
     return transaction_service.get_account_transactions(account_id, limit)
 
 
@@ -63,7 +63,7 @@ def create_deposit(
     transaction_service: TransactionService,
     description: str | None = None,
 ) -> Transaction:
-    """Create a deposit transaction"""
+    """入金（deposit）トランザクションを作成"""
     return transaction_service.create_deposit(account_id, amount, description)
 
 
@@ -73,7 +73,7 @@ def create_withdraw(
     transaction_service: TransactionService,
     description: str | None = None,
 ) -> Transaction:
-    """Create a withdraw transaction"""
+    """出金（withdraw）トランザクションを作成"""
     return transaction_service.create_withdraw(account_id, amount, description)
 
 
@@ -83,7 +83,7 @@ def create_child_profile(
     profile_service: ProfileService,
     initial_balance: int = 0,
 ) -> Profile:
-    """Create a child profile without authentication"""
+    """認証なしで子プロフィールを作成"""
     return profile_service.create_child(parent_id, child_name, initial_balance)
 
 
@@ -92,7 +92,7 @@ def link_child_to_auth_account(
     auth_user_id: str,
     profile_service: ProfileService,
 ) -> Profile:
-    """Link child profile to authentication account"""
+    """子プロフィールを認証アカウントに紐付け"""
     return profile_service.link_child_to_auth(child_id, auth_user_id)
 
 
@@ -101,7 +101,7 @@ def link_child_to_auth_by_email(
     email: str,
     profile_service: ProfileService,
 ) -> Profile:
-    """Link child profile to authentication account by email"""
+    """メールアドレスで子プロフィールを認証アカウントに紐付け"""
     return profile_service.link_child_to_auth_by_email(child_id, email)
 
 
@@ -110,7 +110,7 @@ def invite_child_to_auth(
     email: str,
     profile_service: ProfileService,
 ) -> Profile:
-    """Invite child to create authentication account via email"""
+    """メール経由で子に認証アカウント作成を招待"""
     return profile_service.invite_child_to_auth(child_id, email)
 
 
@@ -118,7 +118,7 @@ def get_pending_withdrawal_requests(
     parent_id: str,
     withdrawal_request_service: WithdrawalRequestService,
 ) -> list[WithdrawalRequest]:
-    """Get pending withdrawal requests for a parent's children"""
+    """親ユーザーの子供に対する未承認の出金リクエストを取得"""
     return withdrawal_request_service.get_pending_requests_for_parent(parent_id)
 
 
@@ -128,7 +128,7 @@ def create_withdrawal_request(
     withdrawal_request_service: WithdrawalRequestService,
     description: str | None = None,
 ) -> WithdrawalRequest:
-    """Create a withdrawal request (child initiates)"""
+    """出金リクエストを作成（子が発行）"""
     return withdrawal_request_service.create_withdrawal_request(account_id, amount, description)
 
 
@@ -137,7 +137,7 @@ def approve_withdrawal_request(
     withdrawal_request_service: WithdrawalRequestService,
     transaction_service: TransactionService,
 ) -> WithdrawalRequest:
-    """Approve a withdrawal request (parent approves)"""
+    """出金リクエストを承認（親が承認）"""
     return withdrawal_request_service.approve_withdrawal_request(request_id, transaction_service)
 
 
@@ -145,7 +145,7 @@ def reject_withdrawal_request(
     request_id: str,
     withdrawal_request_service: WithdrawalRequestService,
 ) -> WithdrawalRequest:
-    """Reject a withdrawal request (parent rejects)"""
+    """出金リクエストを却下（親が却下）"""
     return withdrawal_request_service.reject_withdrawal_request(request_id)
 
 
@@ -155,7 +155,7 @@ def update_goal(
     goal_amount: int | None,
     account_service: AccountService,
 ) -> Account:
-    """Update savings goal for an account"""
+    """アカウントの貯金目標を更新"""
     return account_service.update_goal(account_id, goal_name, goal_amount)
 
 
@@ -166,7 +166,7 @@ def update_profile(
     avatar_url: str | None,
     profile_service: ProfileService,
 ) -> Profile:
-    """Update user profile (self or parent can edit child)"""
+    """ユーザープロフィールを更新（本人または親が子を編集可能）"""
     return profile_service.update_profile(user_id, current_user_id, name, avatar_url)
 
 
@@ -175,7 +175,7 @@ def delete_child(
     child_id: str,
     profile_service: ProfileService,
 ) -> bool:
-    """Delete a child profile (parent only)"""
+    """子プロフィールを削除（親のみ実行可能）"""
     return profile_service.delete_child(parent_id, child_id)
 
 
@@ -184,7 +184,7 @@ def get_recurring_deposit(
     current_user_id: str,
     recurring_deposit_service: RecurringDepositService,
 ) -> RecurringDeposit | None:
-    """Get recurring deposit settings for an account (parent only)"""
+    """アカウントの定期入金設定を取得（親のみ）"""
     return recurring_deposit_service.get_recurring_deposit(account_id, current_user_id)
 
 
@@ -196,7 +196,7 @@ def create_or_update_recurring_deposit(
     recurring_deposit_service: RecurringDepositService,
     is_active: bool = True,
 ) -> RecurringDeposit:
-    """Create or update recurring deposit settings (parent only)"""
+    """定期入金設定を作成または更新（親のみ）"""
     return recurring_deposit_service.create_or_update_recurring_deposit(
         account_id, current_user_id, amount, day_of_month, is_active
     )
@@ -207,5 +207,5 @@ def delete_recurring_deposit(
     current_user_id: str,
     recurring_deposit_service: RecurringDepositService,
 ) -> bool:
-    """Delete recurring deposit settings (parent only)"""
+    """定期入金設定を削除（親のみ）"""
     return recurring_deposit_service.delete_recurring_deposit(account_id, current_user_id)
