@@ -3,7 +3,7 @@
 from datetime import datetime
 from uuid import uuid4
 
-from app.models.models import Account, Profile, RecurringDeposit, Transaction, WithdrawalRequest
+from app.domain.entities import Account, Profile, RecurringDeposit, Transaction, WithdrawalRequest
 from app.repositories.interfaces import (
     AccountRepository,
     ProfileRepository,
@@ -28,13 +28,13 @@ class MockProfileRepository(ProfileRepository):
         return [
             profile
             for profile in self.profiles.values()
-            if profile.parent_id and str(profile.parent_id) == parent_id
+            if profile.parent_id and profile.parent_id == parent_id
         ]
 
     def get_by_auth_user_id(self, auth_user_id: str) -> Profile | None:
         """認証ユーザー ID でプロフィールを取得"""
         for profile in self.profiles.values():
-            if profile.auth_user_id and str(profile.auth_user_id) == auth_user_id:
+            if profile.auth_user_id and profile.auth_user_id == auth_user_id:
                 return profile
         return None
 
@@ -47,31 +47,31 @@ class MockProfileRepository(ProfileRepository):
 
     def create_child(self, name: str, parent_id: str, email: str | None = None) -> Profile:
         """認証なしで子プロフィールを作成"""
-        from uuid import UUID
-
         profile = Profile(
-            id=uuid4(),
+            id=str(uuid4()),
             name=name,
             role="child",
-            parent_id=UUID(parent_id),
+            parent_id=parent_id,
             email=email,
             auth_user_id=None,
-            created_at=str(datetime.now()),
-            updated_at=str(datetime.now()),
+            created_at=datetime.now(),
+            updated_at=datetime.now(),
+            avatar_url=None,
         )
-        self.profiles[str(profile.id)] = profile
+        self.profiles[profile.id] = profile
         return profile
 
     def link_to_auth(self, profile_id: str, auth_user_id: str) -> Profile:
         """既存プロフィールを認証アカウントに紐付け"""
-        from uuid import UUID
-
         profile = self.profiles.get(profile_id)
         if not profile:
             raise ValueError(f"Profile {profile_id} not found")
-        profile.auth_user_id = UUID(auth_user_id)
-        profile.updated_at = str(datetime.now())
-        return profile
+        # dataclassは不変ではないので直接書き換えは不可。新しいインスタンスを作成
+        from dataclasses import replace
+
+        updated_profile = replace(profile, auth_user_id=auth_user_id, updated_at=datetime.now())
+        self.profiles[profile_id] = updated_profile
+        return updated_profile
 
     def delete(self, user_id: str) -> bool:
         """プロフィールを削除"""
@@ -93,7 +93,7 @@ class MockAccountRepository(AccountRepository):
 
     def get_by_user_id(self, user_id: str) -> list[Account]:
         """ユーザーの全アカウントを取得"""
-        return [acc for acc in self.accounts.values() if str(acc.user_id) == user_id]
+        return [acc for acc in self.accounts.values() if acc.user_id == user_id]
 
     def get_by_id(self, account_id: str) -> Account | None:
         """ID でアカウントを取得"""
@@ -101,21 +101,29 @@ class MockAccountRepository(AccountRepository):
 
     def update_balance(self, account: Account, new_balance: int) -> None:
         """アカウント残高を更新"""
-        account.balance = new_balance
+        from dataclasses import replace
+
+        updated_account = replace(account, balance=new_balance, updated_at=datetime.now())
+        self.accounts[account.id] = updated_account
+
+    def update(self, account: Account) -> Account:
+        """アカウントを更新"""
+        self.accounts[account.id] = account
+        return account
 
     def create(self, user_id: str, balance: int, currency: str) -> Account:
         """新規アカウントを作成"""
-        from uuid import UUID
-
         account = Account(
-            id=uuid4(),
-            user_id=UUID(user_id),
+            id=str(uuid4()),
+            user_id=user_id,
             balance=balance,
             currency=currency,
-            created_at=str(datetime.now()),
-            updated_at=str(datetime.now()),
+            goal_name=None,
+            goal_amount=None,
+            created_at=datetime.now(),
+            updated_at=datetime.now(),
         )
-        self.accounts[str(account.id)] = account
+        self.accounts[account.id] = account
         return account
 
     def delete(self, account_id: str) -> bool:
@@ -138,7 +146,7 @@ class MockTransactionRepository(TransactionRepository):
 
     def get_by_account_id(self, account_id: str, limit: int = 50) -> list[Transaction]:
         """アカウントのトランザクションを取得"""
-        account_transactions = [t for t in self.transactions if str(t.account_id) == account_id]
+        account_transactions = [t for t in self.transactions if t.account_id == account_id]
         # created_at の降順でソート
         account_transactions.sort(key=lambda t: t.created_at, reverse=True)
         return account_transactions[:limit]
@@ -152,12 +160,10 @@ class MockTransactionRepository(TransactionRepository):
         created_at: datetime,
     ) -> Transaction:
         """新規トランザクションを作成"""
-        from uuid import UUID
-
         transaction = Transaction(
-            id=uuid4(),
-            account_id=UUID(account_id),
-            type=transaction_type,
+            id=str(uuid4()),
+            account_id=account_id,
+            type=transaction_type,  # type: ignore
             amount=amount,
             description=description,
             created_at=created_at,
@@ -191,27 +197,31 @@ class MockWithdrawalRequestRepository(WithdrawalRequestRepository):
         created_at: datetime,
     ) -> WithdrawalRequest:
         """新規出金リクエストを作成"""
-        from uuid import UUID
-
         request = WithdrawalRequest(
-            id=uuid4(),
-            account_id=UUID(account_id),
+            id=str(uuid4()),
+            account_id=account_id,
             amount=amount,
             description=description,
             status="pending",
             created_at=created_at,
             updated_at=created_at,
         )
-        self.requests[str(request.id)] = request
+        self.requests[request.id] = request
         return request
 
     def update_status(
         self, request: WithdrawalRequest, status: str, updated_at: datetime
     ) -> WithdrawalRequest:
         """出金リクエストのステータスを更新"""
-        request.status = status
-        request.updated_at = updated_at
-        return request
+        from dataclasses import replace
+
+        updated_request = replace(
+            request,
+            status=status,  # type: ignore
+            updated_at=updated_at,
+        )
+        self.requests[request.id] = updated_request
+        return updated_request
 
 
 class MockRecurringDepositRepository(RecurringDepositRepository):
@@ -232,11 +242,9 @@ class MockRecurringDepositRepository(RecurringDepositRepository):
         created_at: datetime,
     ) -> RecurringDeposit:
         """新規定期入金設定を作成"""
-        from uuid import UUID
-
         deposit = RecurringDeposit(
-            id=uuid4(),
-            account_id=UUID(account_id),
+            id=str(uuid4()),
+            account_id=account_id,
             amount=amount,
             day_of_month=day_of_month,
             is_active=True,
@@ -255,18 +263,22 @@ class MockRecurringDepositRepository(RecurringDepositRepository):
         updated_at: datetime,
     ) -> RecurringDeposit:
         """定期入金設定を更新"""
+        from dataclasses import replace
+
+        updates: dict = {"updated_at": updated_at}
         if amount is not None:
-            recurring_deposit.amount = amount
+            updates["amount"] = amount
         if day_of_month is not None:
-            recurring_deposit.day_of_month = day_of_month
+            updates["day_of_month"] = day_of_month
         if is_active is not None:
-            recurring_deposit.is_active = is_active
-        recurring_deposit.updated_at = updated_at
-        return recurring_deposit
+            updates["is_active"] = is_active
+        updated_deposit = replace(recurring_deposit, **updates)
+        self.deposits[recurring_deposit.account_id] = updated_deposit
+        return updated_deposit
 
     def delete(self, recurring_deposit: RecurringDeposit) -> bool:
         """定期入金設定を削除"""
-        account_id = str(recurring_deposit.account_id)
+        account_id = recurring_deposit.account_id
         if account_id in self.deposits:
             del self.deposits[account_id]
             return True

@@ -66,6 +66,11 @@ class AccountRepository(ABC):
         pass
 
     @abstractmethod
+    def update(self, account: Account) -> Account:
+        """アカウントを更新"""
+        pass
+
+    @abstractmethod
     def create(self, user_id: str, balance: int, currency: str) -> Account:
         """新規アカウントを作成"""
         pass

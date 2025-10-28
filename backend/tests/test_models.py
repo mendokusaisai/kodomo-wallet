@@ -8,7 +8,7 @@ from datetime import UTC, datetime
 
 from sqlalchemy.orm import Session
 
-from app.models.models import Account, Profile, RecurringDeposit, Transaction
+from app.repositories.sqlalchemy.models import Account, Profile, RecurringDeposit, Transaction
 
 
 class TestProfileModel:
@@ -352,7 +352,7 @@ class TestWithdrawalRequestModel:
         in_memory_db.add_all([parent, child, account])
         in_memory_db.commit()
 
-        from app.models.models import WithdrawalRequest
+        from app.repositories.sqlalchemy.models import WithdrawalRequest
 
         req = WithdrawalRequest(
             id=uuid.uuid4(),
@@ -393,7 +393,7 @@ class TestWithdrawalRequestModel:
         in_memory_db.add_all([child, account])
         in_memory_db.commit()
 
-        from app.models.models import WithdrawalRequest
+        from app.repositories.sqlalchemy.models import WithdrawalRequest
 
         r1 = WithdrawalRequest(
             id=uuid.uuid4(),
@@ -684,7 +684,7 @@ class TestModelRelationships:
         in_memory_db.add_all([child, account])
         in_memory_db.commit()
 
-        from app.models.models import WithdrawalRequest
+        from app.repositories.sqlalchemy.models import WithdrawalRequest
 
         # 複数の出金リクエストを作成
         r1 = WithdrawalRequest(

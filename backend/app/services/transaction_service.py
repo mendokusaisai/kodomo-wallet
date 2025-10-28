@@ -3,7 +3,7 @@ from datetime import UTC, datetime
 from injector import inject
 
 from app.core.exceptions import InvalidAmountException, ResourceNotFoundException
-from app.models.models import Transaction
+from app.domain.entities import Transaction
 from app.repositories.interfaces import AccountRepository, TransactionRepository
 
 
@@ -36,8 +36,8 @@ class TransactionService:
         if not account:
             raise ResourceNotFoundException("Account", account_id)
 
-        # 残高を更新（SQLAlchemy Columnタイプのためtype: ignore）
-        new_balance = int(account.balance) + amount  # type: ignore[arg-type]
+        # 残高を更新
+        new_balance = account.balance + amount
         self.account_repo.update_balance(account, new_balance)
 
         # トランザクションを作成
@@ -65,7 +65,7 @@ class TransactionService:
             raise ResourceNotFoundException("Account", account_id)
 
         # 残高が十分か確認
-        current_balance = int(account.balance)  # type: ignore[arg-type]
+        current_balance = account.balance
         if current_balance < amount:
             raise InvalidAmountException(
                 amount, f"Insufficient balance. Current: {current_balance}, Required: {amount}"

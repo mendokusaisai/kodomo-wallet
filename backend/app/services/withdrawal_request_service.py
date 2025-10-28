@@ -3,7 +3,7 @@ from datetime import UTC, datetime
 from injector import inject
 
 from app.core.exceptions import InvalidAmountException, ResourceNotFoundException
-from app.models.models import WithdrawalRequest
+from app.domain.entities import WithdrawalRequest
 from app.repositories.interfaces import AccountRepository, WithdrawalRequestRepository
 
 
@@ -33,7 +33,7 @@ class WithdrawalRequestService:
             raise ResourceNotFoundException("Account", account_id)
 
         # 残高が十分か確認（情報提供のため）
-        current_balance = int(account.balance)  # type: ignore[arg-type]
+        current_balance = account.balance
         if current_balance < amount:
             raise InvalidAmountException(
                 amount, f"Insufficient balance. Current: {current_balance}, Required: {amount}"
@@ -61,15 +61,15 @@ class WithdrawalRequestService:
             raise ResourceNotFoundException("WithdrawalRequest", request_id)
 
         # 既に処理済みか確認
-        if request.status != "pending":  # type: ignore[comparison-overlap]
+        if request.status != "pending":
             raise InvalidAmountException(0, f"Request already {request.status}")
 
         # 出金トランザクションを作成
         try:
             transaction_service.create_withdraw(
-                account_id=str(request.account_id),
-                amount=int(request.amount),  # type: ignore[arg-type]
-                description=request.description,  # type: ignore[arg-type]
+                account_id=request.account_id,
+                amount=request.amount,
+                description=request.description,
             )
         except Exception as e:
             # 出金が失敗した場合はステータスを拒否に更新
@@ -91,7 +91,7 @@ class WithdrawalRequestService:
             raise ResourceNotFoundException("WithdrawalRequest", request_id)
 
         # 既に処理済みか確認
-        if request.status != "pending":  # type: ignore[comparison-overlap]
+        if request.status != "pending":
             raise InvalidAmountException(0, f"Request already {request.status}")
 
         # リクエストステータスを更新

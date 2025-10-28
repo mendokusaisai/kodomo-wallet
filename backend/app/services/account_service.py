@@ -3,7 +3,7 @@ from datetime import UTC, datetime
 from injector import inject
 
 from app.core.exceptions import InvalidAmountException, ResourceNotFoundException
-from app.models.models import Account
+from app.domain.entities import Account
 from app.repositories.interfaces import AccountRepository, ProfileRepository
 
 
@@ -50,9 +50,15 @@ class AccountService:
         if goal_amount is not None and goal_amount < 0:
             raise InvalidAmountException(goal_amount, "Goal amount must be non-negative")
 
-        # 目標フィールドを更新
-        account.goal_name = goal_name  # type: ignore
-        account.goal_amount = goal_amount  # type: ignore
-        account.updated_at = str(datetime.now(UTC))  # type: ignore
+        # ドメインエンティティを更新
+        from dataclasses import replace
 
-        return account
+        updated_account = replace(
+            account,
+            goal_name=goal_name,
+            goal_amount=goal_amount,
+            updated_at=datetime.now(UTC),
+        )
+
+        # Repositoryを通じて永続化
+        return self.account_repo.update(updated_account)

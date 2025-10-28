@@ -11,7 +11,13 @@ import pytest
 from sqlalchemy.orm import Session
 
 from app.api.graphql import resolvers
-from app.models.models import Account, Profile, RecurringDeposit, Transaction, WithdrawalRequest
+from app.repositories.sqlalchemy.models import (
+    Account,
+    Profile,
+    RecurringDeposit,
+    Transaction,
+    WithdrawalRequest,
+)
 
 
 @pytest.fixture

@@ -8,7 +8,6 @@ from datetime import UTC, datetime
 
 import pytest
 
-from app.models.models import Account, Profile
 from app.repositories.mock_repositories import (
     MockAccountRepository,
     MockProfileRepository,
@@ -23,6 +22,7 @@ from app.repositories.sqlalchemy import (
     SQLAlchemyTransactionRepository,
     SQLAlchemyWithdrawalRequestRepository,
 )
+from app.repositories.sqlalchemy.models import Account, Profile
 
 # ============================================================================
 # Fixtures
@@ -631,7 +631,7 @@ class TestSQLAlchemyWithdrawalRequestRepository:
             created_at=str(datetime.now(UTC)),
             updated_at=str(datetime.now(UTC)),
         )
-        from app.models.models import Account
+        from app.repositories.sqlalchemy.models import Account
 
         account = Account(
             id=uuid.uuid4(),

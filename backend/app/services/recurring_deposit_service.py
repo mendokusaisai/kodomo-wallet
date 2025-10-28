@@ -3,7 +3,7 @@ from datetime import UTC, datetime
 from injector import inject
 
 from app.core.exceptions import InvalidAmountException, ResourceNotFoundException
-from app.models.models import RecurringDeposit
+from app.domain.entities import RecurringDeposit
 from app.repositories.interfaces import (
     AccountRepository,
     ProfileRepository,
@@ -35,18 +35,18 @@ class RecurringDepositService:
             raise ResourceNotFoundException("Account", account_id)
 
         # アカウント所有者のプロフィールを取得
-        profile = self.profile_repo.get_by_id(str(account.user_id))
+        profile = self.profile_repo.get_by_id(account.user_id)
         if not profile:
-            raise ResourceNotFoundException("Profile", str(account.user_id))
+            raise ResourceNotFoundException("Profile", account.user_id)
 
         # 親のみが定期入金設定を閲覧可能
-        if str(profile.role) == "parent":
+        if profile.role == "parent":
             # 親が自分のアカウントを閲覧（一般的ではないが許可）
-            if str(account.user_id) != current_user_id:
+            if account.user_id != current_user_id:
                 raise InvalidAmountException(0, "You don't have permission to view this")
-        elif str(profile.role) == "child":
+        elif profile.role == "child":
             # この子供の親である必要がある
-            if str(profile.parent_id) != current_user_id:
+            if profile.parent_id != current_user_id:
                 raise InvalidAmountException(
                     0, "You can only view recurring deposits for your own children"
                 )
@@ -78,18 +78,18 @@ class RecurringDepositService:
             raise ResourceNotFoundException("Account", account_id)
 
         # アカウント所有者のプロフィールを取得
-        profile = self.profile_repo.get_by_id(str(account.user_id))
+        profile = self.profile_repo.get_by_id(account.user_id)
         if not profile:
-            raise ResourceNotFoundException("Profile", str(account.user_id))
+            raise ResourceNotFoundException("Profile", account.user_id)
 
         # 親のみが定期入金設定を変更可能
-        if str(profile.role) == "parent":
+        if profile.role == "parent":
             # 親が自分のアカウントを変更（一般的ではないが許可）
-            if str(account.user_id) != current_user_id:
+            if account.user_id != current_user_id:
                 raise InvalidAmountException(0, "You don't have permission to modify this")
-        elif str(profile.role) == "child":
+        elif profile.role == "child":
             # この子供の親である必要がある
-            if str(profile.parent_id) != current_user_id:
+            if profile.parent_id != current_user_id:
                 raise InvalidAmountException(
                     0, "You can only modify recurring deposits for your own children"
                 )

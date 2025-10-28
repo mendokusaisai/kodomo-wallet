@@ -11,7 +11,6 @@ import pytest
 from injector import Binder, Injector, Module
 
 from app.core.exceptions import InvalidAmountException, ResourceNotFoundException
-from app.models.models import Account, Profile
 from app.repositories.interfaces import (
     AccountRepository,
     ProfileRepository,
@@ -26,6 +25,7 @@ from app.repositories.mock_repositories import (
     MockTransactionRepository,
     MockWithdrawalRequestRepository,
 )
+from app.repositories.sqlalchemy.models import Account, Profile
 from app.services import (
     AccountService,
     ProfileService,

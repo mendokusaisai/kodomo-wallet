@@ -1,5 +1,5 @@
 """
-アプリケーションのSQLAlchemyモデル
+SQLAlchemy データベースモデル（インフラ層）
 """
 
 import uuid

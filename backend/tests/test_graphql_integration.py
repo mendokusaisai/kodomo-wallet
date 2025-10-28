@@ -10,12 +10,12 @@ import pytest
 from sqlalchemy.orm import Session
 
 from app.api.graphql import resolvers
-from app.models.models import Account, Profile, Transaction
 from app.repositories.sqlalchemy import (
     SQLAlchemyAccountRepository,
     SQLAlchemyProfileRepository,
     SQLAlchemyTransactionRepository,
 )
+from app.repositories.sqlalchemy.models import Account, Profile, Transaction
 from app.services import (
     AccountService,
     ProfileService,
@@ -133,7 +133,7 @@ class TestResolverIntegration:
         result = resolvers.get_profile_by_id(profile_id, profile_service)
 
         assert result is not None
-        assert result.id == parent_profile.id
+        assert result.id == str(parent_profile.id)
         assert result.name == "Parent User"
         assert result.role == "parent"
 
@@ -155,7 +155,7 @@ class TestResolverIntegration:
         results = resolvers.get_accounts_by_user_id(user_id, account_service, profile_service)
 
         assert len(results) == 1
-        assert results[0].id == child_account.id
+        assert results[0].id == str(child_account.id)
         assert results[0].balance == 10000
         assert results[0].currency == "JPY"
 
@@ -193,7 +193,7 @@ class TestResolverIntegration:
         assert results == []
 
     def test_create_deposit(
-        self, in_memory_db, child_account: Account, transaction_service: TransactionService
+        self, in_memory_db: Session, child_account: Account, transaction_service: TransactionService
     ):
         """入金作成のテスト"""
         account_id = str(child_account.id)
@@ -220,7 +220,7 @@ class TestResolverIntegration:
 
     def test_create_deposit_updates_transaction_list(
         self,
-        in_memory_db,
+        in_memory_db: Session,
         child_account: Account,
         transaction: Transaction,
         transaction_service: TransactionService,
@@ -242,7 +242,7 @@ class TestResolverIntegration:
 
     def test_multiple_deposits(
         self,
-        in_memory_db,
+        in_memory_db: Session,
         child_account: Account,
         transaction: Transaction,
         transaction_service: TransactionService,
