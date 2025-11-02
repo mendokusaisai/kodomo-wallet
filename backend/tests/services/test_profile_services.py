@@ -342,3 +342,104 @@ class TestProfileService:
 
         # 検証
         assert "already linked" in exc_info.value.reason
+
+
+class TestFamilyConsistency:
+    """家族関係の一貫性に関するテスト"""
+
+    def test_create_child_creates_relationships_with_all_parents(
+        self,
+        injector_with_mocks: Injector,
+        mock_profile_repository: MockProfileRepository,
+        mock_family_relationship_repository,
+    ):
+        """子ども作成時に全親との関係が作成される"""
+        from datetime import datetime
+
+        # 準備: 親1と親2を作成
+        parent1 = Profile(
+            id=str(uuid.uuid4()),
+            name="Parent 1",
+            role="parent",
+            email="parent1@example.com",
+            auth_user_id=str(uuid.uuid4()),
+            created_at=datetime.now(),
+            updated_at=datetime.now(),
+            avatar_url=None,
+        )
+        parent2 = Profile(
+            id=str(uuid.uuid4()),
+            name="Parent 2",
+            role="parent",
+            email="parent2@example.com",
+            auth_user_id=str(uuid.uuid4()),
+            created_at=datetime.now(),
+            updated_at=datetime.now(),
+            avatar_url=None,
+        )
+        mock_profile_repository.add(parent1)
+        mock_profile_repository.add(parent2)
+
+        # 親1が子Aを作成
+        service = injector_with_mocks.get(ProfileService)
+        child_a = service.create_child(parent1.id, "Child A")
+
+        # 親1と親2が子Aを共有していることを確認
+        mock_family_relationship_repository.add_relationship(parent2.id, child_a.id)
+
+        # 親1が新しい子Bを作成
+        child_b = service.create_child(parent1.id, "Child B")
+
+        # 検証: 親2も子Bにアクセスできる
+        assert mock_family_relationship_repository.has_relationship(parent1.id, child_b.id)
+        assert mock_family_relationship_repository.has_relationship(parent2.id, child_b.id)
+
+    def test_accept_invite_creates_relationships_with_existing_children(
+        self,
+        injector_with_mocks: Injector,
+        mock_profile_repository: MockProfileRepository,
+        mock_family_relationship_repository,
+    ):
+        """招待受理時に既存子どもとの関係が作成される"""
+        from datetime import datetime
+
+        # 準備: 親1と親2を作成
+        parent1 = Profile(
+            id=str(uuid.uuid4()),
+            name="Parent 1",
+            role="parent",
+            email="parent1@example.com",
+            auth_user_id=str(uuid.uuid4()),
+            created_at=datetime.now(),
+            updated_at=datetime.now(),
+            avatar_url=None,
+        )
+        parent2 = Profile(
+            id=str(uuid.uuid4()),
+            name="Parent 2",
+            role="parent",
+            email="parent2@example.com",
+            auth_user_id=str(uuid.uuid4()),
+            created_at=datetime.now(),
+            updated_at=datetime.now(),
+            avatar_url=None,
+        )
+        mock_profile_repository.add(parent1)
+        mock_profile_repository.add(parent2)
+
+        # 親1が子Aを作成
+        service = injector_with_mocks.get(ProfileService)
+        child_a = service.create_child(parent1.id, "Child A")
+
+        # 親1が子Bを作成
+        child_b = service.create_child(parent1.id, "Child B")
+
+        # 親1が親2を招待
+        token = service.create_parent_invite(parent1.id, child_a.id, "parent2@example.com")
+
+        # 親2が招待を受理
+        service.accept_parent_invite(token, parent2.id)
+
+        # 検証: 親2が子Aと子Bの両方にアクセスできる
+        assert mock_family_relationship_repository.has_relationship(parent2.id, child_a.id)
+        assert mock_family_relationship_repository.has_relationship(parent2.id, child_b.id)

@@ -229,3 +229,23 @@ def delete_recurring_deposit(
 ) -> bool:
     """定期入金設定を削除（親のみ）"""
     return recurring_deposit_service.delete_recurring_deposit(account_id, current_user_id)
+
+
+# ===== 親招待（メール/リンク） =====
+def create_parent_invite(
+    inviter_id: str,
+    child_id: str,
+    email: str,
+    profile_service: ProfileService,
+) -> str:
+    """親を子に招待するためのトークン（文字列）を返す"""
+    return profile_service.create_parent_invite(inviter_id, child_id, email)
+
+
+def accept_parent_invite(
+    token: str,
+    current_parent_id: str,
+    profile_service: ProfileService,
+) -> bool:
+    """親招待を受理し、親子関係を作成する"""
+    return profile_service.accept_parent_invite(token, current_parent_id)

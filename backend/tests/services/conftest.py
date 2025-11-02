@@ -9,6 +9,7 @@ from app.domain.entities import Account, Profile
 from app.repositories.interfaces import (
     AccountRepository,
     FamilyRelationshipRepository,
+    ParentInviteRepository,
     ProfileRepository,
     RecurringDepositRepository,
     TransactionRepository,
@@ -17,11 +18,13 @@ from app.repositories.interfaces import (
 from app.repositories.mock_repositories import (
     MockAccountRepository,
     MockFamilyRelationshipRepository,
+    MockParentInviteRepository,
     MockProfileRepository,
     MockRecurringDepositRepository,
     MockTransactionRepository,
     MockWithdrawalRequestRepository,
 )
+from app.services.mailer import ConsoleMailer, Mailer
 
 
 class RepositoryModule(Module):
@@ -57,6 +60,9 @@ class RepositoryModule(Module):
         binder.bind(WithdrawalRequestRepository, to=self.withdrawal_request_repo)
         binder.bind(RecurringDepositRepository, to=self.recurring_deposit_repo)
         binder.bind(FamilyRelationshipRepository, to=self.family_relationship_repo)
+        binder.bind(ParentInviteRepository, to=MockParentInviteRepository())
+        # メール送信はスタブ（コンソール出力）
+        binder.bind(Mailer, to=ConsoleMailer())
 
 
 @pytest.fixture

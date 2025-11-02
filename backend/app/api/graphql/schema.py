@@ -369,6 +369,43 @@ class Mutation:
         except DomainException as e:
             raise Exception(f"Domain error: {e.message}") from e
 
+    @strawberry.mutation
+    def create_parent_invite(
+        self,
+        info: Info,
+        inviter_id: str,
+        child_id: str,
+        email: str,
+    ) -> str:
+        """親を子に招待する（トークンを返す）"""
+        profile_service = info.context["profile_service"]
+        try:
+            return resolvers.create_parent_invite(inviter_id, child_id, email, profile_service)
+        except ResourceNotFoundException as e:
+            raise Exception(f"Resource not found: {e.message}") from e
+        except InvalidAmountException as e:
+            raise Exception(f"Invalid operation: {e.message}") from e
+        except DomainException as e:
+            raise Exception(f"Domain error: {e.message}") from e
+
+    @strawberry.mutation
+    def accept_parent_invite(
+        self,
+        info: Info,
+        token: str,
+        current_parent_id: str,
+    ) -> bool:
+        """親招待を受理して親子関係を作成"""
+        profile_service = info.context["profile_service"]
+        try:
+            return resolvers.accept_parent_invite(token, current_parent_id, profile_service)
+        except ResourceNotFoundException as e:
+            raise Exception(f"Resource not found: {e.message}") from e
+        except InvalidAmountException as e:
+            raise Exception(f"Invalid operation: {e.message}") from e
+        except DomainException as e:
+            raise Exception(f"Domain error: {e.message}") from e
+
 
 # スキーマの生成
 schema = strawberry.Schema(query=Query, mutation=Mutation)

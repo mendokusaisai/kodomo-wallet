@@ -6,6 +6,7 @@ from uuid import uuid4
 from app.domain.entities import (
     Account,
     FamilyRelationship,
+    ParentInvite,
     Profile,
     RecurringDeposit,
     Transaction,
@@ -14,6 +15,7 @@ from app.domain.entities import (
 from app.repositories.interfaces import (
     AccountRepository,
     FamilyRelationshipRepository,
+    ParentInviteRepository,
     ProfileRepository,
     RecurringDepositRepository,
     TransactionRepository,
@@ -55,7 +57,10 @@ class MockProfileRepository(ProfileRepository):
         return None
 
     def create_child(self, name: str, parent_id: str, email: str | None = None) -> Profile:
-        """認証なしで子プロフィールを作成"""
+        """
+        認証なしで子プロフィールを作成
+        作成した親および関連する全親との関係を自動作成
+        """
         profile = Profile(
             id=str(uuid4()),
             name=name,
@@ -67,9 +72,32 @@ class MockProfileRepository(ProfileRepository):
             avatar_url=None,
         )
         self.profiles[profile.id] = profile
-        # 親子関係を追加
+
+        # 作成した親との関係を追加
         self.relationships.add((parent_id, profile.id))
+
+        # 同じ家族の他の親との関係も作成
+        related_parents = self._get_related_parents(parent_id)
+        for other_parent_id in related_parents:
+            self.relationships.add((other_parent_id, profile.id))
+
         return profile
+
+    def _get_related_parents(self, parent_id: str) -> list[str]:
+        """指定した親と同じ子を持つ他の親を取得"""
+        # parent_id が持つ全子どもを取得
+        children = {child for (parent, child) in self.relationships if parent == parent_id}
+
+        if not children:
+            return []
+
+        # それらの子どもを持つ他の親を取得
+        related_parents = set()
+        for parent, child in self.relationships:
+            if child in children and parent != parent_id:
+                related_parents.add(parent)
+
+        return list(related_parents)
 
     def link_to_auth(self, profile_id: str, auth_user_id: str) -> Profile:
         """既存プロフィールを認証アカウントに紐付け"""
@@ -357,3 +385,63 @@ class MockFamilyRelationshipRepository(FamilyRelationshipRepository):
                 created_at=datetime.now(),
             )
         return None
+
+    def get_related_parents(self, parent_id: str) -> list[str]:
+        """指定した親と同じ子を持つ他の親のIDリストを取得"""
+        # parent_id が持つ全子どもを取得
+        children = {child for (parent, child) in self.relationships if parent == parent_id}
+
+        if not children:
+            return []
+
+        # それらの子どもを持つ他の親を取得
+        related_parents = set()
+        for parent, child in self.relationships:
+            if child in children and parent != parent_id:
+                related_parents.add(parent)
+
+        return list(related_parents)
+
+    def create_relationship(self, parent_id: str, child_id: str) -> None:
+        """親子関係を作成(重複は無視)"""
+        # 既に存在していても何もしない(重複を無視)
+        self.relationships.add((parent_id, child_id))
+
+
+class MockParentInviteRepository(ParentInviteRepository):
+    """テスト用の ParentInviteRepository のモック実装"""
+
+    def __init__(self):
+        # token をキーに保持
+        self.invites: dict[str, ParentInvite] = {}
+
+    def create(
+        self,
+        child_id: str,
+        inviter_id: str,
+        email: str,
+        expires_at: datetime,
+    ) -> ParentInvite:
+        token = str(uuid4())
+        invite = ParentInvite(
+            id=str(uuid4()),
+            token=token,
+            child_id=child_id,
+            inviter_id=inviter_id,
+            email=email,
+            status="pending",
+            expires_at=expires_at,
+            created_at=datetime.now(),
+        )
+        self.invites[token] = invite
+        return invite
+
+    def get_by_token(self, token: str) -> ParentInvite | None:
+        return self.invites.get(token)
+
+    def update_status(self, invite: ParentInvite, status: str) -> ParentInvite:
+        from dataclasses import replace
+
+        updated = replace(invite, status=status)
+        self.invites[invite.token] = updated
+        return updated

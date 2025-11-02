@@ -296,3 +296,20 @@ export const DELETE_RECURRING_DEPOSIT = gql`
     )
   }
 `;
+
+// ===== Parent invite (email/link) =====
+export const CREATE_PARENT_INVITE = gql`
+  mutation CreateParentInvite(
+    $inviterId: String!
+    $childId: String!
+    $email: String!
+  ) {
+    createParentInvite(inviterId: $inviterId, childId: $childId, email: $email)
+  }
+`;
+
+export const ACCEPT_PARENT_INVITE = gql`
+  mutation AcceptParentInvite($token: String!, $currentParentId: String!) {
+    acceptParentInvite(token: $token, currentParentId: $currentParentId)
+  }
+`;

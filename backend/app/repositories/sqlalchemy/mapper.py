@@ -100,3 +100,17 @@ def to_domain_family_relationship(
         relationship_type=str(db_relationship.relationship_type),  # type: ignore
         created_at=parse_datetime(db_relationship.created_at),  # type: ignore
     )
+
+
+def to_domain_parent_invite(db_invite: db_models.ParentInvite) -> domain.ParentInvite:
+    """SQLAlchemyのParentInviteモデルをドメインエンティティに変換"""
+    return domain.ParentInvite(
+        id=str(db_invite.id),
+        token=str(db_invite.token),
+        child_id=str(db_invite.child_id),
+        inviter_id=str(db_invite.inviter_id),
+        email=str(db_invite.email),
+        status=db_invite.status,  # type: ignore
+        expires_at=parse_datetime(db_invite.expires_at),  # type: ignore
+        created_at=parse_datetime(db_invite.created_at),  # type: ignore
+    )

@@ -1,15 +1,18 @@
 from dataclasses import replace
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 from injector import inject
 
+from app.core.config import settings
 from app.core.exceptions import InvalidAmountException, ResourceNotFoundException
 from app.domain.entities import Profile
 from app.repositories.interfaces import (
     AccountRepository,
     FamilyRelationshipRepository,
+    ParentInviteRepository,
     ProfileRepository,
 )
+from app.services.mailer import Mailer
 
 
 class ProfileService:
@@ -21,10 +24,14 @@ class ProfileService:
         profile_repo: ProfileRepository,
         account_repo: AccountRepository,
         family_relationship_repo: FamilyRelationshipRepository,
+        parent_invite_repo: ParentInviteRepository,
+        mailer: Mailer,
     ):
         self.profile_repo = profile_repo
         self.account_repo = account_repo
         self.family_relationship_repo = family_relationship_repo
+        self.parent_invite_repo = parent_invite_repo
+        self.mailer = mailer
 
     def get_profile(self, user_id: str) -> Profile | None:
         """IDでユーザープロフィールを取得"""
@@ -222,3 +229,69 @@ class ProfileService:
             return child
         except httpx.HTTPError as e:
             raise InvalidAmountException(0, f"Failed to send invitation: {str(e)}") from e
+
+    # ===== 親招待（メール/リンク） =====
+    def create_parent_invite(self, inviter_id: str, child_id: str, email: str) -> str:
+        """親を子に招待する（トークンを発行して返す）"""
+        # 認可: inviter が child の親であること
+        inviter = self.profile_repo.get_by_id(inviter_id)
+        if not inviter or inviter.role != "parent":
+            raise ResourceNotFoundException("Parent", inviter_id)
+
+        child = self.profile_repo.get_by_id(child_id)
+        if not child or child.role != "child":
+            raise ResourceNotFoundException("Child", child_id)
+
+        if not self.family_relationship_repo.has_relationship(inviter_id, child_id):
+            raise InvalidAmountException(0, "Not authorized to invite for this child")
+
+        expires_at = datetime.now(UTC) + timedelta(days=7)
+        invite = self.parent_invite_repo.create(child_id, inviter_id, email, expires_at)
+
+        # 受け入れリンクを作成してスタブメール送信
+        accept_link = f"{settings.FRONTEND_ORIGIN}/accept-invite?token={invite.token}"
+        self.mailer.send_parent_invite(
+            email,
+            accept_link,
+            inviter_name=inviter.name,
+            child_name=child.name,
+        )
+        return invite.token
+
+    def accept_parent_invite(self, token: str, current_parent_id: str) -> bool:
+        """
+        親が招待リンクを受け入れ、親子関係を追加
+        招待者の全既存子どもとの関係も自動作成
+        """
+        invite = self.parent_invite_repo.get_by_token(token)
+        if not invite or invite.status != "pending":
+            raise ResourceNotFoundException("ParentInvite", token)
+
+        # 期限チェック
+        now = datetime.now(UTC)
+        if invite.expires_at < now:
+            self.parent_invite_repo.update_status(invite, "expired")
+            raise InvalidAmountException(0, "Invitation expired")
+
+        # 受け入れる親が有効か
+        parent = self.profile_repo.get_by_id(current_parent_id)
+        if not parent or parent.role != "parent":
+            raise ResourceNotFoundException("Parent", current_parent_id)
+
+        # 招待された子どもとの関係を作成
+        if not self.family_relationship_repo.has_relationship(current_parent_id, invite.child_id):
+            self.family_relationship_repo.add_relationship(current_parent_id, invite.child_id)
+
+        # 招待者の全子どもを取得
+        inviter_children = self.profile_repo.get_children(invite.inviter_id)
+
+        # 招待された子ども以外の全子どもとの関係も作成
+        for child in inviter_children:
+            if child.id != invite.child_id:
+                self.family_relationship_repo.create_relationship(
+                    parent_id=current_parent_id,
+                    child_id=child.id
+                )
+
+        self.parent_invite_repo.update_status(invite, "accepted")
+        return True

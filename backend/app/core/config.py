@@ -94,12 +94,26 @@ class AppSettings:
         return cls(environment=env)
 
 
+@dataclass(frozen=True)
+class FrontendSettings:
+    """フロントエンド関連の設定"""
+
+    origin: str
+
+    @classmethod
+    def from_env(cls) -> FrontendSettings:
+        """環境変数からフロント設定を読み込む"""
+        origin = os.getenv("FRONTEND_ORIGIN", "http://localhost:3000")
+        return cls(origin=origin)
+
+
 # シングルトンインスタンス - モジュールインポート時に1度だけ読み込まれる
 database_settings = DatabaseSettings.from_env()
 cors_settings = CORSSettings.from_env()
 security_settings = SecuritySettings.from_env()
 supabase_settings = SupabaseSettings.from_env()
 app_settings = AppSettings.from_env()
+frontend_settings = FrontendSettings.from_env()
 
 
 # 後方互換性のためのファサード - 段階的な移行用
@@ -144,6 +158,10 @@ class Settings:
     @property
     def CORS_ORIGINS(self) -> list[str]:
         return cors_settings.cors_origins
+
+    @property
+    def FRONTEND_ORIGIN(self) -> str:
+        return frontend_settings.origin
 
 
 settings = Settings()

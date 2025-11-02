@@ -57,13 +57,16 @@ class SQLAlchemyProfileRepository(ProfileRepository):
         return to_domain_profile(db_profile) if db_profile else None
 
     def create_child(self, name: str, parent_id: str, email: str | None = None) -> Profile:
-        """認証なしで子プロフィールを作成"""
+        """
+        認証なしで子プロフィールを作成
+        作成した親および関連する全親との関係を自動作成
+        """
         from datetime import UTC
 
         db_profile = db_models.Profile(
             id=uuid.uuid4(),
             auth_user_id=None,  # 認証なし
-            email=email,  # メールアドレス（任意）
+            email=email,  # メールアドレス(任意)
             name=name,
             role="child",
             created_at=str(datetime.now(UTC)),
@@ -71,17 +74,60 @@ class SQLAlchemyProfileRepository(ProfileRepository):
         )
         self.db.add(db_profile)
         self.db.flush()
-        # 親子関係を作成
+
+        # 作成した親との関係を作成
+        self._create_family_relationship(parent_id, str(db_profile.id))
+
+        # 同じ家族の他の親との関係も作成
+        related_parents = self._get_related_parents(parent_id)
+        for other_parent_id in related_parents:
+            self._create_family_relationship(other_parent_id, str(db_profile.id))
+
+        self.db.refresh(db_profile)
+        return to_domain_profile(db_profile)
+
+    def _get_related_parents(self, parent_id: str) -> list[str]:
+        """指定した親と同じ子を持つ他の親を取得"""
+        children = (
+            self.db.query(db_models.FamilyRelationship.child_id)
+            .filter(db_models.FamilyRelationship.parent_id == uuid.UUID(parent_id))
+            .all()
+        )
+
+        if not children:
+            return []
+
+        child_ids = [c.child_id for c in children]
+
+        other_parents = (
+            self.db.query(db_models.FamilyRelationship.parent_id)
+            .filter(db_models.FamilyRelationship.child_id.in_(child_ids))
+            .filter(db_models.FamilyRelationship.parent_id != uuid.UUID(parent_id))
+            .distinct()
+            .all()
+        )
+
+        return [str(p.parent_id) for p in other_parents]
+
+    def _create_family_relationship(self, parent_id: str, child_id: str) -> None:
+        """親子関係を作成(重複は無視)"""
+        from datetime import UTC
+
+        from sqlalchemy.exc import IntegrityError
+
         relationship = db_models.FamilyRelationship(
             parent_id=uuid.UUID(parent_id),
-            child_id=db_profile.id,
+            child_id=uuid.UUID(child_id),
             relationship_type="parent",
             created_at=str(datetime.now(UTC)),
         )
         self.db.add(relationship)
-        self.db.flush()
-        self.db.refresh(db_profile)
-        return to_domain_profile(db_profile)
+
+        try:
+            self.db.flush()
+        except IntegrityError:
+            # UNIQUE制約違反 = 既に関係が存在 → 無視
+            self.db.rollback()
 
     def link_to_auth(self, profile_id: str, auth_user_id: str) -> Profile:
         """既存プロフィールを認証アカウントに紐付け"""

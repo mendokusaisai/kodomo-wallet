@@ -170,3 +170,22 @@ class RecurringDeposit(Base):
             "day_of_month >= 1 AND day_of_month <= 31", name="check_day_of_month_range"
         ),
     )
+
+
+class ParentInvite(Base):
+    """親招待モデル（メール/リンクによる親追加のための招待）"""
+
+    __tablename__ = "parent_invites"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    token = Column(UUID(as_uuid=True), nullable=False, unique=True, default=uuid.uuid4)
+    child_id = Column(
+        UUID(as_uuid=True), ForeignKey("profiles.id", ondelete="CASCADE"), nullable=False
+    )
+    inviter_id = Column(
+        UUID(as_uuid=True), ForeignKey("profiles.id", ondelete="CASCADE"), nullable=False
+    )
+    email = Column(Text, nullable=False)
+    status = Column(Text, nullable=False, default="pending")  # pending/accepted/expired/cancelled
+    expires_at = Column(Text, nullable=False)
+    created_at = Column(Text, nullable=False)

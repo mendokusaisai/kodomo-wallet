@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session
 from app.repositories.interfaces import (
     AccountRepository,
     FamilyRelationshipRepository,
+    ParentInviteRepository,
     ProfileRepository,
     RecurringDepositRepository,
     TransactionRepository,
@@ -22,11 +23,13 @@ from app.repositories.interfaces import (
 from app.repositories.sqlalchemy import (
     SQLAlchemyAccountRepository,
     SQLAlchemyFamilyRelationshipRepository,
+    SQLAlchemyParentInviteRepository,
     SQLAlchemyProfileRepository,
     SQLAlchemyRecurringDepositRepository,
     SQLAlchemyTransactionRepository,
     SQLAlchemyWithdrawalRequestRepository,
 )
+from app.services.mailer import ConsoleMailer, Mailer
 
 
 class RepositoryModule(Module):
@@ -71,6 +74,18 @@ class RepositoryModule(Module):
         binder.bind(
             FamilyRelationshipRepository,
             to=SQLAlchemyFamilyRelationshipRepository(self.db),
+            scope=singleton,
+        )
+        binder.bind(
+            ParentInviteRepository,
+            to=SQLAlchemyParentInviteRepository(self.db),
+            scope=singleton,
+        )
+
+        # Mailer（スタブ実装）
+        binder.bind(
+            Mailer,
+            to=ConsoleMailer(),
             scope=singleton,
         )
 
