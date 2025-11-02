@@ -1,5 +1,4 @@
 "use client";
-/* eslint-disable react-hooks/exhaustive-deps */
 
 import { useMutation } from "@apollo/client/react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -20,7 +19,6 @@ function AcceptInviteInner() {
 	const [acceptInvite] =
 		useMutation<AcceptParentInviteResponse>(ACCEPT_PARENT_INVITE);
 
-	// eslint-disable-next-line react-hooks/exhaustive-deps
 	useEffect(() => {
 		const run = async () => {
 			const token = searchParams.get("token");
@@ -63,8 +61,7 @@ function AcceptInviteInner() {
 			}
 		};
 		run();
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, []);
+	}, [searchParams, router, acceptInvite]);
 
 	return (
 		<div className="min-h-screen flex items-center justify-center bg-gray-50 p-6">
