@@ -1,7 +1,7 @@
 "use client";
 
-import type { ReactNode } from "react";
-import { useState } from "react";
+import type { ReactElement, ReactNode } from "react";
+import { cloneElement, isValidElement, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -11,6 +11,11 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
+
+interface TriggerProps {
+	onClick?: (e: React.MouseEvent) => void;
+	[key: string]: unknown;
+}
 
 interface ConfirmDialogProps {
 	trigger: ReactNode;
@@ -46,11 +51,25 @@ export function ConfirmDialog({
 		}
 	};
 
+	// triggerにonClickハンドラを追加
+	const triggerElement = isValidElement(trigger)
+		? cloneElement(trigger as ReactElement<TriggerProps>, {
+				onClick: (e: React.MouseEvent) => {
+					e.preventDefault();
+					// 元のonClickがあれば実行
+					const originalOnClick = (trigger as ReactElement<TriggerProps>).props
+						.onClick;
+					if (originalOnClick) {
+						originalOnClick(e);
+					}
+					setOpen(true);
+				},
+			})
+		: trigger;
+
 	return (
 		<Dialog open={open} onOpenChange={setOpen}>
-			<button type="button" onClick={() => setOpen(true)} className="contents">
-				{trigger}
-			</button>
+			{triggerElement}
 			<DialogContent>
 				<DialogHeader>
 					<DialogTitle>{title}</DialogTitle>
