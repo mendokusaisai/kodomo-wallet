@@ -4,7 +4,7 @@ from datetime import UTC, datetime
 from sqlalchemy.orm import Session
 
 from app.repositories.sqlalchemy import SQLAlchemyWithdrawalRequestRepository
-from app.repositories.sqlalchemy.models import Account, Profile
+from app.repositories.sqlalchemy.models import Account, FamilyRelationship, Profile
 
 
 # ============================================================================
@@ -71,7 +71,6 @@ class TestSQLAlchemyWithdrawalRequestRepository:
             name="Parent",
             email=None,
             role="parent",
-            parent_id=None,
             auth_user_id=None,
             avatar_url=None,
             created_at=str(datetime.now(UTC)),
@@ -82,7 +81,6 @@ class TestSQLAlchemyWithdrawalRequestRepository:
             name="Child",
             email=None,
             role="child",
-            parent_id=parent.id,
             auth_user_id=None,
             avatar_url=None,
             created_at=str(datetime.now(UTC)),
@@ -99,7 +97,14 @@ class TestSQLAlchemyWithdrawalRequestRepository:
             created_at=str(datetime.now(UTC)),
             updated_at=str(datetime.now(UTC)),
         )
-        in_memory_db.add_all([parent, child, account])
+        fr = FamilyRelationship(
+            id=uuid.uuid4(),
+            parent_id=parent.id,
+            child_id=child.id,
+            relationship_type="parent",
+            created_at=str(datetime.now(UTC)),
+        )
+        in_memory_db.add_all([parent, child, account, fr])
         in_memory_db.commit()
 
         repo = SQLAlchemyWithdrawalRequestRepository(in_memory_db)

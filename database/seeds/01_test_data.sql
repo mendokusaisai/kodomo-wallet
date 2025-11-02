@@ -36,14 +36,13 @@ BEGIN
   -- ========================================
 
   -- 子ども1: 田中太郎
-  INSERT INTO profiles (id, auth_user_id, email, name, role, parent_id, created_at, updated_at)
+  INSERT INTO profiles (id, auth_user_id, email, name, role, created_at, updated_at)
   VALUES (
     gen_random_uuid(),
     NULL,  -- 認証なし
     'test-taro@example.com',  -- 将来の招待用メールアドレス
     '田中太郎',
     'child',
-    parent_profile_id,
     NOW(),
     NOW()
   )
@@ -51,14 +50,13 @@ BEGIN
   RETURNING id INTO child1_profile_id;
 
   -- 子ども2: 田中花子
-  INSERT INTO profiles (id, auth_user_id, email, name, role, parent_id, created_at, updated_at)
+  INSERT INTO profiles (id, auth_user_id, email, name, role, created_at, updated_at)
   VALUES (
     gen_random_uuid(),
     NULL,  -- 認証なし
     'test-hanako@example.com',  -- 将来の招待用メールアドレス
     '田中花子',
     'child',
-    parent_profile_id,
     NOW(),
     NOW()
   )
@@ -114,6 +112,16 @@ BEGIN
   RAISE NOTICE '子ども2 アカウント ID: %', child2_account_id;
 
   -- ========================================
+  -- 4. 親子関係を作成
+  -- ========================================
+
+  INSERT INTO family_relationships (parent_id, child_id, relationship_type, created_at)
+  VALUES
+    (parent_profile_id, child1_profile_id, 'parent', NOW()),
+    (parent_profile_id, child2_profile_id, 'parent', NOW())
+  ON CONFLICT (parent_id, child_id) DO NOTHING;
+
+  -- ========================================
   -- 4. トランザクション履歴を作成
   -- ========================================
 
@@ -144,7 +152,7 @@ END $$;
 -- 確認クエリ
 -- ========================================
 
--- プロフィール確認
+-- プロフィール確認（親子関係）
 SELECT
   p.id,
   p.auth_user_id,
@@ -157,7 +165,8 @@ SELECT
   END as auth_status,
   pp.name as parent_name
 FROM profiles p
-LEFT JOIN profiles pp ON p.parent_id = pp.id
+LEFT JOIN family_relationships fr ON fr.child_id = p.id
+LEFT JOIN profiles pp ON fr.parent_id = pp.id
 ORDER BY p.role DESC, p.created_at;
 
 -- アカウント確認

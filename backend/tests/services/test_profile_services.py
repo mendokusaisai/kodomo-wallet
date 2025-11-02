@@ -82,14 +82,15 @@ class TestProfileService:
         self,
         injector_with_mocks: Injector,
         mock_profile_repository: MockProfileRepository,
+        mock_family_relationship_repository,
         sample_profile: Profile,
         sample_child: Profile,
     ):
         """親の子供リスト取得の成功をテスト"""
         # 準備: 親と子をリポジトリに追加
         mock_profile_repository.add(sample_profile)
-        sample_child.parent_id = sample_profile.id
         mock_profile_repository.add(sample_child)
+        mock_family_relationship_repository.add_relationship(sample_profile.id, sample_child.id)
 
         # テスト
         service = injector_with_mocks.get(ProfileService)
@@ -98,7 +99,6 @@ class TestProfileService:
         # 検証
         assert len(children) == 1
         assert children[0].id == sample_child.id
-        assert children[0].parent_id == sample_profile.id
 
     def test_get_children_empty(self, injector_with_mocks: Injector, sample_profile: Profile):
         """子供がいない親の子供リスト取得をテスト"""
@@ -148,6 +148,7 @@ class TestProfileService:
         injector_with_mocks: Injector,
         mock_profile_repository: MockProfileRepository,
         mock_account_repository,
+        mock_family_relationship_repository,
         sample_profile: Profile,
     ):
         """子供プロフィール作成の成功をテスト"""
@@ -166,7 +167,8 @@ class TestProfileService:
         # 検証
         assert child.name == "新しい子供"
         assert child.role == "child"
-        assert child.parent_id == sample_profile.id
+        # 親子関係が作成されていること
+        assert mock_family_relationship_repository.has_relationship(sample_profile.id, child.id)
 
         # アカウントも作成されたことを確認
         accounts = mock_account_repository.get_by_user_id(child.id)
@@ -219,6 +221,7 @@ class TestProfileService:
         injector_with_mocks: Injector,
         mock_profile_repository: MockProfileRepository,
         mock_account_repository: MockAccountRepository,
+        mock_family_relationship_repository,
         sample_profile: Profile,
         sample_child: Profile,
     ):
@@ -232,9 +235,9 @@ class TestProfileService:
         sample_profile.role = "parent"
         mock_profile_repository.add(sample_profile)
 
-        sample_child.parent_id = sample_profile.id
         sample_child.role = "child"
         mock_profile_repository.add(sample_child)
+        mock_family_relationship_repository.add_relationship(sample_profile.id, sample_child.id)
 
         child_account = Account(
             id=str(uuid.uuid4()),
@@ -261,6 +264,7 @@ class TestProfileService:
         self,
         injector_with_mocks: Injector,
         mock_profile_repository: MockProfileRepository,
+        mock_family_relationship_repository,
         sample_profile: Profile,
         sample_child: Profile,
     ):
@@ -273,9 +277,11 @@ class TestProfileService:
         sample_profile.role = "parent"
         mock_profile_repository.add(sample_profile)
 
-        sample_child.parent_id = str(uuid.uuid4())  # 異なる親
         sample_child.role = "child"
         mock_profile_repository.add(sample_child)
+        # 異なる親と紐付け
+        other_parent_id = str(uuid.uuid4())
+        mock_family_relationship_repository.add_relationship(other_parent_id, sample_child.id)
 
         # テスト
         service = injector_with_mocks.get(ProfileService)

@@ -8,6 +8,7 @@ from injector import Binder, Injector, Module
 from app.domain.entities import Account, Profile
 from app.repositories.interfaces import (
     AccountRepository,
+    FamilyRelationshipRepository,
     ProfileRepository,
     RecurringDepositRepository,
     TransactionRepository,
@@ -15,6 +16,7 @@ from app.repositories.interfaces import (
 )
 from app.repositories.mock_repositories import (
     MockAccountRepository,
+    MockFamilyRelationshipRepository,
     MockProfileRepository,
     MockRecurringDepositRepository,
     MockTransactionRepository,
@@ -32,12 +34,20 @@ class RepositoryModule(Module):
         transaction_repo: MockTransactionRepository,
         withdrawal_request_repo: MockWithdrawalRequestRepository | None = None,
         recurring_deposit_repo: MockRecurringDepositRepository | None = None,
+        family_relationship_repo: MockFamilyRelationshipRepository | None = None,
     ):
         self.profile_repo = profile_repo
         self.account_repo = account_repo
         self.transaction_repo = transaction_repo
         self.withdrawal_request_repo = withdrawal_request_repo or MockWithdrawalRequestRepository()
         self.recurring_deposit_repo = recurring_deposit_repo or MockRecurringDepositRepository()
+        self.family_relationship_repo = (
+            family_relationship_repo
+            or MockFamilyRelationshipRepository(
+                relationships=getattr(profile_repo, "relationships", set()),
+                profiles=getattr(profile_repo, "profiles", {}),
+            )
+        )
 
     def configure(self, binder: Binder) -> None:
         """モックリポジトリをバインド"""
@@ -46,6 +56,7 @@ class RepositoryModule(Module):
         binder.bind(TransactionRepository, to=self.transaction_repo)
         binder.bind(WithdrawalRequestRepository, to=self.withdrawal_request_repo)
         binder.bind(RecurringDepositRepository, to=self.recurring_deposit_repo)
+        binder.bind(FamilyRelationshipRepository, to=self.family_relationship_repo)
 
 
 @pytest.fixture
@@ -57,7 +68,6 @@ def sample_profile() -> Profile:
         email="test@example.com",
         name="Test User",
         role="parent",
-        parent_id=None,
         avatar_url=None,
         created_at=datetime.now(UTC),
         updated_at=datetime.now(UTC),
@@ -73,7 +83,6 @@ def sample_child(sample_profile: Profile) -> Profile:
         email=None,
         name="Test Child",
         role="child",
-        parent_id=sample_profile.id,
         avatar_url=None,
         created_at=datetime.now(UTC),
         updated_at=datetime.now(UTC),
@@ -126,12 +135,24 @@ def mock_recurring_deposit_repository() -> MockRecurringDepositRepository:
 
 
 @pytest.fixture
+def mock_family_relationship_repository(
+    mock_profile_repository: MockProfileRepository,
+) -> MockFamilyRelationshipRepository:
+    """モックの家族関係リポジトリを作成（プロフィールとストレージ共有）"""
+    return MockFamilyRelationshipRepository(
+        relationships=mock_profile_repository.relationships,
+        profiles=mock_profile_repository.profiles,
+    )
+
+
+@pytest.fixture
 def injector_with_mocks(
     mock_profile_repository,
     mock_account_repository,
     mock_transaction_repository,
     mock_withdrawal_request_repository,
     mock_recurring_deposit_repository,
+    mock_family_relationship_repository,
 ) -> Injector:
     """モックリポジトリを持つインジェクターを作成"""
     return Injector(
@@ -142,6 +163,7 @@ def injector_with_mocks(
                 mock_transaction_repository,
                 mock_withdrawal_request_repository,
                 mock_recurring_deposit_repository,
+                mock_family_relationship_repository,
             )
         ]
     )

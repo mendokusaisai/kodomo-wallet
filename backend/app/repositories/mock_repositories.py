@@ -3,9 +3,17 @@
 from datetime import datetime
 from uuid import uuid4
 
-from app.domain.entities import Account, Profile, RecurringDeposit, Transaction, WithdrawalRequest
+from app.domain.entities import (
+    Account,
+    FamilyRelationship,
+    Profile,
+    RecurringDeposit,
+    Transaction,
+    WithdrawalRequest,
+)
 from app.repositories.interfaces import (
     AccountRepository,
+    FamilyRelationshipRepository,
     ProfileRepository,
     RecurringDepositRepository,
     TransactionRepository,
@@ -16,8 +24,12 @@ from app.repositories.interfaces import (
 class MockProfileRepository(ProfileRepository):
     """テスト用の ProfileRepository のモック実装"""
 
-    def __init__(self):
+    def __init__(self, relationships: set[tuple[str, str]] | None = None):
         self.profiles: dict[str, Profile] = {}
+        # 親子関係を (parent_id, child_id) のタプルで保持
+        self.relationships: set[tuple[str, str]] = (
+            relationships if relationships is not None else set()
+        )
 
     def get_by_id(self, user_id: str) -> Profile | None:
         """ID でプロフィールを取得"""
@@ -25,11 +37,8 @@ class MockProfileRepository(ProfileRepository):
 
     def get_children(self, parent_id: str) -> list[Profile]:
         """親の全ての子プロフィールを取得"""
-        return [
-            profile
-            for profile in self.profiles.values()
-            if profile.parent_id and profile.parent_id == parent_id
-        ]
+        child_ids = {child for (parent, child) in self.relationships if parent == parent_id}
+        return [p for pid, p in self.profiles.items() if pid in child_ids]
 
     def get_by_auth_user_id(self, auth_user_id: str) -> Profile | None:
         """認証ユーザー ID でプロフィールを取得"""
@@ -51,7 +60,6 @@ class MockProfileRepository(ProfileRepository):
             id=str(uuid4()),
             name=name,
             role="child",
-            parent_id=parent_id,
             email=email,
             auth_user_id=None,
             created_at=datetime.now(),
@@ -59,6 +67,8 @@ class MockProfileRepository(ProfileRepository):
             avatar_url=None,
         )
         self.profiles[profile.id] = profile
+        # 親子関係を追加
+        self.relationships.add((parent_id, profile.id))
         return profile
 
     def link_to_auth(self, profile_id: str, auth_user_id: str) -> Profile:
@@ -83,6 +93,13 @@ class MockProfileRepository(ProfileRepository):
     def add(self, profile: Profile) -> None:
         """テスト用にプロフィールを追加"""
         self.profiles[str(profile.id)] = profile
+
+    # テスト支援: 親子関係の追加/削除
+    def add_relationship(self, parent_id: str, child_id: str) -> None:
+        self.relationships.add((parent_id, child_id))
+
+    def remove_relationship(self, parent_id: str, child_id: str) -> None:
+        self.relationships.discard((parent_id, child_id))
 
 
 class MockAccountRepository(AccountRepository):
@@ -283,3 +300,60 @@ class MockRecurringDepositRepository(RecurringDepositRepository):
             del self.deposits[account_id]
             return True
         return False
+
+
+class MockFamilyRelationshipRepository(FamilyRelationshipRepository):
+    """テスト用の FamilyRelationshipRepository のモック実装"""
+
+    def __init__(
+        self,
+        relationships: set[tuple[str, str]] | None = None,
+        profiles: dict[str, Profile] | None = None,
+    ):
+        # 親子関係 (parent_id, child_id)
+        self.relationships: set[tuple[str, str]] = (
+            relationships if relationships is not None else set()
+        )
+        # プロフィール参照（親/子の取得に使用）
+        self.profiles = profiles if profiles is not None else {}
+
+    def get_parents(self, child_id: str) -> list[Profile]:
+        parent_ids = {parent for (parent, child) in self.relationships if child == child_id}
+        return [p for pid, p in self.profiles.items() if pid in parent_ids]
+
+    def get_children(self, parent_id: str) -> list[Profile]:
+        child_ids = {child for (parent, child) in self.relationships if parent == parent_id}
+        return [p for pid, p in self.profiles.items() if pid in child_ids]
+
+    def has_relationship(self, parent_id: str, child_id: str) -> bool:
+        return (parent_id, child_id) in self.relationships
+
+    def add_relationship(
+        self, parent_id: str, child_id: str, relationship_type: str = "parent"
+    ) -> FamilyRelationship:
+        # relationship_type はモックでは未使用
+        self.relationships.add((parent_id, child_id))
+        return FamilyRelationship(
+            id=str(uuid4()),
+            parent_id=parent_id,
+            child_id=child_id,
+            relationship_type="parent",
+            created_at=datetime.now(),
+        )
+
+    def remove_relationship(self, parent_id: str, child_id: str) -> bool:
+        if (parent_id, child_id) in self.relationships:
+            self.relationships.remove((parent_id, child_id))
+            return True
+        return False
+
+    def get_relationship(self, parent_id: str, child_id: str) -> FamilyRelationship | None:
+        if (parent_id, child_id) in self.relationships:
+            return FamilyRelationship(
+                id=str(uuid4()),
+                parent_id=parent_id,
+                child_id=child_id,
+                relationship_type="parent",
+                created_at=datetime.now(),
+            )
+        return None

@@ -35,8 +35,8 @@ class TestRecurringDepositService:
         """親が子供の定期入金設定を取得できることをテスト"""
         # プロフィールとアカウントを準備
         mock_profile_repository.add(sample_profile)
-        sample_child.parent_id = sample_profile.id
         mock_profile_repository.add(sample_child)
+        mock_profile_repository.add_relationship(sample_profile.id, sample_child.id)
         sample_account.user_id = sample_child.id
         mock_account_repository.add(sample_account)
 
@@ -106,8 +106,8 @@ class TestRecurringDepositService:
         """新しい定期入金設定を作成できることをテスト"""
         # プロフィールとアカウントを準備
         mock_profile_repository.add(sample_profile)
-        sample_child.parent_id = sample_profile.id
         mock_profile_repository.add(sample_child)
+        mock_profile_repository.add_relationship(sample_profile.id, sample_child.id)
         sample_account.user_id = sample_child.id
         mock_account_repository.add(sample_account)
 
@@ -151,8 +151,8 @@ class TestRecurringDepositService:
         """既存の定期入金設定を更新できることをテスト"""
         # プロフィールとアカウントを準備
         mock_profile_repository.add(sample_profile)
-        sample_child.parent_id = sample_profile.id
         mock_profile_repository.add(sample_child)
+        mock_profile_repository.add_relationship(sample_profile.id, sample_child.id)
         sample_account.user_id = sample_child.id
         mock_account_repository.add(sample_account)
 
@@ -205,8 +205,8 @@ class TestRecurringDepositService:
         """不正な金額で定期入金設定を作成しようとするとエラーになることをテスト"""
         # プロフィールとアカウントを準備
         mock_profile_repository.add(sample_profile)
-        sample_child.parent_id = sample_profile.id
         mock_profile_repository.add(sample_child)
+        mock_profile_repository.add_relationship(sample_profile.id, sample_child.id)
         sample_account.user_id = sample_child.id
         mock_account_repository.add(sample_account)
 
@@ -256,8 +256,8 @@ class TestRecurringDepositService:
         """不正な日付で定期入金設定を作成しようとするとエラーになることをテスト"""
         # プロフィールとアカウントを準備
         mock_profile_repository.add(sample_profile)
-        sample_child.parent_id = sample_profile.id
         mock_profile_repository.add(sample_child)
+        mock_profile_repository.add_relationship(sample_profile.id, sample_child.id)
         sample_account.user_id = sample_child.id
         mock_account_repository.add(sample_account)
 
@@ -307,8 +307,8 @@ class TestRecurringDepositService:
         """定期入金設定を削除できることをテスト"""
         # プロフィールとアカウントを準備
         mock_profile_repository.add(sample_profile)
-        sample_child.parent_id = sample_profile.id
         mock_profile_repository.add(sample_child)
+        mock_profile_repository.add_relationship(sample_profile.id, sample_child.id)
         sample_account.user_id = sample_child.id
         mock_account_repository.add(sample_account)
 
@@ -357,8 +357,8 @@ class TestRecurringDepositService:
         """存在しない定期入金設定を削除しようとするとエラーになることをテスト"""
         # プロフィールとアカウントを準備
         mock_profile_repository.add(sample_profile)
-        sample_child.parent_id = sample_profile.id
         mock_profile_repository.add(sample_child)
+        mock_profile_repository.add_relationship(sample_profile.id, sample_child.id)
         sample_account.user_id = sample_child.id
         mock_account_repository.add(sample_account)
 

@@ -6,6 +6,7 @@ from app.core.exceptions import InvalidAmountException, ResourceNotFoundExceptio
 from app.domain.entities import RecurringDeposit
 from app.repositories.interfaces import (
     AccountRepository,
+    FamilyRelationshipRepository,
     ProfileRepository,
     RecurringDepositRepository,
 )
@@ -20,10 +21,12 @@ class RecurringDepositService:
         recurring_deposit_repo: RecurringDepositRepository,
         account_repo: AccountRepository,
         profile_repo: ProfileRepository,
+        family_relationship_repo: FamilyRelationshipRepository,
     ):
         self.recurring_deposit_repo = recurring_deposit_repo
         self.account_repo = account_repo
         self.profile_repo = profile_repo
+        self.family_relationship_repo = family_relationship_repo
 
     def get_recurring_deposit(
         self, account_id: str, current_user_id: str
@@ -46,7 +49,7 @@ class RecurringDepositService:
                 raise InvalidAmountException(0, "You don't have permission to view this")
         elif profile.role == "child":
             # この子供の親である必要がある
-            if profile.parent_id != current_user_id:
+            if not self.family_relationship_repo.has_relationship(current_user_id, str(profile.id)):
                 raise InvalidAmountException(
                     0, "You can only view recurring deposits for your own children"
                 )
@@ -89,7 +92,7 @@ class RecurringDepositService:
                 raise InvalidAmountException(0, "You don't have permission to modify this")
         elif profile.role == "child":
             # この子供の親である必要がある
-            if profile.parent_id != current_user_id:
+            if not self.family_relationship_repo.has_relationship(current_user_id, str(profile.id)):
                 raise InvalidAmountException(
                     0, "You can only modify recurring deposits for your own children"
                 )
@@ -129,7 +132,7 @@ class RecurringDepositService:
                 raise InvalidAmountException(0, "You don't have permission to delete this")
         elif str(profile.role) == "child":
             # この子供の親である必要がある
-            if str(profile.parent_id) != current_user_id:
+            if not self.family_relationship_repo.has_relationship(current_user_id, str(profile.id)):
                 raise InvalidAmountException(
                     0, "You can only delete recurring deposits for your own children"
                 )

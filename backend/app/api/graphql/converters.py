@@ -26,7 +26,6 @@ def to_graphql_profile(entity: domain_entities.Profile) -> graphql_types.Profile
         updated_at=_to_iso_string(entity.updated_at),
         auth_user_id=entity.auth_user_id,
         email=entity.email,
-        parent_id=entity.parent_id,
     )
 
 

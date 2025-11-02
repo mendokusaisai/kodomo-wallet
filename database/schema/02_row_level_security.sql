@@ -7,6 +7,7 @@ ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE accounts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE transactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE withdrawal_requests ENABLE ROW LEVEL SECURITY;
+ALTER TABLE family_relationships ENABLE ROW LEVEL SECURITY;
 
 -- ========================================
 -- プロフィールテーブルのポリシー
@@ -20,9 +21,9 @@ CREATE POLICY "Users can view own profile" ON profiles
 CREATE POLICY "Parents can view children profiles" ON profiles
   FOR SELECT USING (
     EXISTS (
-      SELECT 1 FROM profiles
-      WHERE id = auth.uid() AND role = 'parent'
-    ) AND parent_id = auth.uid()
+      SELECT 1 FROM family_relationships fr
+      WHERE fr.parent_id = auth.uid() AND fr.child_id = profiles.id
+    )
   );
 
 -- ユーザーは自分のプロフィールを更新可能
@@ -34,13 +35,7 @@ CREATE POLICY "Users can insert own profile" ON profiles
   FOR INSERT WITH CHECK (auth.uid() = id);
 
 -- 親は子供のプロフィールを作成可能
-CREATE POLICY "Parents can insert children profiles" ON profiles
-  FOR INSERT WITH CHECK (
-    EXISTS (
-      SELECT 1 FROM profiles
-      WHERE id = auth.uid() AND role = 'parent'
-    ) AND parent_id = auth.uid()
-  );
+-- NOTE: children profiles insertion is controlled at application layer
 
 -- ========================================
 -- アカウントテーブルのポリシー
@@ -58,8 +53,7 @@ CREATE POLICY "Users can view own accounts" ON accounts
 CREATE POLICY "Parents can view children accounts" ON accounts
   FOR SELECT USING (
     user_id IN (
-      SELECT id FROM profiles
-      WHERE parent_id = auth.uid()
+      SELECT fr.child_id FROM family_relationships fr WHERE fr.parent_id = auth.uid()
     )
   );
 
@@ -71,8 +65,7 @@ CREATE POLICY "Users can insert own accounts" ON accounts
 CREATE POLICY "Parents can insert children accounts" ON accounts
   FOR INSERT WITH CHECK (
     user_id IN (
-      SELECT id FROM profiles
-      WHERE parent_id = auth.uid()
+      SELECT fr.child_id FROM family_relationships fr WHERE fr.parent_id = auth.uid()
     )
   );
 
@@ -84,8 +77,7 @@ CREATE POLICY "Users can update own accounts" ON accounts
 CREATE POLICY "Parents can update children accounts" ON accounts
   FOR UPDATE USING (
     user_id IN (
-      SELECT id FROM profiles
-      WHERE parent_id = auth.uid()
+      SELECT fr.child_id FROM family_relationships fr WHERE fr.parent_id = auth.uid()
     )
   );
 
@@ -106,8 +98,8 @@ CREATE POLICY "Parents can view children transactions" ON transactions
   FOR SELECT USING (
     account_id IN (
       SELECT a.id FROM accounts a
-      JOIN profiles p ON a.user_id = p.id
-      WHERE p.parent_id = auth.uid()
+      JOIN family_relationships fr ON a.user_id = fr.child_id
+      WHERE fr.parent_id = auth.uid()
     )
   );
 
@@ -116,8 +108,8 @@ CREATE POLICY "Parents can insert transactions" ON transactions
   FOR INSERT WITH CHECK (
     account_id IN (
       SELECT a.id FROM accounts a
-      JOIN profiles p ON a.user_id = p.id
-      WHERE p.parent_id = auth.uid() OR a.user_id = auth.uid()
+      LEFT JOIN family_relationships fr ON a.user_id = fr.child_id
+      WHERE fr.parent_id = auth.uid() OR a.user_id = auth.uid()
     )
   );
 
@@ -138,8 +130,8 @@ CREATE POLICY "Parents can view children withdrawal requests" ON withdrawal_requ
   FOR SELECT USING (
     account_id IN (
       SELECT a.id FROM accounts a
-      JOIN profiles p ON a.user_id = p.id
-      WHERE p.parent_id = auth.uid()
+      JOIN family_relationships fr ON a.user_id = fr.child_id
+      WHERE fr.parent_id = auth.uid()
     )
   );
 
@@ -156,7 +148,24 @@ CREATE POLICY "Parents can update children withdrawal requests" ON withdrawal_re
   FOR UPDATE USING (
     account_id IN (
       SELECT a.id FROM accounts a
-      JOIN profiles p ON a.user_id = p.id
-      WHERE p.parent_id = auth.uid()
+      JOIN family_relationships fr ON a.user_id = fr.child_id
+      WHERE fr.parent_id = auth.uid()
     )
   );
+
+-- ========================================
+-- family_relationships テーブルのポリシー
+-- ========================================
+
+CREATE POLICY "Users can view own family relationships" ON family_relationships
+  FOR SELECT USING (parent_id = auth.uid() OR child_id = auth.uid());
+
+CREATE POLICY "Parents can create family relationships" ON family_relationships
+  FOR INSERT WITH CHECK (
+    parent_id = auth.uid() AND EXISTS (
+      SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'parent'
+    )
+  );
+
+CREATE POLICY "Parents can delete family relationships" ON family_relationships
+  FOR DELETE USING (parent_id = auth.uid());

@@ -16,7 +16,6 @@ class Profile:
     email: str | None
     name: str
     role: Literal["parent", "child"]
-    parent_id: str | None
     avatar_url: str | None
     created_at: datetime
     updated_at: datetime
@@ -72,3 +71,14 @@ class RecurringDeposit:
     is_active: bool
     created_at: datetime
     updated_at: datetime
+
+
+@dataclass
+class FamilyRelationship:
+    """家族関係エンティティ（親-子の多対多関係）"""
+
+    id: str
+    parent_id: str
+    child_id: str
+    relationship_type: Literal["parent", "guardian"]
+    created_at: datetime

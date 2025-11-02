@@ -118,6 +118,7 @@ class TestAccountService:
         injector_with_mocks: Injector,
         mock_account_repository: MockAccountRepository,
         mock_profile_repository,
+        mock_family_relationship_repository,
         sample_profile: Profile,
         sample_child,
     ):
@@ -126,9 +127,9 @@ class TestAccountService:
         sample_profile.role = "parent"
         mock_profile_repository.add(sample_profile)
 
-        sample_child.parent_id = sample_profile.id
         sample_child.role = "child"
         mock_profile_repository.add(sample_child)
+        mock_profile_repository.add_relationship(sample_profile.id, sample_child.id)
 
         child_account = Account(
             id=str(uuid.uuid4()),
@@ -187,6 +188,7 @@ class TestAccountService:
         injector_with_mocks: Injector,
         mock_account_repository: MockAccountRepository,
         mock_profile_repository,
+        mock_family_relationship_repository,
         sample_profile: Profile,
     ):
         """親ユーザーが複数の子供のアカウントを取得することをテスト"""
@@ -198,7 +200,6 @@ class TestAccountService:
             id=str(uuid.uuid4()),
             name="子供1",
             role="child",
-            parent_id=sample_profile.id,
             email=None,
             auth_user_id=None,
             avatar_url=None,
@@ -209,7 +210,6 @@ class TestAccountService:
             id=str(uuid.uuid4()),
             name="子供2",
             role="child",
-            parent_id=sample_profile.id,
             email=None,
             auth_user_id=None,
             avatar_url=None,
@@ -218,6 +218,8 @@ class TestAccountService:
         )
         mock_profile_repository.add(child1)
         mock_profile_repository.add(child2)
+        mock_profile_repository.add_relationship(sample_profile.id, child1.id)
+        mock_profile_repository.add_relationship(sample_profile.id, child2.id)
 
         account1 = Account(
             id=str(uuid.uuid4()),

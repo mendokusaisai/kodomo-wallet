@@ -5,6 +5,9 @@ SQLAlchemy リポジトリ実装
 from app.repositories.sqlalchemy.sqlalchemy_account_repository import (
     SQLAlchemyAccountRepository,
 )
+from app.repositories.sqlalchemy.sqlalchemy_family_relationship_repository import (
+    SQLAlchemyFamilyRelationshipRepository,
+)
 from app.repositories.sqlalchemy.sqlalchemy_profile_repository import (
     SQLAlchemyProfileRepository,
 )
@@ -24,4 +27,5 @@ __all__ = [
     "SQLAlchemyRecurringDepositRepository",
     "SQLAlchemyTransactionRepository",
     "SQLAlchemyWithdrawalRequestRepository",
+    "SQLAlchemyFamilyRelationshipRepository",
 ]

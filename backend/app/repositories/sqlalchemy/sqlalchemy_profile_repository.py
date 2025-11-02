@@ -28,7 +28,11 @@ class SQLAlchemyProfileRepository(ProfileRepository):
         """親の全ての子プロフィールを取得"""
         db_profiles = (
             self.db.query(db_models.Profile)
-            .filter(db_models.Profile.parent_id == uuid.UUID(parent_id))
+            .join(
+                db_models.FamilyRelationship,
+                db_models.Profile.id == db_models.FamilyRelationship.child_id,
+            )
+            .filter(db_models.FamilyRelationship.parent_id == uuid.UUID(parent_id))
             .all()
         )
         return [to_domain_profile(p) for p in db_profiles]
@@ -62,11 +66,19 @@ class SQLAlchemyProfileRepository(ProfileRepository):
             email=email,  # メールアドレス（任意）
             name=name,
             role="child",
-            parent_id=uuid.UUID(parent_id),
             created_at=str(datetime.now(UTC)),
             updated_at=str(datetime.now(UTC)),
         )
         self.db.add(db_profile)
+        self.db.flush()
+        # 親子関係を作成
+        relationship = db_models.FamilyRelationship(
+            parent_id=uuid.UUID(parent_id),
+            child_id=db_profile.id,
+            relationship_type="parent",
+            created_at=str(datetime.now(UTC)),
+        )
+        self.db.add(relationship)
         self.db.flush()
         self.db.refresh(db_profile)
         return to_domain_profile(db_profile)

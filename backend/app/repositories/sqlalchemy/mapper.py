@@ -22,7 +22,6 @@ def to_domain_profile(db_profile: db_models.Profile) -> domain.Profile:
         email=str(db_profile.email) if db_profile.email is not None else None,  # type: ignore
         name=str(db_profile.name),  # type: ignore
         role=db_profile.role,  # type: ignore
-        parent_id=str(db_profile.parent_id) if db_profile.parent_id is not None else None,  # type: ignore
         avatar_url=str(db_profile.avatar_url) if db_profile.avatar_url is not None else None,  # type: ignore
         created_at=parse_datetime(db_profile.created_at),  # type: ignore
         updated_at=parse_datetime(db_profile.updated_at),  # type: ignore
@@ -84,4 +83,17 @@ def to_domain_recurring_deposit(
         is_active=db_deposit.is_active == "true",  # type: ignore
         created_at=parse_datetime(db_deposit.created_at),  # type: ignore
         updated_at=parse_datetime(db_deposit.updated_at),  # type: ignore
+    )
+
+
+def to_domain_family_relationship(
+    db_relationship: db_models.FamilyRelationship,
+) -> domain.FamilyRelationship:
+    """SQLAlchemyのFamilyRelationshipモデルをドメインエンティティに変換"""
+    return domain.FamilyRelationship(
+        id=str(db_relationship.id),
+        parent_id=str(db_relationship.parent_id),
+        child_id=str(db_relationship.child_id),
+        relationship_type=str(db_relationship.relationship_type),  # type: ignore
+        created_at=parse_datetime(db_relationship.created_at),  # type: ignore
     )

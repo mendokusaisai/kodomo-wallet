@@ -41,7 +41,6 @@ class TestSQLAlchemyProfileRepository:
             name="Parent",
             email="parent@example.com",
             role="parent",
-            parent_id=None,
             auth_user_id=None,
             avatar_url=None,
             created_at=str(datetime.now(UTC)),
@@ -52,7 +51,6 @@ class TestSQLAlchemyProfileRepository:
             name="Child 1",
             email=None,
             role="child",
-            parent_id=parent.id,
             auth_user_id=None,
             avatar_url=None,
             created_at=str(datetime.now(UTC)),
@@ -63,13 +61,33 @@ class TestSQLAlchemyProfileRepository:
             name="Child 2",
             email=None,
             role="child",
-            parent_id=parent.id,
             auth_user_id=None,
             avatar_url=None,
             created_at=str(datetime.now(UTC)),
             updated_at=str(datetime.now(UTC)),
         )
         in_memory_db.add_all([parent, child1, child2])
+        # 親子関係を作成
+        from app.repositories.sqlalchemy.models import FamilyRelationship
+
+        in_memory_db.add(
+            FamilyRelationship(
+                id=uuid.uuid4(),
+                parent_id=parent.id,
+                child_id=child1.id,
+                relationship_type="parent",
+                created_at=str(datetime.now(UTC)),
+            )
+        )
+        in_memory_db.add(
+            FamilyRelationship(
+                id=uuid.uuid4(),
+                parent_id=parent.id,
+                child_id=child2.id,
+                relationship_type="parent",
+                created_at=str(datetime.now(UTC)),
+            )
+        )
         in_memory_db.commit()
 
         repo = SQLAlchemyProfileRepository(in_memory_db)
@@ -87,7 +105,6 @@ class TestSQLAlchemyProfileRepository:
             name="Parent",
             email="parent@example.com",
             role="parent",
-            parent_id=None,
             auth_user_id=None,
             avatar_url=None,
             created_at=str(datetime.now(UTC)),
@@ -109,7 +126,6 @@ class TestSQLAlchemyProfileRepository:
             name="Auth User",
             email="auth@example.com",
             role="parent",
-            parent_id=None,
             auth_user_id=auth_user_id,
             avatar_url=None,
             created_at=str(datetime.now(UTC)),
@@ -138,7 +154,6 @@ class TestSQLAlchemyProfileRepository:
             name="Invited Child",
             email="child@example.com",
             role="child",
-            parent_id=uuid.uuid4(),
             auth_user_id=None,  # 未認証
             avatar_url=None,
             created_at=str(datetime.now(UTC)),
@@ -167,7 +182,6 @@ class TestSQLAlchemyProfileRepository:
             name="Auth User",
             email="auth@example.com",
             role="parent",
-            parent_id=None,
             auth_user_id=uuid.uuid4(),  # 認証済み
             avatar_url=None,
             created_at=str(datetime.now(UTC)),
@@ -188,7 +202,6 @@ class TestSQLAlchemyProfileRepository:
             name="Parent",
             email="parent@example.com",
             role="parent",
-            parent_id=None,
             auth_user_id=None,
             avatar_url=None,
             created_at=str(datetime.now(UTC)),
@@ -205,10 +218,21 @@ class TestSQLAlchemyProfileRepository:
 
         assert child.id is not None
         assert str(child.name) == "New Child"
-        assert str(child.parent_id) == str(parent.id)
         assert str(child.email) == "child@example.com"
         assert str(child.role) == "child"
         assert child.auth_user_id is None
+        # 親子関係が作成されていることを確認
+        from app.repositories.sqlalchemy.models import FamilyRelationship
+
+        rel = (
+            in_memory_db.query(FamilyRelationship)
+            .filter(
+                FamilyRelationship.parent_id == parent.id,
+                FamilyRelationship.child_id == uuid.UUID(child.id),
+            )
+            .first()
+        )
+        assert rel is not None
 
     def test_create_child_without_email(self, in_memory_db: Session):
         """メールアドレスなしで子プロフィールを作成できることをテスト"""
@@ -217,7 +241,6 @@ class TestSQLAlchemyProfileRepository:
             name="Parent",
             email="parent@example.com",
             role="parent",
-            parent_id=None,
             auth_user_id=None,
             avatar_url=None,
             created_at=str(datetime.now(UTC)),
@@ -241,7 +264,6 @@ class TestSQLAlchemyProfileRepository:
             name="Child",
             email="child@example.com",
             role="child",
-            parent_id=uuid.uuid4(),
             auth_user_id=None,
             avatar_url=None,
             created_at=str(datetime.now(UTC)),
@@ -270,7 +292,6 @@ class TestSQLAlchemyProfileRepository:
             name="To Delete",
             email="delete@example.com",
             role="child",
-            parent_id=uuid.uuid4(),
             auth_user_id=None,
             avatar_url=None,
             created_at=str(datetime.now(UTC)),

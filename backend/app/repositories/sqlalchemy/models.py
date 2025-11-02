@@ -23,14 +23,25 @@ class Profile(Base):
     email = Column(Text, nullable=True)  # メールアドレス
     name = Column(Text, nullable=False)
     role = Column(Text, nullable=False)
-    parent_id = Column(UUID(as_uuid=True), ForeignKey("profiles.id"), nullable=True)
     avatar_url = Column(Text, nullable=True)
     created_at = Column(Text, nullable=False)
     updated_at = Column(Text, nullable=False)
 
     # リレーション
     accounts = relationship("Account", back_populates="user", cascade="all, delete-orphan")
-    children = relationship("Profile", backref="parent", remote_side=[id])
+    # family relationships
+    parent_relationships = relationship(
+        "FamilyRelationship",
+        foreign_keys="FamilyRelationship.child_id",
+        back_populates="child",
+        cascade="all, delete-orphan",
+    )
+    child_relationships = relationship(
+        "FamilyRelationship",
+        foreign_keys="FamilyRelationship.parent_id",
+        back_populates="parent",
+        cascade="all, delete-orphan",
+    )
 
     __table_args__ = (CheckConstraint("role IN ('parent', 'child')", name="check_role"),)
 
@@ -94,7 +105,6 @@ class WithdrawalRequest(Base):
     """出金リクエストモデル"""
 
     __tablename__ = "withdrawal_requests"
-
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     account_id = Column(
         UUID(as_uuid=True),
@@ -113,6 +123,25 @@ class WithdrawalRequest(Base):
     __table_args__ = (
         CheckConstraint("status IN ('pending', 'approved', 'rejected')", name="check_status"),
     )
+
+
+class FamilyRelationship(Base):
+    """家族関係モデル（親-子の多対多）"""
+
+    __tablename__ = "family_relationships"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    parent_id = Column(
+        UUID(as_uuid=True), ForeignKey("profiles.id", ondelete="CASCADE"), nullable=False
+    )
+    child_id = Column(
+        UUID(as_uuid=True), ForeignKey("profiles.id", ondelete="CASCADE"), nullable=False
+    )
+    relationship_type = Column(Text, default="parent", nullable=False)
+    created_at = Column(Text, nullable=False)
+
+    parent = relationship("Profile", foreign_keys=[parent_id], back_populates="child_relationships")
+    child = relationship("Profile", foreign_keys=[child_id], back_populates="parent_relationships")
 
 
 class RecurringDeposit(Base):

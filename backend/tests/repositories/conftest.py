@@ -14,7 +14,6 @@ def sample_profile() -> Profile:
         name="Test User",
         email=None,
         role="parent",
-        parent_id=None,
         auth_user_id=None,
         avatar_url=None,
         created_at=str(datetime.now(UTC)),

@@ -32,9 +32,16 @@ class SQLAlchemyWithdrawalRequestRepository(WithdrawalRequestRepository):
         """親の子供の全ての保留中出金リクエストを取得"""
         db_requests = (
             self.db.query(db_models.WithdrawalRequest)
-            .join(db_models.Account, db_models.WithdrawalRequest.account_id == db_models.Account.id)
+            .join(
+                db_models.Account,
+                db_models.WithdrawalRequest.account_id == db_models.Account.id,
+            )
             .join(db_models.Profile, db_models.Account.user_id == db_models.Profile.id)
-            .filter(db_models.Profile.parent_id == uuid.UUID(parent_id))
+            .join(
+                db_models.FamilyRelationship,
+                db_models.Profile.id == db_models.FamilyRelationship.child_id,
+            )
+            .filter(db_models.FamilyRelationship.parent_id == uuid.UUID(parent_id))
             .filter(db_models.WithdrawalRequest.status == "pending")
             .order_by(db_models.WithdrawalRequest.created_at.desc())
             .all()

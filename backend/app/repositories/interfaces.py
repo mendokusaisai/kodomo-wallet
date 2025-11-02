@@ -5,7 +5,14 @@
 from abc import ABC, abstractmethod
 from datetime import datetime
 
-from app.domain.entities import Account, Profile, RecurringDeposit, Transaction, WithdrawalRequest
+from app.domain.entities import (
+    Account,
+    FamilyRelationship,
+    Profile,
+    RecurringDeposit,
+    Transaction,
+    WithdrawalRequest,
+)
 
 
 class ProfileRepository(ABC):
@@ -44,6 +51,42 @@ class ProfileRepository(ABC):
     @abstractmethod
     def delete(self, user_id: str) -> bool:
         """プロフィールを削除"""
+        pass
+
+
+class FamilyRelationshipRepository(ABC):
+    """FamilyRelationship のデータアクセスインターフェース"""
+
+    @abstractmethod
+    def get_parents(self, child_id: str) -> list[Profile]:
+        """子どもの全ての親を取得"""
+        pass
+
+    @abstractmethod
+    def get_children(self, parent_id: str) -> list[Profile]:
+        """親の全ての子どもを取得"""
+        pass
+
+    @abstractmethod
+    def has_relationship(self, parent_id: str, child_id: str) -> bool:
+        """親子関係が存在するか確認"""
+        pass
+
+    @abstractmethod
+    def add_relationship(
+        self, parent_id: str, child_id: str, relationship_type: str = "parent"
+    ) -> FamilyRelationship:
+        """親子関係を追加"""
+        pass
+
+    @abstractmethod
+    def remove_relationship(self, parent_id: str, child_id: str) -> bool:
+        """親子関係を削除"""
+        pass
+
+    @abstractmethod
+    def get_relationship(self, parent_id: str, child_id: str) -> FamilyRelationship | None:
+        """特定の親子関係を取得"""
         pass
 
 

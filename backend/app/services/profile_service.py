@@ -6,6 +6,7 @@ from app.core.exceptions import InvalidAmountException, ResourceNotFoundExceptio
 from app.domain.entities import Profile
 from app.repositories.interfaces import (
     AccountRepository,
+    FamilyRelationshipRepository,
     ProfileRepository,
 )
 
@@ -14,9 +15,15 @@ class ProfileService:
     """プロフィール関連のビジネスロジックサービス"""
 
     @inject
-    def __init__(self, profile_repo: ProfileRepository, account_repo: AccountRepository):
+    def __init__(
+        self,
+        profile_repo: ProfileRepository,
+        account_repo: AccountRepository,
+        family_relationship_repo: FamilyRelationshipRepository,
+    ):
         self.profile_repo = profile_repo
         self.account_repo = account_repo
+        self.family_relationship_repo = family_relationship_repo
 
     def get_profile(self, user_id: str) -> Profile | None:
         """IDでユーザープロフィールを取得"""
@@ -55,7 +62,9 @@ class ProfileService:
                 raise InvalidAmountException(0, "You don't have permission to edit this profile")
 
             # 親は自分の子供のみを編集可能
-            if profile.role != "child" or profile.parent_id != current_user_id:
+            if profile.role != "child" or not self.family_relationship_repo.has_relationship(
+                current_user_id, user_id
+            ):
                 raise InvalidAmountException(0, "You can only edit profiles of your own children")
 
         # ドメインエンティティを更新（dataclassとして扱う）
@@ -104,7 +113,7 @@ class ProfileService:
             raise ResourceNotFoundException("Child", child_id)
 
         # 子どもが実際にこの親のものか確認
-        if child.parent_id != parent_id:
+        if not self.family_relationship_repo.has_relationship(parent_id, child_id):
             raise InvalidAmountException(0, "Child does not belong to this parent")
 
         # 子どもに紐づくアカウントを取得
