@@ -7,7 +7,6 @@ import { ConfirmDialog } from "@/components/confirm-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
 	CREATE_OR_UPDATE_RECURRING_DEPOSIT,
 	DELETE_RECURRING_DEPOSIT,
@@ -159,11 +158,9 @@ export default function RecurringDepositSettings({
 					定期お小遣い設定（親のみ）
 				</h2>
 			</div>
-
 			<p className="text-sm text-gray-600 mb-4">
 				毎月指定した日にちに自動でお小遣いを入金できます。
 			</p>
-
 			<form onSubmit={handleSave} className="space-y-4">
 				<div>
 					<Label htmlFor={amountInputId}>月額（円）</Label>
@@ -223,20 +220,21 @@ export default function RecurringDepositSettings({
 
 					{hasExistingSettings && (
 						<ConfirmDialog
+							trigger={
+								<Button variant="destructive" disabled={deleting}>
+									<Trash2 className="w-4 h-4 mr-2" />
+									{deleting ? "削除中..." : "削除"}
+								</Button>
+							}
 							title="設定を削除"
 							description={`${childName}の定期お小遣い設定を削除しますか？この操作は取り消せません。`}
-							confirmLabel="削除"
-							onConfirm={handleDelete}
+							confirmText="削除"
 							variant="destructive"
-							disabled={deleting}
-						>
-							<Trash2 className="w-4 h-4 mr-2" />
-							{deleting ? "削除中..." : "削除"}
-						</ConfirmDialog>
+							onConfirm={handleDelete}
+						/>
 					)}
 				</div>
-			</form>
-
+			</form>{" "}
 			{hasExistingSettings && (
 				<div className="mt-4 p-4 bg-green-50 rounded-lg border border-green-200">
 					<p className="text-sm text-green-800">

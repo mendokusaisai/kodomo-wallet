@@ -24,6 +24,10 @@ interface WithdrawalRequest {
 	updatedAt: string;
 }
 
+interface GetWithdrawalRequestsResponse {
+	withdrawalRequests: WithdrawalRequest[];
+}
+
 interface WithdrawalRequestsListProps {
 	parentId: string;
 }
@@ -31,9 +35,12 @@ interface WithdrawalRequestsListProps {
 export default function WithdrawalRequestsList({
 	parentId,
 }: WithdrawalRequestsListProps) {
-	const { data, loading, refetch } = useQuery(GET_WITHDRAWAL_REQUESTS, {
-		variables: { parentId },
-	});
+	const { data, loading, refetch } = useQuery<GetWithdrawalRequestsResponse>(
+		GET_WITHDRAWAL_REQUESTS,
+		{
+			variables: { parentId },
+		},
+	);
 
 	const [approveWithdrawal] = useMutation(APPROVE_WITHDRAWAL, {
 		refetchQueries: ["GetAccounts", "GetTransactions", "GetWithdrawalRequests"],

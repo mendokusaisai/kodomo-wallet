@@ -2,7 +2,7 @@
 
 import { useMutation } from "@apollo/client/react";
 import { Target } from "lucide-react";
-import { useState } from "react";
+import { useId, useState } from "react";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { Button } from "@/components/ui/button";
 import {
@@ -28,6 +28,8 @@ export default function GoalDialog({
 	currentGoalName,
 	currentGoalAmount,
 }: GoalDialogProps) {
+	const goalNameId = useId();
+	const goalAmountId = useId();
 	const [open, setOpen] = useState(false);
 	const [goalName, setGoalName] = useState(currentGoalName || "");
 	const [goalAmount, setGoalAmount] = useState(
@@ -94,9 +96,9 @@ export default function GoalDialog({
 				</DialogHeader>
 				<form onSubmit={handleSubmit} className="space-y-4">
 					<div>
-						<Label htmlFor="goal-name">目標名</Label>
+						<Label htmlFor={goalNameId}>目標名</Label>
 						<Input
-							id="goal-name"
+							id={goalNameId}
 							type="text"
 							placeholder="例: 新しいゲーム機"
 							value={goalName}
@@ -104,9 +106,9 @@ export default function GoalDialog({
 						/>
 					</div>
 					<div>
-						<Label htmlFor="goal-amount">目標金額 (円)</Label>
+						<Label htmlFor={goalAmountId}>目標金額 (円)</Label>
 						<Input
-							id="goal-amount"
+							id={goalAmountId}
 							type="number"
 							placeholder="10000"
 							value={goalAmount}
@@ -124,15 +126,17 @@ export default function GoalDialog({
 						</Button>
 						{(currentGoalName || currentGoalAmount) && (
 							<ConfirmDialog
+								trigger={
+									<Button variant="outline" disabled={loading}>
+										クリア
+									</Button>
+								}
 								title="目標をクリア"
 								description="目標をクリアしますか？この操作は取り消せません。"
-								confirmLabel="クリア"
+								confirmText="クリア"
+								variant="destructive"
 								onConfirm={handleClearGoal}
-								variant="outline"
-								disabled={loading}
-							>
-								クリア
-							</ConfirmDialog>
+							/>
 						)}
 					</div>
 				</form>
