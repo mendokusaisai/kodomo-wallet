@@ -4,6 +4,7 @@
 これらのリゾルバーはデータベースの詳細を知ることなく、サービス層の依存性を使用します。
 """
 
+from app.api.graphql import converters
 from app.api.graphql.types import Account, Profile, RecurringDeposit, Transaction, WithdrawalRequest
 from app.services import (
     AccountService,
@@ -19,7 +20,8 @@ def get_profile_by_id(
     profile_service: ProfileService,
 ) -> Profile | None:
     """IDでユーザープロフィールを取得"""
-    return profile_service.get_profile(user_id)
+    entity = profile_service.get_profile(user_id)
+    return converters.to_graphql_profile(entity) if entity else None
 
 
 def get_children_count(
@@ -37,13 +39,16 @@ def get_accounts_by_user_id(
     profile_service: ProfileService,
 ) -> list[Account]:
     """ユーザーとその子供（親の場合）の全アカウントを取得"""
-    accounts = account_service.get_family_accounts(user_id)
+    entities = account_service.get_family_accounts(user_id)
 
-    # 各アカウントにユーザー情報を付与
-    for account in accounts:
-        user_profile = profile_service.get_profile(str(account.user_id))
-        if user_profile:
-            account.user = user_profile
+    # エンティティをGraphQL型に変換し、各アカウントにユーザー情報を付与
+    accounts = []
+    for entity in entities:
+        account = converters.to_graphql_account(entity)
+        user_entity = profile_service.get_profile(str(entity.user_id))
+        if user_entity:
+            account.user = converters.to_graphql_profile(user_entity)
+        accounts.append(account)
 
     return accounts
 
@@ -54,7 +59,8 @@ def get_transactions_by_account_id(
     limit: int = 50,
 ) -> list[Transaction]:
     """指定したアカウントのトランザクション一覧を取得"""
-    return transaction_service.get_account_transactions(account_id, limit)
+    entities = transaction_service.get_account_transactions(account_id, limit)
+    return [converters.to_graphql_transaction(e) for e in entities]
 
 
 def create_deposit(
@@ -64,7 +70,8 @@ def create_deposit(
     description: str | None = None,
 ) -> Transaction:
     """入金（deposit）トランザクションを作成"""
-    return transaction_service.create_deposit(account_id, amount, description)
+    entity = transaction_service.create_deposit(account_id, amount, description)
+    return converters.to_graphql_transaction(entity)
 
 
 def create_withdraw(
@@ -74,7 +81,8 @@ def create_withdraw(
     description: str | None = None,
 ) -> Transaction:
     """出金（withdraw）トランザクションを作成"""
-    return transaction_service.create_withdraw(account_id, amount, description)
+    entity = transaction_service.create_withdraw(account_id, amount, description)
+    return converters.to_graphql_transaction(entity)
 
 
 def create_child_profile(
@@ -84,7 +92,8 @@ def create_child_profile(
     initial_balance: int = 0,
 ) -> Profile:
     """認証なしで子プロフィールを作成"""
-    return profile_service.create_child(parent_id, child_name, initial_balance)
+    entity = profile_service.create_child(parent_id, child_name, initial_balance)
+    return converters.to_graphql_profile(entity)
 
 
 def link_child_to_auth_account(
@@ -93,7 +102,8 @@ def link_child_to_auth_account(
     profile_service: ProfileService,
 ) -> Profile:
     """子プロフィールを認証アカウントに紐付け"""
-    return profile_service.link_child_to_auth(child_id, auth_user_id)
+    entity = profile_service.link_child_to_auth(child_id, auth_user_id)
+    return converters.to_graphql_profile(entity)
 
 
 def link_child_to_auth_by_email(
@@ -102,7 +112,8 @@ def link_child_to_auth_by_email(
     profile_service: ProfileService,
 ) -> Profile:
     """メールアドレスで子プロフィールを認証アカウントに紐付け"""
-    return profile_service.link_child_to_auth_by_email(child_id, email)
+    entity = profile_service.link_child_to_auth_by_email(child_id, email)
+    return converters.to_graphql_profile(entity)
 
 
 def invite_child_to_auth(
@@ -111,7 +122,8 @@ def invite_child_to_auth(
     profile_service: ProfileService,
 ) -> Profile:
     """メール経由で子に認証アカウント作成を招待"""
-    return profile_service.invite_child_to_auth(child_id, email)
+    entity = profile_service.invite_child_to_auth(child_id, email)
+    return converters.to_graphql_profile(entity)
 
 
 def get_pending_withdrawal_requests(
@@ -119,7 +131,8 @@ def get_pending_withdrawal_requests(
     withdrawal_request_service: WithdrawalRequestService,
 ) -> list[WithdrawalRequest]:
     """親ユーザーの子供に対する未承認の出金リクエストを取得"""
-    return withdrawal_request_service.get_pending_requests_for_parent(parent_id)
+    entities = withdrawal_request_service.get_pending_requests_for_parent(parent_id)
+    return [converters.to_graphql_withdrawal_request(e) for e in entities]
 
 
 def create_withdrawal_request(
@@ -129,7 +142,8 @@ def create_withdrawal_request(
     description: str | None = None,
 ) -> WithdrawalRequest:
     """出金リクエストを作成（子が発行）"""
-    return withdrawal_request_service.create_withdrawal_request(account_id, amount, description)
+    entity = withdrawal_request_service.create_withdrawal_request(account_id, amount, description)
+    return converters.to_graphql_withdrawal_request(entity)
 
 
 def approve_withdrawal_request(
@@ -138,7 +152,8 @@ def approve_withdrawal_request(
     transaction_service: TransactionService,
 ) -> WithdrawalRequest:
     """出金リクエストを承認（親が承認）"""
-    return withdrawal_request_service.approve_withdrawal_request(request_id, transaction_service)
+    entity = withdrawal_request_service.approve_withdrawal_request(request_id, transaction_service)
+    return converters.to_graphql_withdrawal_request(entity)
 
 
 def reject_withdrawal_request(
@@ -146,7 +161,8 @@ def reject_withdrawal_request(
     withdrawal_request_service: WithdrawalRequestService,
 ) -> WithdrawalRequest:
     """出金リクエストを却下（親が却下）"""
-    return withdrawal_request_service.reject_withdrawal_request(request_id)
+    entity = withdrawal_request_service.reject_withdrawal_request(request_id)
+    return converters.to_graphql_withdrawal_request(entity)
 
 
 def update_goal(
@@ -156,7 +172,8 @@ def update_goal(
     account_service: AccountService,
 ) -> Account:
     """アカウントの貯金目標を更新"""
-    return account_service.update_goal(account_id, goal_name, goal_amount)
+    entity = account_service.update_goal(account_id, goal_name, goal_amount)
+    return converters.to_graphql_account(entity)
 
 
 def update_profile(
@@ -167,7 +184,8 @@ def update_profile(
     profile_service: ProfileService,
 ) -> Profile:
     """ユーザープロフィールを更新（本人または親が子を編集可能）"""
-    return profile_service.update_profile(user_id, current_user_id, name, avatar_url)
+    entity = profile_service.update_profile(user_id, current_user_id, name, avatar_url)
+    return converters.to_graphql_profile(entity)
 
 
 def delete_child(
@@ -185,7 +203,8 @@ def get_recurring_deposit(
     recurring_deposit_service: RecurringDepositService,
 ) -> RecurringDeposit | None:
     """アカウントの定期入金設定を取得（親のみ）"""
-    return recurring_deposit_service.get_recurring_deposit(account_id, current_user_id)
+    entity = recurring_deposit_service.get_recurring_deposit(account_id, current_user_id)
+    return converters.to_graphql_recurring_deposit(entity) if entity else None
 
 
 def create_or_update_recurring_deposit(
@@ -197,9 +216,10 @@ def create_or_update_recurring_deposit(
     is_active: bool = True,
 ) -> RecurringDeposit:
     """定期入金設定を作成または更新（親のみ）"""
-    return recurring_deposit_service.create_or_update_recurring_deposit(
+    entity = recurring_deposit_service.create_or_update_recurring_deposit(
         account_id, current_user_id, amount, day_of_month, is_active
     )
+    return converters.to_graphql_recurring_deposit(entity)
 
 
 def delete_recurring_deposit(
