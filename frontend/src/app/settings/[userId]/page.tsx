@@ -76,7 +76,9 @@ export default function ChildSettingsPage() {
 	const isParentOfChild =
 		isParent &&
 		childProfileData?.me?.role === "child" &&
-		childProfileData?.me?.parentId === currentUserId;
+		childProfileData?.me?.parents?.some(
+			(parent) => parent.id === currentUserId,
+		);
 
 	// デバッグ用
 	useEffect(() => {
@@ -89,7 +91,7 @@ export default function ChildSettingsPage() {
 				isParentOfChild,
 				meRole: meData?.me?.role,
 				childRole: childProfileData?.me?.role,
-				childParentId: childProfileData?.me?.parentId,
+				childParents: childProfileData?.me?.parents?.map((p) => p.id),
 			});
 		}
 	}, [

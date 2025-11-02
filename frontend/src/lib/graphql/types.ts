@@ -8,7 +8,7 @@ export interface Profile {
 	createdAt: string;
 	authUserId?: string | null; // 認証アカウントID (認証なし子どもの場合null)
 	email?: string | null; // メールアドレス（未認証子どもの場合に事前登録）
-	parentId?: string | null; // 親のID（子どもの場合のみ）
+	parents?: Profile[]; // 親プロフィール一覧（子の場合、複数親対応）
 }
 
 export interface Account {
