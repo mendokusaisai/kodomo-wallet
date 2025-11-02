@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery } from "@apollo/client/react";
-import { ArrowLeft, Save, Trash2, User } from "lucide-react";
+import { ArrowLeft, Copy, Save, Trash2, User, UserPlus } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
@@ -10,13 +10,22 @@ import { LogoutButton } from "@/components/logout-button";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
+	CREATE_PARENT_INVITE,
+	GET_CHILDREN,
 	GET_CHILDREN_COUNT,
 	GET_ME,
 	UPDATE_PROFILE,
 } from "@/lib/graphql/queries";
-import type { GetMeResponse } from "@/lib/graphql/types";
+import type { GetMeResponse, Profile } from "@/lib/graphql/types";
 import { getUser } from "@/lib/supabase/auth";
 import { createClient } from "@/lib/supabase/client";
 import { deleteAvatar, uploadAvatar } from "@/lib/supabase/storage";
@@ -33,6 +42,13 @@ export default function SettingsPage() {
 	const fileInputRef = useRef<HTMLInputElement>(null);
 	const nameInputId = useId();
 	const avatarInputId = useId();
+	const childSelectId = useId();
+
+	// 親招待用のstate
+	const [selectedChildId, setSelectedChildId] = useState<string>("");
+	const [inviteEmail, setInviteEmail] = useState("");
+	const [inviteLink, setInviteLink] = useState<string | null>(null);
+	const inviteEmailId = useId();
 
 	// Supabaseからユーザー情報を取得
 	useEffect(() => {
@@ -69,6 +85,24 @@ export default function SettingsPage() {
 			skip: !userId || meData?.me?.role !== "parent",
 		},
 	);
+
+	// 子どもリストを取得（親の場合のみ）
+	const { data: childrenData } = useQuery<{ children: Profile[] }>(
+		GET_CHILDREN,
+		{
+			variables: { parentId: userId },
+			skip: !userId || meData?.me?.role !== "parent",
+		},
+	);
+
+	// 親招待mutation
+	const [createParentInvite, { loading: inviting }] = useMutation<{
+		createParentInvite: string;
+	}>(CREATE_PARENT_INVITE, {
+		onError: (error: { message: string }) => {
+			showError("招待リンクの作成に失敗しました", error.message);
+		},
+	});
 
 	// プロフィールデータが読み込まれたら初期値を設定
 	useEffect(() => {
@@ -153,6 +187,54 @@ export default function SettingsPage() {
 			setAvatarPreview(reader.result as string);
 		};
 		reader.readAsDataURL(file);
+	};
+
+	const handleCreateInvite = async () => {
+		if (!userId) return;
+		if (!selectedChildId) {
+			showWarning("子どもを選択してください");
+			return;
+		}
+		if (!inviteEmail) {
+			showWarning("メールアドレスを入力してください");
+			return;
+		}
+
+		try {
+			const res = await createParentInvite({
+				variables: {
+					inviterId: userId,
+					childId: selectedChildId,
+					email: inviteEmail,
+				},
+			});
+
+			const token: string | undefined = res.data?.createParentInvite;
+			if (token) {
+				const origin =
+					typeof window !== "undefined" ? window.location.origin : "";
+				const link = `${origin}/accept-invite?token=${token}`;
+				setInviteLink(link);
+				showSuccess("招待リンクを作成しました");
+				setInviteEmail("");
+			}
+		} catch {
+			/* すでに onError で通知 */
+		}
+	};
+
+	const handleCopyInviteLink = async () => {
+		if (!inviteLink) return;
+
+		try {
+			await navigator.clipboard.writeText(inviteLink);
+			showSuccess("招待リンクをコピーしました");
+		} catch (error) {
+			showError(
+				"コピーに失敗しました",
+				error instanceof Error ? error.message : "不明なエラー",
+			);
+		}
 	};
 
 	const handleDeleteAccount = async (accountId: string) => {
@@ -326,6 +408,93 @@ export default function SettingsPage() {
 						</div>
 					</div>
 				</div>
+
+				{/* 親招待セクション（親の場合のみ表示） */}
+				{meData?.me?.role === "parent" && (
+					<div className="bg-white dark:bg-gray-900 rounded-lg shadow-md p-4 md:p-6 mb-6">
+						<div className="flex items-center gap-3 mb-4">
+							<UserPlus className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+							<h2 className="text-lg md:text-xl font-bold text-gray-900 dark:text-gray-100">
+								もう一人の親を招待
+							</h2>
+						</div>
+						<p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+							配偶者やパートナーを招待して、子どものお小遣いを一緒に管理できます。
+						</p>
+
+						<div className="space-y-4">
+							{/* 子ども選択 */}
+							<div>
+								<Label htmlFor={childSelectId}>
+									招待する子どもを選択
+								</Label>
+								<Select
+									value={selectedChildId}
+									onValueChange={setSelectedChildId}
+								>
+									<SelectTrigger id={childSelectId}>
+										<SelectValue placeholder="子どもを選択してください" />
+									</SelectTrigger>
+									<SelectContent>
+										{childrenData?.children.map((child) => (
+											<SelectItem key={child.id} value={child.id}>
+												{child.name}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
+							</div>
+
+							{/* メールアドレス入力 */}
+							<div>
+								<Label htmlFor={inviteEmailId}>招待するメールアドレス</Label>
+								<Input
+									id={inviteEmailId}
+									type="email"
+									placeholder="partner@example.com"
+									value={inviteEmail}
+									onChange={(e) => setInviteEmail(e.target.value)}
+								/>
+							</div>
+
+							{/* 招待ボタン */}
+							<Button
+								onClick={handleCreateInvite}
+								disabled={inviting || !selectedChildId || !inviteEmail}
+								className="w-full bg-blue-600 hover:bg-blue-700"
+							>
+								<UserPlus className="w-4 h-4 mr-2" />
+								{inviting ? "作成中..." : "招待リンクを作成"}
+							</Button>
+
+							{/* 招待リンク表示 */}
+							{inviteLink && (
+								<div className="mt-4 p-4 bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-900 rounded-lg">
+									<Label className="text-green-800 dark:text-green-400 font-semibold">
+										招待リンク
+									</Label>
+									<div className="mt-2 flex gap-2">
+										<Input
+											value={inviteLink}
+											readOnly
+											className="text-sm font-mono"
+										/>
+										<Button
+											onClick={handleCopyInviteLink}
+											variant="outline"
+											size="sm"
+										>
+											<Copy className="w-4 h-4" />
+										</Button>
+									</div>
+									<p className="text-xs text-green-700 dark:text-green-300 mt-2">
+										このリンクを相手に送信してください。リンクは7日間有効です。
+									</p>
+								</div>
+							)}
+						</div>
+					</div>
+				)}
 
 				{/* 危険な操作セクション */}
 				<div className="bg-white dark:bg-gray-900 rounded-lg shadow-md p-4 md:p-6 border-2 border-red-200 dark:border-red-900">

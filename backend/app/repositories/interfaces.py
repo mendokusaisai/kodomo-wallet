@@ -95,13 +95,13 @@ class FamilyRelationshipRepository(ABC):
         """
         指定した親と家族関係にある他の親のIDリストを取得
         同じ子どもを共有している親を返す
-        
+
         Args:
             parent_id: 基準となる親のID
-            
+
         Returns:
             家族関係にある他の親のIDリスト
-            
+
         Example:
             親1と親2が子Aを共有 → get_related_parents(親1) → [親2のID]
         """
@@ -111,11 +111,11 @@ class FamilyRelationshipRepository(ABC):
     def create_relationship(self, parent_id: str, child_id: str) -> None:
         """
         親子関係を作成（UNIQUE制約により重複は無視）
-        
+
         Args:
             parent_id: 親のID
             child_id: 子どものID
-            
+
         Note:
             既に同じ関係が存在する場合は何もしない（エラーにならない）
         """

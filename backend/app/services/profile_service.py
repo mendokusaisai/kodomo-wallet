@@ -289,8 +289,7 @@ class ProfileService:
         for child in inviter_children:
             if child.id != invite.child_id:
                 self.family_relationship_repo.create_relationship(
-                    parent_id=current_parent_id,
-                    child_id=child.id
+                    parent_id=current_parent_id, child_id=child.id
                 )
 
         self.parent_invite_repo.update_status(invite, "accepted")

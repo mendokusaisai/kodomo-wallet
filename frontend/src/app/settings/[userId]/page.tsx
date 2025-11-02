@@ -10,11 +10,7 @@ import RecurringDepositSettings from "@/components/recurring-deposit-settings";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-	DELETE_CHILD,
-	GET_ME,
-	UPDATE_PROFILE,
-} from "@/lib/graphql/queries";
+import { DELETE_CHILD, GET_ME, UPDATE_PROFILE } from "@/lib/graphql/queries";
 import type { GetMeResponse } from "@/lib/graphql/types";
 import { getUser } from "@/lib/supabase/auth";
 import { deleteAvatar, uploadAvatar } from "@/lib/supabase/storage";

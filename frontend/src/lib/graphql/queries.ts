@@ -27,6 +27,18 @@ export const GET_CHILDREN_COUNT = gql`
   }
 `;
 
+export const GET_CHILDREN = gql`
+  query GetChildren($parentId: String!) {
+    children(parentId: $parentId) {
+      id
+      name
+      role
+      avatarUrl
+      email
+    }
+  }
+`;
+
 export const GET_ACCOUNTS = gql`
 	query GetAccounts($userId: String!) {
 		accounts(userId: $userId) {
