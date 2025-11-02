@@ -1,3 +1,4 @@
+from dataclasses import replace
 from datetime import UTC, datetime
 
 from injector import inject
@@ -68,8 +69,6 @@ class ProfileService:
                 raise InvalidAmountException(0, "You can only edit profiles of your own children")
 
         # ドメインエンティティを更新（dataclassとして扱う）
-        from dataclasses import replace
-
         updates: dict = {"updated_at": datetime.now(UTC)}
         if name is not None:
             updates["name"] = name

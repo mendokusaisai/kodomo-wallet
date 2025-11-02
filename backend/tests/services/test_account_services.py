@@ -9,7 +9,11 @@ import pytest
 from injector import Injector
 
 from app.domain.entities import Account, Profile
-from app.repositories.mock_repositories import MockAccountRepository
+from app.repositories.mock_repositories import (
+    MockAccountRepository,
+    MockFamilyRelationshipRepository,
+    MockProfileRepository,
+)
 from app.services import AccountService
 
 
@@ -117,8 +121,8 @@ class TestAccountService:
         self,
         injector_with_mocks: Injector,
         mock_account_repository: MockAccountRepository,
-        mock_profile_repository,
-        mock_family_relationship_repository,
+        mock_profile_repository: MockProfileRepository,
+        mock_family_relationship_repository: MockFamilyRelationshipRepository,
         sample_profile: Profile,
         sample_child,
     ):
@@ -187,8 +191,7 @@ class TestAccountService:
         self,
         injector_with_mocks: Injector,
         mock_account_repository: MockAccountRepository,
-        mock_profile_repository,
-        mock_family_relationship_repository,
+        mock_profile_repository: MockProfileRepository,
         sample_profile: Profile,
     ):
         """親ユーザーが複数の子供のアカウントを取得することをテスト"""

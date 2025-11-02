@@ -1,3 +1,4 @@
+from dataclasses import replace
 from datetime import UTC, datetime
 
 from injector import inject
@@ -51,8 +52,6 @@ class AccountService:
             raise InvalidAmountException(goal_amount, "Goal amount must be non-negative")
 
         # ドメインエンティティを更新
-        from dataclasses import replace
-
         updated_account = replace(
             account,
             goal_name=goal_name,
