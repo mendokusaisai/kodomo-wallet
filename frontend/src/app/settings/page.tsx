@@ -10,22 +10,14 @@ import { LogoutButton } from "@/components/logout-button";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
 	CREATE_PARENT_INVITE,
-	GET_CHILDREN,
 	GET_CHILDREN_COUNT,
 	GET_ME,
 	UPDATE_PROFILE,
 } from "@/lib/graphql/queries";
-import type { GetMeResponse, Profile } from "@/lib/graphql/types";
+import type { GetMeResponse } from "@/lib/graphql/types";
 import { getUser } from "@/lib/supabase/auth";
 import { createClient } from "@/lib/supabase/client";
 import { deleteAvatar, uploadAvatar } from "@/lib/supabase/storage";
@@ -42,10 +34,8 @@ export default function SettingsPage() {
 	const fileInputRef = useRef<HTMLInputElement>(null);
 	const nameInputId = useId();
 	const avatarInputId = useId();
-	const childSelectId = useId();
 
 	// 親招待用のstate
-	const [selectedChildId, setSelectedChildId] = useState<string>("");
 	const [inviteEmail, setInviteEmail] = useState("");
 	const [inviteLink, setInviteLink] = useState<string | null>(null);
 	const inviteEmailId = useId();
@@ -80,15 +70,6 @@ export default function SettingsPage() {
 	// 子どもの数を取得（親の場合のみ）
 	const { data: childrenCountData } = useQuery<{ childrenCount: number }>(
 		GET_CHILDREN_COUNT,
-		{
-			variables: { parentId: userId },
-			skip: !userId || meData?.me?.role !== "parent",
-		},
-	);
-
-	// 子どもリストを取得（親の場合のみ）
-	const { data: childrenData } = useQuery<{ children: Profile[] }>(
-		GET_CHILDREN,
 		{
 			variables: { parentId: userId },
 			skip: !userId || meData?.me?.role !== "parent",
@@ -191,10 +172,6 @@ export default function SettingsPage() {
 
 	const handleCreateInvite = async () => {
 		if (!userId) return;
-		if (!selectedChildId) {
-			showWarning("子どもを選択してください");
-			return;
-		}
 		if (!inviteEmail) {
 			showWarning("メールアドレスを入力してください");
 			return;
@@ -204,7 +181,6 @@ export default function SettingsPage() {
 			const res = await createParentInvite({
 				variables: {
 					inviterId: userId,
-					childId: selectedChildId,
 					email: inviteEmail,
 				},
 			});
@@ -423,28 +399,6 @@ export default function SettingsPage() {
 						</p>
 
 						<div className="space-y-4">
-							{/* 子ども選択 */}
-							<div>
-								<Label htmlFor={childSelectId}>
-									招待する子どもを選択
-								</Label>
-								<Select
-									value={selectedChildId}
-									onValueChange={setSelectedChildId}
-								>
-									<SelectTrigger id={childSelectId}>
-										<SelectValue placeholder="子どもを選択してください" />
-									</SelectTrigger>
-									<SelectContent>
-										{childrenData?.children.map((child) => (
-											<SelectItem key={child.id} value={child.id}>
-												{child.name}
-											</SelectItem>
-										))}
-									</SelectContent>
-								</Select>
-							</div>
-
 							{/* メールアドレス入力 */}
 							<div>
 								<Label htmlFor={inviteEmailId}>招待するメールアドレス</Label>
@@ -460,7 +414,7 @@ export default function SettingsPage() {
 							{/* 招待ボタン */}
 							<Button
 								onClick={handleCreateInvite}
-								disabled={inviting || !selectedChildId || !inviteEmail}
+								disabled={inviting || !inviteEmail}
 								className="w-full bg-blue-600 hover:bg-blue-700"
 							>
 								<UserPlus className="w-4 h-4 mr-2" />

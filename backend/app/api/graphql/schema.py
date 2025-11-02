@@ -374,13 +374,12 @@ class Mutation:
         self,
         info: Info,
         inviter_id: str,
-        child_id: str,
         email: str,
     ) -> str:
-        """親を子に招待する（トークンを返す）"""
+        """親を招待する（トークンを返す）招待者の全ての子どもと受理者が紐づけられる"""
         profile_service = info.context["profile_service"]
         try:
-            return resolvers.create_parent_invite(inviter_id, child_id, email, profile_service)
+            return resolvers.create_parent_invite(inviter_id, email, profile_service)
         except ResourceNotFoundException as e:
             raise Exception(f"Resource not found: {e.message}") from e
         except InvalidAmountException as e:

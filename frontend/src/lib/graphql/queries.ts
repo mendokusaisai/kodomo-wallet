@@ -313,10 +313,9 @@ export const DELETE_RECURRING_DEPOSIT = gql`
 export const CREATE_PARENT_INVITE = gql`
   mutation CreateParentInvite(
     $inviterId: String!
-    $childId: String!
     $email: String!
   ) {
-    createParentInvite(inviterId: $inviterId, childId: $childId, email: $email)
+    createParentInvite(inviterId: $inviterId, email: $email)
   }
 `;
 

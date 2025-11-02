@@ -231,30 +231,43 @@ class ProfileService:
             raise InvalidAmountException(0, f"Failed to send invitation: {str(e)}") from e
 
     # ===== 親招待（メール/リンク） =====
-    def create_parent_invite(self, inviter_id: str, child_id: str, email: str) -> str:
-        """親を子に招待する（トークンを発行して返す）"""
-        # 認可: inviter が child の親であること
+    def create_parent_invite(self, inviter_id: str, email: str) -> str:
+        """
+        親を招待する（トークンを発行して返す）
+        招待者の全ての子どもと受理者が紐づけられる
+        """
+        # 認可: inviter が親であること
         inviter = self.profile_repo.get_by_id(inviter_id)
         if not inviter or inviter.role != "parent":
             raise ResourceNotFoundException("Parent", inviter_id)
 
-        child = self.profile_repo.get_by_id(child_id)
-        if not child or child.role != "child":
-            raise ResourceNotFoundException("Child", child_id)
+        # 招待者が少なくとも1人の子どもを持っているか確認
+        children = self.profile_repo.get_children(inviter_id)
+        if not children:
+            raise InvalidAmountException(
+                0, "You must have at least one child to invite another parent"
+            )
 
-        if not self.family_relationship_repo.has_relationship(inviter_id, child_id):
-            raise InvalidAmountException(0, "Not authorized to invite for this child")
+        # 最初の子どもを代表として招待レコードに保存
+        # (実際の紐付けは受理時に全ての子どもと行われる)
+        representative_child_id = children[0].id
 
         expires_at = datetime.now(UTC) + timedelta(days=7)
-        invite = self.parent_invite_repo.create(child_id, inviter_id, email, expires_at)
+        invite = self.parent_invite_repo.create(
+            representative_child_id, inviter_id, email, expires_at
+        )
 
         # 受け入れリンクを作成してスタブメール送信
         accept_link = f"{settings.FRONTEND_ORIGIN}/accept-invite?token={invite.token}"
+
+        # メール本文用に子どもの名前をリスト化
+        children_names = ", ".join([child.name for child in children])
+
         self.mailer.send_parent_invite(
             email,
             accept_link,
             inviter_name=inviter.name,
-            child_name=child.name,
+            child_name=children_names,
         )
         return invite.token
 

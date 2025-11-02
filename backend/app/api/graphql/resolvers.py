@@ -234,12 +234,11 @@ def delete_recurring_deposit(
 # ===== 親招待（メール/リンク） =====
 def create_parent_invite(
     inviter_id: str,
-    child_id: str,
     email: str,
     profile_service: ProfileService,
 ) -> str:
-    """親を子に招待するためのトークン（文字列）を返す"""
-    return profile_service.create_parent_invite(inviter_id, child_id, email)
+    """親を招待するためのトークン(文字列)を返す。招待者の全ての子どもと受理者が紐づけられる"""
+    return profile_service.create_parent_invite(inviter_id, email)
 
 
 def accept_parent_invite(

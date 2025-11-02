@@ -23,7 +23,7 @@ class TestParentInviteService:
         mock_profile_repository: MockProfileRepository,
         mock_family_relationship_repository: MockFamilyRelationshipRepository,
     ) -> None:
-        """親が子を招待する正常系: トークンが発行され、招待がDBに保存される"""
+        """親が招待する正常系: トークンが発行され、招待がDBに保存される"""
         # 準備: 親と子のプロフィールを作成
         parent = Profile(
             id="p1",
@@ -51,26 +51,26 @@ class TestParentInviteService:
 
         service = injector_with_mocks.get(ProfileService)
 
-        # 実行
-        token = service.create_parent_invite("p1", "c1", "invitee@example.com")
+        # 実行: 子どもIDは不要、招待者の全ての子どもと紐づく
+        token = service.create_parent_invite("p1", "invitee@example.com")
 
         # 検証
         assert isinstance(token, str) and len(token) > 0
         # リポジトリ経由で招待を取得し、基本的な値を検証
         invite = service.parent_invite_repo.get_by_token(token)  # type: ignore[attr-defined]
         assert invite is not None
-        assert invite.child_id == "c1"
+        assert invite.child_id == "c1"  # 最初の子どもが代表として保存される
         assert invite.inviter_id == "p1"
         assert invite.email == "invitee@example.com"
         assert invite.status == "pending"
 
-    def test_create_parent_invite_unauthorized(
+    def test_create_parent_invite_no_children(
         self,
         injector_with_mocks: Injector,
         mock_profile_repository: MockProfileRepository,
     ) -> None:
-        """親子関係がない場合、招待作成は認可エラーになる"""
-        # 準備: 親と子は存在するが、親子関係がない
+        """子どもがいない場合、招待作成はエラーになる"""
+        # 準備: 親はいるが子どもがいない
         parent = Profile(
             id="p1",
             auth_user_id="auth-parent",
@@ -81,24 +81,13 @@ class TestParentInviteService:
             created_at=datetime.now(UTC),
             updated_at=datetime.now(UTC),
         )
-        child = Profile(
-            id="c1",
-            auth_user_id=None,
-            email=None,
-            name="Child",
-            role="child",
-            avatar_url=None,
-            created_at=datetime.now(UTC),
-            updated_at=datetime.now(UTC),
-        )
         mock_profile_repository.add(parent)
-        mock_profile_repository.add(child)
 
         service = injector_with_mocks.get(ProfileService)
 
-        # 実行 & 検証: 認可エラーが発生する
+        # 実行 & 検証: 子どもがいないためエラーが発生する
         with pytest.raises(InvalidAmountException):
-            service.create_parent_invite("p1", "c1", "invitee@example.com")
+            service.create_parent_invite("p1", "invitee@example.com")
 
     def test_accept_parent_invite_success(
         self,
@@ -132,12 +121,12 @@ class TestParentInviteService:
         mock_profile_repository.add(child)
 
         service = injector_with_mocks.get(ProfileService)
-        # 招待を作成するには、招待者と子の親子関係が必要
+        # 招待を作成するには、招待者が子を持っている必要がある
         # まず p2 と c2 の関係を作って認可を満たす
         mock_family_relationship_repository.add_relationship("p2", "c2")
-        token = service.create_parent_invite("p2", "c2", "invitee2@example.com")
+        token = service.create_parent_invite("p2", "invitee2@example.com")
 
-        # 実行: 受け入れ側の親として p2 自身を想定（例として妥当）
+        # 実行: 受け入れ側の親として p2 自身を想定(例として妥当)
         ok = service.accept_parent_invite(token, "p2")
 
         # 検証
@@ -180,7 +169,7 @@ class TestParentInviteService:
         service = injector_with_mocks.get(ProfileService)
         mock_family_relationship_repository.add_relationship("p3", "c3")
         # 招待を作成し、モックを直接書き換えて期限切れにする
-        token = service.create_parent_invite("p3", "c3", "invitee3@example.com")
+        token = service.create_parent_invite("p3", "invitee3@example.com")
         invite = service.parent_invite_repo.get_by_token(token)  # type: ignore[attr-defined]
         assert invite is not None
         # 過去日時を設定して期限切れにする
