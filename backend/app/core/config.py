@@ -37,11 +37,25 @@ class CORSSettings:
     @classmethod
     def from_env(cls) -> CORSSettings:
         """環境変数からCORS設定を読み込む"""
-        # 必要に応じて環境変数で設定可能
-        origins = [
+        # デフォルトのローカルオリジン
+        origins: list[str] = [
             "http://localhost:3000",
             "http://127.0.0.1:3000",
         ]
+        # 追加のオリジンを環境変数から受け取る（カンマ区切り）
+        env_origins = os.getenv("CORS_ORIGINS")
+        if env_origins:
+            for o in env_origins.split(","):
+                o2 = o.strip()
+                if o2:
+                    origins.append(o2)
+        # フロントエンドの本番オリジンがあれば追加
+        fe_origin = os.getenv("FRONTEND_ORIGIN")
+        if fe_origin:
+            fe_origin = fe_origin.strip()
+            if fe_origin and fe_origin not in origins:
+                origins.append(fe_origin)
+
         return cls(cors_origins=origins)
 
 
