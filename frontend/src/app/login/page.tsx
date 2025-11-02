@@ -2,14 +2,14 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useId, useState } from "react";
+import { Suspense, useId, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { signIn } from "@/lib/supabase/auth";
 
-export default function LoginPage() {
+function LoginForm() {
 	const router = useRouter();
 	const searchParams = useSearchParams();
 	const [email, setEmail] = useState("");
@@ -154,6 +154,33 @@ export default function LoginPage() {
 							>
 								新規登録
 							</Link>
+						</p>
+					</div>
+				</div>
+			</div>
+		</div>
+	);
+}
+
+export default function LoginPage() {
+	return (
+		<Suspense fallback={<LoginPageSkeleton />}>
+			<LoginForm />
+		</Suspense>
+	);
+}
+
+function LoginPageSkeleton() {
+	return (
+		<div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 p-4">
+			<div className="w-full max-w-md">
+				<div className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl p-6 md:p-8">
+					<div className="text-center mb-6 md:mb-8">
+						<h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+							Kodomo Wallet
+						</h1>
+						<p className="text-sm md:text-base text-gray-600 dark:text-gray-400">
+							読み込み中...
 						</p>
 					</div>
 				</div>
