@@ -435,7 +435,7 @@ class TestFamilyConsistency:
         child_b = service.create_child(parent1.id, "Child B")
 
         # 親1が親2を招待
-        token = service.create_parent_invite(parent1.id, child_a.id, "parent2@example.com")
+        token = service.create_parent_invite(parent1.id, "parent2@example.com")
 
         # 親2が招待を受理
         service.accept_parent_invite(token, parent2.id)
