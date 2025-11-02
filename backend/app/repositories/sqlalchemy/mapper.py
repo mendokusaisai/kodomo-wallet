@@ -8,8 +8,11 @@ from app.domain import entities as domain
 from app.repositories.sqlalchemy import models as db_models
 
 
-def parse_datetime(dt_str: str) -> datetime:
-    """文字列からdatetimeオブジェクトを生成"""
+def parse_datetime(dt_str: str | datetime) -> datetime:
+    """文字列またはdatetimeオブジェクトからdatetimeオブジェクトを生成"""
+    # 既にdatetimeオブジェクトの場合はそのまま返す
+    if isinstance(dt_str, datetime):
+        return dt_str
     # ISO 8601形式の文字列をパース
     return datetime.fromisoformat(dt_str.replace("Z", "+00:00"))
 
