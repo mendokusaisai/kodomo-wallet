@@ -74,22 +74,15 @@ function AcceptInviteInner() {
 				setInviteEmail(email);
 				setEmail(email); // サインアップフォーム用にセット
 
-				// Supabaseでこのメールアドレスのアカウントが存在するか確認
-				// 注: admin.listUsers は管理者権限が必要なので、signInWithPasswordを試す方が良い
-				// ここではログイン状態を確認し、ログインしていない場合のみチェック
+				// ログイン状態を確認
 				const user = await getUser();
 
 				if (user) {
 					// 既にログイン済み → 招待受け入れ処理へ
 					await processAcceptInvite(tokenParam, user.id);
 				} else {
-					// 未ログイン → メールアドレスでアカウント存在チェック（簡易版）
-					// Supabaseには直接チェックする方法がないため、サインインを試みる
-					// ただし、これは実用的ではないので、ユーザーに選択させる方式にする
-
-					// ユーザーに選択させる（既存アカウントでログイン or 新規作成）
-					setStatus("user_not_exists"); // デフォルトで新規作成を表示
-					// 実際には既存ユーザーかどうか不明なので、両方のオプションを提供
+					// 未ログイン → サインアップフォームを表示
+					setStatus("user_not_exists");
 				}
 			} catch (e) {
 				setStatus("error");

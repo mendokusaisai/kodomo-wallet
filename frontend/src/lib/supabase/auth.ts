@@ -51,7 +51,10 @@ export async function getUser() {
 
 	const { data, error } = await supabase.auth.getUser();
 
-	if (error) throw error;
+	if (error) {
+		// セッションがない場合はnullを返す（エラーをスローしない）
+		return null;
+	}
 	return data.user;
 }
 
