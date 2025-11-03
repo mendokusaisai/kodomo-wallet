@@ -8,6 +8,7 @@ from injector import Binder, Injector, Module
 from app.domain.entities import Account, Profile
 from app.repositories.interfaces import (
     AccountRepository,
+    ChildInviteRepository,
     FamilyRelationshipRepository,
     ParentInviteRepository,
     ProfileRepository,
@@ -17,6 +18,7 @@ from app.repositories.interfaces import (
 )
 from app.repositories.mock_repositories import (
     MockAccountRepository,
+    MockChildInviteRepository,
     MockFamilyRelationshipRepository,
     MockParentInviteRepository,
     MockProfileRepository,
@@ -38,6 +40,7 @@ class RepositoryModule(Module):
         withdrawal_request_repo: MockWithdrawalRequestRepository | None = None,
         recurring_deposit_repo: MockRecurringDepositRepository | None = None,
         family_relationship_repo: MockFamilyRelationshipRepository | None = None,
+        child_invite_repo: MockChildInviteRepository | None = None,
     ):
         self.profile_repo = profile_repo
         self.account_repo = account_repo
@@ -51,6 +54,7 @@ class RepositoryModule(Module):
                 profiles=getattr(profile_repo, "profiles", {}),
             )
         )
+        self.child_invite_repo = child_invite_repo or MockChildInviteRepository()
 
     def configure(self, binder: Binder) -> None:
         """モックリポジトリをバインド"""
@@ -61,7 +65,8 @@ class RepositoryModule(Module):
         binder.bind(RecurringDepositRepository, to=self.recurring_deposit_repo)
         binder.bind(FamilyRelationshipRepository, to=self.family_relationship_repo)
         binder.bind(ParentInviteRepository, to=MockParentInviteRepository())
-        # メール送信はスタブ（コンソール出力）
+        binder.bind(ChildInviteRepository, to=self.child_invite_repo)
+        # メール送信はスタブ(コンソール出力)
         binder.bind(Mailer, to=ConsoleMailer())
 
 

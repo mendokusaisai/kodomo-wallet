@@ -5,6 +5,7 @@ from uuid import uuid4
 
 from app.domain.entities import (
     Account,
+    ChildInvite,
     FamilyRelationship,
     ParentInvite,
     Profile,
@@ -14,6 +15,7 @@ from app.domain.entities import (
 )
 from app.repositories.interfaces import (
     AccountRepository,
+    ChildInviteRepository,
     FamilyRelationshipRepository,
     ParentInviteRepository,
     ProfileRepository,
@@ -110,6 +112,11 @@ class MockProfileRepository(ProfileRepository):
             del self.profiles[user_id]
             return True
         return False
+
+    def update(self, profile: Profile) -> Profile:
+        """プロフィールを更新"""
+        self.profiles[profile.id] = profile
+        return profile
 
     def add(self, profile: Profile) -> None:
         """テスト用にプロフィールを追加"""
@@ -322,6 +329,14 @@ class MockRecurringDepositRepository(RecurringDepositRepository):
             return True
         return False
 
+    def get_active_by_day_of_month(self, day_of_month: int) -> list[RecurringDeposit]:
+        """指定した日付の有効な定期入金設定を取得"""
+        return [
+            deposit
+            for deposit in self.deposits.values()
+            if deposit.is_active and deposit.day_of_month == day_of_month
+        ]
+
 
 class MockFamilyRelationshipRepository(FamilyRelationshipRepository):
     """テスト用の FamilyRelationshipRepository のモック実装"""
@@ -433,6 +448,36 @@ class MockParentInviteRepository(ParentInviteRepository):
         return self.invites.get(token)
 
     def update_status(self, invite: ParentInvite, status: str) -> ParentInvite:
+        from dataclasses import replace
+
+        updated = replace(invite, status=status)
+        self.invites[invite.token] = updated
+        return updated
+
+
+class MockChildInviteRepository(ChildInviteRepository):
+    """テスト用の ChildInviteRepository のモック実装"""
+
+    def __init__(self):
+        self.invites: dict[str, ChildInvite] = {}
+
+    def create(self, child_id: str, email: str, token: str, expires_at: datetime) -> ChildInvite:
+        invite = ChildInvite(
+            id=str(uuid4()),
+            token=token,
+            child_id=child_id,
+            email=email,
+            status="pending",
+            expires_at=expires_at,
+            created_at=datetime.now(),
+        )
+        self.invites[token] = invite
+        return invite
+
+    def get_by_token(self, token: str) -> ChildInvite | None:
+        return self.invites.get(token)
+
+    def update_status(self, invite: ChildInvite, status: str) -> ChildInvite:
         from dataclasses import replace
 
         updated = replace(invite, status=status)
