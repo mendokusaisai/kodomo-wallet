@@ -1,5 +1,4 @@
-
-import { ArrowRight, Coins, PiggyBank, Shield, Sparkles, HelpCircle } from "lucide-react";
+import { ArrowRight, Coins, PiggyBank, Shield, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
@@ -20,7 +19,9 @@ export default function Home() {
 						Kodomo Wallet
 					</h1>
 					<p className="text-lg md:text-2xl text-gray-700 dark:text-gray-300">
-						親子で安心して使える<br className="md:hidden" />おこづかい管理アプリ
+						親子で安心して使える
+						<br className="md:hidden" />
+						おこづかい管理アプリ
 					</p>
 				</div>
 
@@ -52,7 +53,8 @@ export default function Home() {
 							安心・安全なシステム
 						</h3>
 						<p className="text-gray-600 dark:text-gray-400 text-sm">
-							Supabase認証とRow Level Securityで、家族のデータをしっかり保護します。
+							Supabase認証とRow Level
+							Securityで、家族のデータをしっかり保護します。
 						</p>
 					</div>
 				</div>
@@ -62,25 +64,6 @@ export default function Home() {
 					<h2 className="text-xl md:text-2xl font-semibold mb-6 text-gray-800 dark:text-gray-100">
 						🎉 Kodomo Wallet で家族のお金をもっとスマートに！
 					</h2>
-					<ul className="text-left space-y-3 text-sm md:text-base text-gray-700 dark:text-gray-300 mb-8 max-w-2xl mx-auto">
-						<li className="flex items-start gap-2">
-							<span className="text-green-500 font-bold mt-0.5">✅</span>
-							<span>レスポンシブデザイン（スマホ・PC・タブレット対応）</span>
-						</li>
-						<li className="flex items-start gap-2">
-							<span className="text-green-500 font-bold mt-0.5">✅</span>
-							<span>ダークモード・アニメーション・トースト通知</span>
-						</li>
-						<li className="flex items-start gap-2">
-							<span className="text-green-500 font-bold mt-0.5">✅</span>
-							<span>shadcn/ui コンポーネント統合</span>
-						</li>
-						<li className="flex items-start gap-2">
-							<span className="text-green-500 font-bold mt-0.5">✅</span>
-							<span>Supabase + FastAPI + Next.js で安心運用</span>
-						</li>
-					</ul>
-
 					<div className="flex flex-col sm:flex-row gap-4 justify-center">
 						<Button asChild size="lg" className="text-base md:text-lg">
 							<Link href="/login" className="flex items-center gap-2">
@@ -96,10 +79,6 @@ export default function Home() {
 						>
 							<Link href="/signup">新規登録</Link>
 						</Button>
-					</div>
-					<div className="mt-8 flex flex-col items-center gap-2 text-gray-500 dark:text-gray-400">
-						<HelpCircle className="w-5 h-5 inline-block mr-1" />
-						<span>ご質問・お問い合わせは <a href="mailto:support@kodomo-wallet.jp" className="underline">support@kodomo-wallet.jp</a> まで</span>
 					</div>
 				</div>
 
