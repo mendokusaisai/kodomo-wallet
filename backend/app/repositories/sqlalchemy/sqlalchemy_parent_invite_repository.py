@@ -43,11 +43,28 @@ class SQLAlchemyParentInviteRepository(ParentInviteRepository):
 
     def get_by_token(self, token: str) -> domain.ParentInvite | None:
         """トークンで親招待を取得"""
+        # デバッグ用: クエリ実行前にログ
+        print(f"[DEBUG] Querying parent_invites table for token: {token}")
+
         db_invite = (
             self.db.query(db_models.ParentInvite)
             .filter(db_models.ParentInvite.token == token)
             .first()
         )
+
+        # デバッグ用: 結果をログ
+        if db_invite:
+            print(
+                f"[DEBUG] Found invite: id={db_invite.id}, status={db_invite.status}, child_id={db_invite.child_id}"
+            )
+        else:
+            print(f"[DEBUG] No invite found for token: {token}")
+            # すべての招待レコードを確認
+            all_invites = self.db.query(db_models.ParentInvite).all()
+            print(f"[DEBUG] Total invites in database: {len(all_invites)}")
+            for inv in all_invites[:5]:  # 最初の5件のみ表示
+                print(f"  - token={inv.token}, email={inv.email}, status={inv.status}")
+
         return to_domain_parent_invite(db_invite) if db_invite else None
 
     def update_status(self, invite: domain.ParentInvite, status: str) -> domain.ParentInvite:

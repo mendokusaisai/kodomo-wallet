@@ -246,6 +246,11 @@ class ProfileService:
             representative_child_id, inviter_id, email, expires_at
         )
 
+        # デバッグ用ログ
+        print(
+            f"[DEBUG] Created parent invite: token={invite.token}, child_id={representative_child_id}, inviter_id={inviter_id}, email={email}"
+        )
+
         # 受け入れリンクを作成してスタブメール送信
         accept_link = f"{settings.FRONTEND_ORIGIN}/accept-invite?token={invite.token}"
 
@@ -266,8 +271,18 @@ class ProfileService:
         招待者の全既存子どもとの関係も自動作成
         """
         invite = self.parent_invite_repo.get_by_token(token)
-        if not invite or invite.status != "pending":
-            raise ResourceNotFoundException("ParentInvite", token)
+        if not invite:
+            # デバッグ用: トークンが見つからない場合の詳細情報
+            raise ResourceNotFoundException(
+                "ParentInvite",
+                f"Token '{token}' not found in database. "
+                f"Please verify the invite link is correct and the invitation exists.",
+            )
+        if invite.status != "pending":
+            raise InvalidAmountException(
+                0,
+                f"Invitation is {invite.status}. Only pending invitations can be accepted.",
+            )
 
         # 期限チェック
         now = datetime.now(UTC)
