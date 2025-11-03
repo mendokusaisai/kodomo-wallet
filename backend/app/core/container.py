@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 
 from app.repositories.interfaces import (
     AccountRepository,
+    ChildInviteRepository,
     FamilyRelationshipRepository,
     ParentInviteRepository,
     ProfileRepository,
@@ -23,6 +24,7 @@ from app.repositories.interfaces import (
 )
 from app.repositories.sqlalchemy import (
     SQLAlchemyAccountRepository,
+    SQLAlchemyChildInviteRepository,
     SQLAlchemyFamilyRelationshipRepository,
     SQLAlchemyParentInviteRepository,
     SQLAlchemyProfileRepository,
@@ -86,6 +88,11 @@ class RepositoryModule(Module):
         binder.bind(
             ParentInviteRepository,
             to=SQLAlchemyParentInviteRepository(self.db),
+            scope=singleton,
+        )
+        binder.bind(
+            ChildInviteRepository,
+            to=SQLAlchemyChildInviteRepository(self.db),
             scope=singleton,
         )
 

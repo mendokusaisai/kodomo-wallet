@@ -196,3 +196,28 @@ class SQLAlchemyProfileRepository(ProfileRepository):
         self.db.delete(db_profile)
         self.db.flush()
         return True
+
+    def update(self, profile: Profile) -> Profile:
+        """プロフィールを更新"""
+        # UPDATE文を使用して更新
+        self.db.execute(
+            update(db_models.Profile)
+            .where(db_models.Profile.id == uuid.UUID(profile.id))
+            .values(
+                name=profile.name,
+                avatar_url=profile.avatar_url,
+                updated_at=profile.updated_at,
+            )
+        )
+        self.db.flush()
+
+        # 更新後のデータを取得
+        db_profile = (
+            self.db.query(db_models.Profile)
+            .filter(db_models.Profile.id == uuid.UUID(profile.id))
+            .first()
+        )
+        if not db_profile:
+            raise ValueError(f"Profile {profile.id} not found after update")
+
+        return to_domain_profile(db_profile)

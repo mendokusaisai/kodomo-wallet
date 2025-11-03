@@ -111,3 +111,16 @@ class ParentInvite:
     status: Literal["pending", "accepted", "expired", "cancelled"]
     expires_at: datetime
     created_at: datetime
+
+
+@dataclass
+class ChildInvite:
+    """子どもの認証アカウント作成招待エンティティ"""
+
+    id: str
+    token: str
+    child_id: str
+    email: str
+    status: Literal["pending", "accepted", "expired", "cancelled"]
+    expires_at: datetime
+    created_at: datetime

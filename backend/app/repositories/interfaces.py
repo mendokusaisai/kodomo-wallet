@@ -7,6 +7,7 @@ from datetime import datetime
 
 from app.domain.entities import (
     Account,
+    ChildInvite,
     FamilyRelationship,
     ParentInvite,
     Profile,
@@ -48,6 +49,11 @@ class ProfileRepository(ABC):
     @abstractmethod
     def delete(self, user_id: str) -> bool:
         """プロフィールを削除"""
+        pass
+
+    @abstractmethod
+    def update(self, profile: Profile) -> Profile:
+        """プロフィールを更新"""
         pass
 
 
@@ -300,4 +306,29 @@ class ParentInviteRepository(ABC):
     @abstractmethod
     def update_status(self, invite: ParentInvite, status: str) -> ParentInvite:
         """親招待のステータスを更新"""
+        pass
+
+
+class ChildInviteRepository(ABC):
+    """子どもの認証アカウント作成招待のデータアクセスインターフェース"""
+
+    @abstractmethod
+    def create(
+        self,
+        child_id: str,
+        email: str,
+        token: str,
+        expires_at: datetime,
+    ) -> ChildInvite:
+        """子ども招待を作成"""
+        pass
+
+    @abstractmethod
+    def get_by_token(self, token: str) -> ChildInvite | None:
+        """トークンで子ども招待を取得"""
+        pass
+
+    @abstractmethod
+    def update_status(self, invite: ChildInvite, status: str) -> ChildInvite:
+        """子ども招待のステータスを更新"""
         pass

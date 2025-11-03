@@ -116,3 +116,16 @@ def to_domain_parent_invite(db_invite: db_models.ParentInvite) -> domain.ParentI
         expires_at=parse_datetime(db_invite.expires_at),  # type: ignore
         created_at=parse_datetime(db_invite.created_at),  # type: ignore
     )
+
+
+def to_domain_child_invite(db_invite: db_models.ChildInvite) -> domain.ChildInvite:
+    """SQLAlchemyのChildInviteモデルをドメインエンティティに変換"""
+    return domain.ChildInvite(
+        id=str(db_invite.id),
+        token=str(db_invite.token),
+        child_id=str(db_invite.child_id),
+        email=str(db_invite.email),
+        status=db_invite.status,  # type: ignore
+        expires_at=parse_datetime(db_invite.expires_at),  # type: ignore
+        created_at=parse_datetime(db_invite.created_at),  # type: ignore
+    )

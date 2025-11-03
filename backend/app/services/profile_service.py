@@ -8,6 +8,7 @@ from app.core.exceptions import InvalidAmountException, ResourceNotFoundExceptio
 from app.domain.entities import Profile
 from app.repositories.interfaces import (
     AccountRepository,
+    ChildInviteRepository,
     FamilyRelationshipRepository,
     ParentInviteRepository,
     ProfileRepository,
@@ -25,12 +26,14 @@ class ProfileService:
         account_repo: AccountRepository,
         family_relationship_repo: FamilyRelationshipRepository,
         parent_invite_repo: ParentInviteRepository,
+        child_invite_repo: ChildInviteRepository,
         mailer: Mailer,
     ):
         self.profile_repo = profile_repo
         self.account_repo = account_repo
         self.family_relationship_repo = family_relationship_repo
         self.parent_invite_repo = parent_invite_repo
+        self.child_invite_repo = child_invite_repo
         self.mailer = mailer
 
     def get_profile(self, user_id: str) -> Profile | None:
@@ -84,10 +87,8 @@ class ProfileService:
 
         updated_profile = replace(profile, **updates)
 
-        # Repositoryに更新メソッドを追加する必要があるが、
-        # 今は簡略化のため更新されたエンティティを返す
-        # TODO: ProfileRepositoryにupdateメソッドを追加
-        return updated_profile
+        # Repositoryを使用してDBに保存
+        return self.profile_repo.update(updated_profile)
 
     def create_child(
         self, parent_id: str, child_name: str, initial_balance: int = 0, email: str | None = None
@@ -174,7 +175,6 @@ class ProfileService:
 
     def invite_child_to_auth(self, child_id: str, email: str) -> str:
         """子供を認証アカウント作成に招待し、招待トークンを返す"""
-        from datetime import timedelta
         from uuid import uuid4
 
         # 子どもプロフィールが存在するか確認
@@ -190,27 +190,45 @@ class ProfileService:
         token = str(uuid4())
         expires_at = datetime.now(UTC) + timedelta(days=7)
 
-        # TODO: child_invite テーブルに保存（実装が必要）
-        # child_invite_repo.create(child_id, email, token, expires_at)
+        # child_invite テーブルに保存
+        invite = self.child_invite_repo.create(child_id, email, token, expires_at)
 
         print(
-            f"[DEBUG] Created child invite: token={token}, child_id={child_id}, email={email}, expires_at={expires_at}"
+            f"[DEBUG] Created child invite: token={invite.token}, child_id={child_id}, email={email}, expires_at={expires_at}"
         )
 
-        return token
+        return invite.token
 
     def accept_child_invite(self, token: str, auth_user_id: str) -> bool:
         """子どもの招待を受け入れ、認証アカウントとプロフィールを紐付ける"""
-        # TODO: child_invite テーブルからトークンを検索
-        # 今は簡易実装として、常に成功を返す
+        # child_invite テーブルからトークンを検索
+        invite = self.child_invite_repo.get_by_token(token)
+        if not invite:
+            raise ResourceNotFoundException("ChildInvite", f"Token '{token}' not found")
 
-        print(f"[DEBUG] Accepting child invite: token={token}, auth_user_id={auth_user_id}")
+        if invite.status != "pending":
+            raise InvalidAmountException(
+                0, f"Invitation is {invite.status}. Only pending invitations can be accepted."
+            )
 
-        # TODO: トークンからchild_idを取得し、プロフィールを更新
-        # child_invite = child_invite_repo.get_by_token(token)
-        # child = self.profile_repo.get_by_id(child_invite.child_id)
-        # updated_child = replace(child, auth_user_id=auth_user_id)
-        # self.profile_repo.update(updated_child)
+        # 期限チェック
+        now = datetime.now(UTC)
+        if invite.expires_at < now:
+            self.child_invite_repo.update_status(invite, "expired")
+            raise InvalidAmountException(0, "Invitation expired")
+
+        # トークンからchild_idを取得し、プロフィールを更新
+        child = self.profile_repo.get_by_id(invite.child_id)
+        if not child:
+            raise ResourceNotFoundException("Child", invite.child_id)
+
+        # 認証アカウントにリンク
+        self.profile_repo.link_to_auth(invite.child_id, auth_user_id)
+
+        # ステータスを更新
+        self.child_invite_repo.update_status(invite, "accepted")
+
+        print(f"[DEBUG] Accepted child invite: token={token}, auth_user_id={auth_user_id}")
 
         return True
 
