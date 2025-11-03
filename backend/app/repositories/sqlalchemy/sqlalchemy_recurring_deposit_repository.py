@@ -90,3 +90,15 @@ class SQLAlchemyRecurringDepositRepository(RecurringDepositRepository):
         self.db.delete(db_deposit)
         self.db.flush()
         return True
+
+    def get_active_by_day_of_month(self, day_of_month: int) -> list[RecurringDeposit]:
+        """指定日が実行日で有効な定期入金設定を取得"""
+        db_deposits = (
+            self.db.query(db_models.RecurringDeposit)
+            .filter(
+                db_models.RecurringDeposit.is_active == "true",
+                db_models.RecurringDeposit.day_of_month == day_of_month,
+            )
+            .all()
+        )
+        return [to_domain_recurring_deposit(dep) for dep in db_deposits]

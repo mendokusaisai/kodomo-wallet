@@ -11,6 +11,7 @@ from app.domain.entities import (
     ParentInvite,
     Profile,
     RecurringDeposit,
+    RecurringDepositExecution,
     Transaction,
     WithdrawalRequest,
 )
@@ -238,6 +239,44 @@ class RecurringDepositRepository(ABC):
     @abstractmethod
     def delete(self, recurring_deposit: RecurringDeposit) -> bool:
         """定期入金設定を削除"""
+        pass
+
+    @abstractmethod
+    def get_active_by_day_of_month(self, day_of_month: int) -> list[RecurringDeposit]:
+        """指定日が実行日で有効な定期入金設定を取得"""
+        pass
+
+
+class RecurringDepositExecutionRepository(ABC):
+    """定期入金実行履歴のデータアクセスインターフェース"""
+
+    @abstractmethod
+    def create(
+        self,
+        recurring_deposit_id: str,
+        transaction_id: str | None,
+        status: str,
+        amount: int,
+        day_of_month: int,
+        error_message: str | None,
+        executed_at: datetime,
+        created_at: datetime,
+    ) -> RecurringDepositExecution:
+        """実行履歴を作成"""
+        pass
+
+    @abstractmethod
+    def has_execution_this_month(
+        self, recurring_deposit_id: str, year: int, month: int
+    ) -> bool:
+        """指定した年月に成功した実行履歴が存在するかチェック"""
+        pass
+
+    @abstractmethod
+    def get_by_recurring_deposit_id(
+        self, recurring_deposit_id: str, limit: int = 10
+    ) -> list[RecurringDepositExecution]:
+        """定期入金設定IDで実行履歴を取得（最新順）"""
         pass
 
 

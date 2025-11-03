@@ -74,6 +74,21 @@ class RecurringDeposit:
 
 
 @dataclass
+class RecurringDepositExecution:
+    """定期入金実行履歴エンティティ"""
+
+    id: str
+    recurring_deposit_id: str
+    transaction_id: str | None
+    executed_at: datetime
+    status: Literal["success", "failed", "skipped"]
+    error_message: str | None
+    amount: int
+    day_of_month: int
+    created_at: datetime
+
+
+@dataclass
 class FamilyRelationship:
     """家族関係エンティティ（親-子の多対多関係）"""
 
