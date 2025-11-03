@@ -14,11 +14,11 @@ CREATE TABLE IF NOT EXISTS recurring_deposit_executions (
 );
 
 -- インデックス作成
-CREATE INDEX idx_recurring_deposit_executions_recurring_deposit_id 
+CREATE INDEX idx_recurring_deposit_executions_recurring_deposit_id
     ON recurring_deposit_executions(recurring_deposit_id);
-CREATE INDEX idx_recurring_deposit_executions_executed_at 
+CREATE INDEX idx_recurring_deposit_executions_executed_at
     ON recurring_deposit_executions(executed_at);
-CREATE INDEX idx_recurring_deposit_executions_status 
+CREATE INDEX idx_recurring_deposit_executions_status
     ON recurring_deposit_executions(status);
 
 -- コメント追加

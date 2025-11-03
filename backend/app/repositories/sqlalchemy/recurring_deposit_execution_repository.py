@@ -73,9 +73,7 @@ class SQLAlchemyRecurringDepositExecutionRepository(RecurringDepositExecutionRep
             created_at=result[8],
         )
 
-    def has_execution_this_month(
-        self, recurring_deposit_id: str, year: int, month: int
-    ) -> bool:
+    def has_execution_this_month(self, recurring_deposit_id: str, year: int, month: int) -> bool:
         """指定した年月に成功した実行履歴が存在するかチェック"""
         query = text("""
             SELECT COUNT(*) > 0

@@ -2,6 +2,9 @@
 SQLAlchemy リポジトリ実装
 """
 
+from app.repositories.sqlalchemy.recurring_deposit_execution_repository import (
+    SQLAlchemyRecurringDepositExecutionRepository,
+)
 from app.repositories.sqlalchemy.sqlalchemy_account_repository import (
     SQLAlchemyAccountRepository,
 )
@@ -28,6 +31,7 @@ __all__ = [
     "SQLAlchemyAccountRepository",
     "SQLAlchemyProfileRepository",
     "SQLAlchemyRecurringDepositRepository",
+    "SQLAlchemyRecurringDepositExecutionRepository",
     "SQLAlchemyTransactionRepository",
     "SQLAlchemyWithdrawalRequestRepository",
     "SQLAlchemyFamilyRelationshipRepository",

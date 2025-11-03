@@ -1,0 +1,43 @@
+name: 定期入金処理
+
+on:
+  # 毎日 日本時間 00:00 (UTC 15:00) に実行
+  schedule:
+    - cron: '0 15 * * *'
+
+  # 手動実行も可能
+  workflow_dispatch:
+
+jobs:
+  process-recurring-deposits:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+
+      - name: Install dependencies
+        run: |
+          cd backend
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run recurring deposits batch
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          cd backend
+          python -m app.batch.process_recurring_deposits
+
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "❌ 定期入金バッチ処理が失敗しました"
+          echo "ログを確認してください: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"

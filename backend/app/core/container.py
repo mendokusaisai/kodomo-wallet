@@ -16,6 +16,7 @@ from app.repositories.interfaces import (
     FamilyRelationshipRepository,
     ParentInviteRepository,
     ProfileRepository,
+    RecurringDepositExecutionRepository,
     RecurringDepositRepository,
     TransactionRepository,
     WithdrawalRequestRepository,
@@ -25,6 +26,7 @@ from app.repositories.sqlalchemy import (
     SQLAlchemyFamilyRelationshipRepository,
     SQLAlchemyParentInviteRepository,
     SQLAlchemyProfileRepository,
+    SQLAlchemyRecurringDepositExecutionRepository,
     SQLAlchemyRecurringDepositRepository,
     SQLAlchemyTransactionRepository,
     SQLAlchemyWithdrawalRequestRepository,
@@ -69,6 +71,11 @@ class RepositoryModule(Module):
         binder.bind(
             RecurringDepositRepository,
             to=SQLAlchemyRecurringDepositRepository(self.db),
+            scope=singleton,
+        )
+        binder.bind(
+            RecurringDepositExecutionRepository,
+            to=SQLAlchemyRecurringDepositExecutionRepository(self.db),
             scope=singleton,
         )
         binder.bind(
