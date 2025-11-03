@@ -175,13 +175,13 @@ export const LINK_CHILD_TO_AUTH_BY_EMAIL = gql`
 
 export const INVITE_CHILD_TO_AUTH = gql`
 	mutation InviteChildToAuth($childId: String!, $email: String!) {
-		inviteChildToAuth(childId: $childId, email: $email) {
-			id
-			name
-			email
-			role
-			createdAt
-		}
+		inviteChildToAuth(childId: $childId, email: $email)
+	}
+`;
+
+export const ACCEPT_CHILD_INVITE = gql`
+	mutation AcceptChildInvite($token: String!, $authUserId: String!) {
+		acceptChildInvite(token: $token, authUserId: $authUserId)
 	}
 `;
 

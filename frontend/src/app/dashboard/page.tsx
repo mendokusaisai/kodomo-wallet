@@ -298,9 +298,9 @@ export default function DashboardPage() {
 													}
 												}}
 												variant="outline"
-												className="w-full border-purple-500 text-purple-600 hover:bg-purple-50"
+												className="w-full border-purple-500 text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-950"
 											>
-												📧 招待メールを送信
+												� 招待リンクを作成
 											</Button>
 										</div>
 									)}

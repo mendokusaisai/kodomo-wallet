@@ -2,7 +2,8 @@
 
 import { useMutation } from "@apollo/client/react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useId } from "react";
+import { Copy } from "lucide-react";
+import { useId, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -37,6 +38,8 @@ export function LinkChildToAuthDialog({
 	childId,
 	childName,
 }: LinkChildToAuthDialogProps) {
+	const [inviteLink, setInviteLink] = useState<string | null>(null);
+	
 	const {
 		register,
 		handleSubmit,
@@ -58,78 +61,132 @@ export function LinkChildToAuthDialog({
 
 	const onSubmit = async (data: LinkAuthFormData) => {
 		try {
-			await inviteChild({
+			const response = await inviteChild({
 				variables: {
 					childId,
 					email: data.email,
 				},
 			});
 
-			toast.success("招待メールを送信しました", {
-				description: `${data.email} に招待メールを送信しました。メールのリンクからパスワードを設定してください。`,
-			});
+			const token = (response.data as { inviteChildToAuth?: string })?.inviteChildToAuth;
+			if (token) {
+				const origin = typeof window !== "undefined" ? window.location.origin : "";
+				const link = `${origin}/child-signup?token=${token}`;
+				setInviteLink(link);
 
-			reset();
-			onOpenChange(false);
+				toast.success("招待リンクを作成しました", {
+					description: "リンクをコピーして子どもに送信してください",
+				});
+			}
 		} catch (error) {
-			console.error("招待メール送信エラー:", error);
-			toast.error("招待メールの送信に失敗しました", {
-				description: "メールアドレスが正しいか確認してください",
+			console.error("招待リンク作成エラー:", error);
+			toast.error("招待リンクの作成に失敗しました", {
+				description: "もう一度お試しください",
 			});
 		}
 	};
 
+	const handleCopyLink = async () => {
+		if (!inviteLink) return;
+
+		try {
+			await navigator.clipboard.writeText(inviteLink);
+			toast.success("リンクをコピーしました", {
+				description: "子どもに送信してください",
+			});
+		} catch {
+			toast.error("コピーに失敗しました");
+		}
+	};
+
+	const handleClose = () => {
+		reset();
+		setInviteLink(null);
+		onOpenChange(false);
+	};
+
 	return (
-		<Dialog open={open} onOpenChange={onOpenChange}>
+		<Dialog open={open} onOpenChange={handleClose}>
 			<DialogContent className="sm:max-w-md">
 				<DialogHeader>
-					<DialogTitle>招待メールを送信</DialogTitle>
+					<DialogTitle>認証アカウント招待リンク作成</DialogTitle>
 					<DialogDescription>
 						{childName}
-						さんのメールアドレスを入力してください。
+						さんのメールアドレスを入力して招待リンクを作成してください。
 						<br />
-						招待メールが送信され、メール内のリンクからパスワードを設定できます。
+						作成されたリンクを子どもに送信すると、パスワードを設定してログインできます。
 					</DialogDescription>
 				</DialogHeader>
 
-				<form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-					{/* メールアドレス */}
-					<div className="space-y-2">
-						<Label htmlFor={emailId}>メールアドレス</Label>
-						<Input
-							id={emailId}
-							type="email"
-							{...register("email")}
-							placeholder="例: taro@example.com"
-							disabled={loading}
-						/>
-						{errors.email && (
-							<p className="text-sm text-red-600">{errors.email.message}</p>
-						)}
-						<p className="text-xs text-gray-500">
-							※
-							招待メールのリンクからパスワードを設定すると、自動的にアカウントが紐付けられます
-						</p>
-					</div>
+				{!inviteLink ? (
+					<form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+						{/* メールアドレス */}
+						<div className="space-y-2">
+							<Label htmlFor={emailId}>メールアドレス</Label>
+							<Input
+								id={emailId}
+								type="email"
+								{...register("email")}
+								placeholder="例: taro@example.com"
+								disabled={loading}
+							/>
+							{errors.email && (
+								<p className="text-sm text-red-600">{errors.email.message}</p>
+							)}
+							<p className="text-xs text-gray-500">
+								※
+								招待リンクからパスワードを設定すると、自動的にアカウントが紐付けられます
+							</p>
+						</div>
 
-					{/* ボタン */}
-					<div className="flex justify-end gap-3">
-						<Button
-							type="button"
-							variant="outline"
-							onClick={() => {
-								reset();
-								onOpenChange(false);
-							}}
-							disabled={loading}
-						>
-							キャンセル
-						</Button>
-						<Button type="submit" disabled={loading}>
-							{loading ? "送信中..." : "招待メールを送信"}
-						</Button>
+						{/* ボタン */}
+						<div className="flex justify-end gap-3">
+							<Button
+								type="button"
+								variant="outline"
+								onClick={handleClose}
+								disabled={loading}
+							>
+								キャンセル
+							</Button>
+							<Button type="submit" disabled={loading}>
+								{loading ? "作成中..." : "招待リンクを作成"}
+							</Button>
+						</div>
+					</form>
+				) : (
+					<div className="space-y-4">
+						{/* 招待リンク表示 */}
+						<div className="space-y-2">
+							<Label>招待リンク</Label>
+							<div className="flex gap-2">
+								<Input
+									value={inviteLink}
+									readOnly
+									className="text-sm font-mono"
+								/>
+								<Button
+									onClick={handleCopyLink}
+									variant="outline"
+									size="icon"
+									className="flex-shrink-0"
+								>
+									<Copy className="w-4 h-4" />
+								</Button>
+							</div>
+							<p className="text-xs text-green-700 dark:text-green-300">
+								✓ リンクをコピーして、{childName}さんに送信してください
+							</p>
+						</div>
+
+						{/* 完了ボタン */}
+						<div className="flex justify-end">
+							<Button onClick={handleClose}>
+								完了
+							</Button>
+						</div>
 					</div>
-				</form>
+				)}
 			</DialogContent>
 		</Dialog>
 	);

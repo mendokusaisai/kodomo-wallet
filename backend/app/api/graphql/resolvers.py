@@ -120,10 +120,19 @@ def invite_child_to_auth(
     child_id: str,
     email: str,
     profile_service: ProfileService,
-) -> Profile:
-    """メール経由で子に認証アカウント作成を招待"""
-    entity = profile_service.invite_child_to_auth(child_id, email)
-    return converters.to_graphql_profile(entity)
+) -> str:
+    """子に認証アカウント作成を促す招待トークンを生成"""
+    token = profile_service.invite_child_to_auth(child_id, email)
+    return token
+
+
+def accept_child_invite(
+    token: str,
+    auth_user_id: str,
+    profile_service: ProfileService,
+) -> bool:
+    """子どもの招待を受け入れ、認証アカウントとプロフィールを紐付ける"""
+    return profile_service.accept_child_invite(token, auth_user_id)
 
 
 def get_pending_withdrawal_requests(

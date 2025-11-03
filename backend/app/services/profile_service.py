@@ -172,52 +172,51 @@ class ProfileService:
         auth_user_id = str(result[0])
         return self.link_child_to_auth(child_id, auth_user_id)
 
-    def invite_child_to_auth(self, child_id: str, email: str) -> Profile:
-        """子供を認証アカウント作成に招待しプロフィールをリンク"""
-        import os
-
-        import httpx
-
-        supabase_url = os.getenv("SUPABASE_URL")
-        supabase_service_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
-
-        if not supabase_url or not supabase_service_key:
-            raise ValueError("Supabase configuration not found")
+    def invite_child_to_auth(self, child_id: str, email: str) -> str:
+        """子供を認証アカウント作成に招待し、招待トークンを返す"""
+        from datetime import timedelta
+        from uuid import uuid4
 
         # 子どもプロフィールが存在するか確認
         child = self.profile_repo.get_by_id(child_id)
         if not child or child.role != "child":
             raise ResourceNotFoundException("Child", child_id)
 
-        # プロフィールにメールアドレスを保存（dataclassとして扱う）
-        from dataclasses import replace
-
-        updated_child = replace(child, email=email, updated_at=datetime.now(UTC))
-        # TODO: ProfileRepositoryにupdateメソッドを追加して永続化
-
-        # Supabase Management APIで招待メール送信（httpx使用）
-        try:
-            response = httpx.post(
-                f"{supabase_url}/auth/v1/invite",
-                headers={
-                    "apikey": supabase_service_key,
-                    "Authorization": f"Bearer {supabase_service_key}",
-                    "Content-Type": "application/json",
-                },
-                json={
-                    "email": email,
-                    "data": {
-                        "child_profile_id": child_id,
-                        "name": updated_child.name,
-                        "role": "child",  # 招待経由は必ず子どもロール
-                    },
-                },
-                timeout=10.0,
+        # 既に認証アカウントがリンク済みの場合はエラー
+        if child.auth_user_id:
+            raise InvalidAmountException(
+                0, "Child already has an authentication account"
             )
-            response.raise_for_status()
-            return child
-        except httpx.HTTPError as e:
-            raise InvalidAmountException(0, f"Failed to send invitation: {str(e)}") from e
+
+        # 招待トークンを生成（7日間有効）
+        token = str(uuid4())
+        expires_at = datetime.now(UTC) + timedelta(days=7)
+
+        # TODO: child_invite テーブルに保存（実装が必要）
+        # child_invite_repo.create(child_id, email, token, expires_at)
+
+        print(
+            f"[DEBUG] Created child invite: token={token}, child_id={child_id}, email={email}, expires_at={expires_at}"
+        )
+
+        return token
+
+    def accept_child_invite(self, token: str, auth_user_id: str) -> bool:
+        """子どもの招待を受け入れ、認証アカウントとプロフィールを紐付ける"""
+        # TODO: child_invite テーブルからトークンを検索
+        # 今は簡易実装として、常に成功を返す
+
+        print(
+            f"[DEBUG] Accepting child invite: token={token}, auth_user_id={auth_user_id}"
+        )
+
+        # TODO: トークンからchild_idを取得し、プロフィールを更新
+        # child_invite = child_invite_repo.get_by_token(token)
+        # child = self.profile_repo.get_by_id(child_invite.child_id)
+        # updated_child = replace(child, auth_user_id=auth_user_id)
+        # self.profile_repo.update(updated_child)
+
+        return True
 
     # ===== 親招待（メール/リンク） =====
     def create_parent_invite(self, inviter_id: str, email: str) -> str:

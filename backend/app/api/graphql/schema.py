@@ -189,20 +189,37 @@ class Mutation:
             raise Exception(f"Domain error: {e.message}") from e
 
     @strawberry.mutation
+    @strawberry.mutation
     def invite_child_to_auth(
         self,
         info: Info,
         child_id: str,
         email: str,
-    ) -> Profile:
-        """子に認証アカウント作成を促す招待メールを送信"""
+    ) -> str:
+        """子に認証アカウント作成を促す招待トークンを生成"""
         profile_service = info.context["profile_service"]
         try:
             return resolvers.invite_child_to_auth(child_id, email, profile_service)
         except ResourceNotFoundException as e:
             raise Exception(f"Resource not found: {e.message}") from e
         except InvalidAmountException as e:
-            raise Exception(f"Failed to send invitation: {e.message}") from e
+            raise Exception(f"Failed to create invitation: {e.message}") from e
+        except DomainException as e:
+            raise Exception(f"Domain error: {e.message}") from e
+
+    @strawberry.mutation
+    def accept_child_invite(
+        self,
+        info: Info,
+        token: str,
+        auth_user_id: str,
+    ) -> bool:
+        """子どもの招待を受け入れ、認証アカウントとプロフィールを紐付ける"""
+        profile_service = info.context["profile_service"]
+        try:
+            return resolvers.accept_child_invite(token, auth_user_id, profile_service)
+        except ResourceNotFoundException as e:
+            raise Exception(f"Resource not found: {e.message}") from e
         except DomainException as e:
             raise Exception(f"Domain error: {e.message}") from e
 
