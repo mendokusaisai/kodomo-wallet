@@ -1,4 +1,3 @@
-import os
 import secrets
 import uuid
 
@@ -57,11 +56,16 @@ class SQLAlchemyProfileRepository(ProfileRepository):
         """
         import httpx
 
-        supabase_url = os.getenv("SUPABASE_URL")
-        supabase_service_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+        from app.core.config import settings
+
+        supabase_url = settings.SUPABASE_URL
+        supabase_service_key = settings.SUPABASE_KEY
 
         if not supabase_url or not supabase_service_key:
-            raise ValueError("Supabase configuration not found")
+            raise ValueError(
+                "Supabase configuration not found. "
+                "Please set SUPABASE_URL and SUPABASE_KEY environment variables."
+            )
 
         # 一時的なメールアドレスとパスワードを生成
         if not email:
@@ -97,15 +101,34 @@ class SQLAlchemyProfileRepository(ProfileRepository):
         auth_user_id = auth_user["id"]
 
         # トリガーで自動作成された profiles レコードを取得
-        self.db.flush()  # 保留中の変更をコミット
-        db_profile = (
-            self.db.query(db_models.Profile)
-            .filter(db_models.Profile.id == uuid.UUID(auth_user_id))
-            .first()
-        )
+        # Supabaseトリガーは auth.users への INSERT と同じトランザクションで実行される
+        # ただし、httpx経由なので別接続。少し待機してからクエリ
+        import time
+
+        db_profile = None
+        max_retries = 10
+
+        for retry_count in range(max_retries):
+            if retry_count > 0:
+                time.sleep(0.5)  # 500ms待機
+
+            # 新しいクエリで profiles を確認
+            db_profile = (
+                self.db.query(db_models.Profile)
+                .filter(db_models.Profile.id == uuid.UUID(auth_user_id))
+                .first()
+            )
+
+            if db_profile:
+                break
 
         if not db_profile:
-            raise ValueError(f"Profile not created by trigger for auth_user_id: {auth_user_id}")
+            raise ValueError(
+                f"Profile not created by database trigger for user {auth_user_id}. "
+                f"Checked {max_retries} times over {max_retries * 0.5} seconds. "
+                f"Possible issues: 1) Trigger handle_new_user not working, "
+                f"2) Database connection timeout, 3) Supabase service issue."
+            )
 
         # 名前を更新（UPDATE文を使用）
         self.db.execute(

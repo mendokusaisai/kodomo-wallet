@@ -79,7 +79,11 @@ export function CreateChildDialog({
 			onOpenChange(false);
 		} catch (error) {
 			console.error("子どもアカウント作成エラー:", error);
-			toast.error("子どもアカウントの作成に失敗しました");
+			const errorMessage =
+				error instanceof Error ? error.message : "不明なエラーが発生しました";
+			toast.error("子どもアカウントの作成に失敗しました", {
+				description: errorMessage,
+			});
 		}
 	};
 
