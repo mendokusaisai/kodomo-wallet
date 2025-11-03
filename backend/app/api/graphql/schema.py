@@ -204,7 +204,6 @@ class Mutation:
             raise Exception(f"Domain error: {e.message}") from e
 
     @strawberry.mutation
-    @strawberry.mutation
     def invite_child_to_auth(
         self,
         info: Info,
@@ -439,4 +438,7 @@ class Mutation:
 
 
 # スキーマの生成
-schema = strawberry.Schema(query=Query, mutation=Mutation)
+schema = strawberry.Schema(
+    query=Query,
+    mutation=Mutation,
+)
