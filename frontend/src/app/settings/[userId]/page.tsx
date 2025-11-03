@@ -351,6 +351,15 @@ export default function ChildSettingsPage() {
 					</div>
 				</div>
 
+				{/* 定期お小遣い設定セクション（親が子どもに対してのみ表示） */}
+				{isParent && isParentOfChild && (
+					<RecurringDepositSettings
+						childUserId={childUserId}
+						currentUserId={currentUserId ?? ""}
+						childName={childProfileData?.me?.name || ""}
+					/>
+				)}
+
 				{/* アカウント削除セクション（親が子どもを削除する場合のみ表示） */}
 				{isParent && isParentOfChild && (
 					<div className="bg-white rounded-lg shadow-md p-6 border border-red-200">
@@ -378,15 +387,6 @@ export default function ChildSettingsPage() {
 							}
 						/>
 					</div>
-				)}
-
-				{/* 定期お小遣い設定セクション（親が子どもに対してのみ表示） */}
-				{isParent && isParentOfChild && (
-					<RecurringDepositSettings
-						childUserId={childUserId}
-						currentUserId={currentUserId ?? ""}
-						childName={childProfileData?.me?.name || ""}
-					/>
 				)}
 			</div>
 		</div>
