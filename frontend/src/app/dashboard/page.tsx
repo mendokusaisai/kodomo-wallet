@@ -82,11 +82,39 @@ export default function DashboardPage() {
 	}
 
 	if (meError || accountsError) {
+		const errorMessage = meError?.message || accountsError?.message || "";
+		const is503Error =
+			errorMessage.includes("503") ||
+			errorMessage.includes("Service Unavailable");
+
 		return (
 			<div className="min-h-screen flex items-center justify-center p-4">
-				<div className="text-red-600 text-center">
-					<h2 className="text-xl font-bold mb-2">エラーが発生しました</h2>
-					<p>{meError?.message || accountsError?.message}</p>
+				<div className="text-center max-w-md">
+					{is503Error ? (
+						<>
+							<div className="mb-4">
+								<div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto" />
+							</div>
+							<h2 className="text-xl font-bold mb-2 text-gray-900 dark:text-gray-100">
+								サーバーを起動しています...
+							</h2>
+							<p className="text-gray-600 dark:text-gray-400 text-sm">
+								無料プランのため、起動に30秒〜1分程度かかる場合があります。
+								<br />
+								自動的に再試行しています。
+							</p>
+						</>
+					) : (
+						<>
+							<h2 className="text-xl font-bold mb-2 text-red-600">
+								エラーが発生しました
+							</h2>
+							<p className="text-gray-600 dark:text-gray-400">{errorMessage}</p>
+							<Button onClick={() => window.location.reload()} className="mt-4">
+								再読み込み
+							</Button>
+						</>
+					)}
 				</div>
 			</div>
 		);
