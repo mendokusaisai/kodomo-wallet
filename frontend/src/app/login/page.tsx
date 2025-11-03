@@ -87,7 +87,6 @@ function LoginForm() {
 							親子で楽しく学べるおこづかい管理
 						</p>
 					</div>
-
 					{/* ログインフォーム */}
 					<form onSubmit={handleSubmit} className="space-y-4">
 						<div>
@@ -120,7 +119,6 @@ function LoginForm() {
 							{isLoading ? "処理中..." : "ログイン"}
 						</Button>
 					</form>
-
 					{/* ソーシャルログイン */}
 					<div className="mt-6 space-y-3">
 						<div className="relative">
@@ -176,31 +174,31 @@ function LoginForm() {
 							Googleでログイン
 						</Button>
 					</div>
-
-					{/* テストユーザーログイン */}
-					<div className="mt-6">
-						<div className="space-y-2">
-							<Button
-								type="button"
-								onClick={handleTestLogin}
-								disabled={isLoading}
-								variant="outline"
-								className="w-full border-dashed bg-green-50 hover:bg-green-100 text-green-800 border-green-200"
-							>
-								👨 親アカウントでログイン
-							</Button>
-							<Button
-								type="button"
-								onClick={handleChildLogin}
-								disabled={isLoading}
-								variant="outline"
-								className="w-full border-dashed bg-purple-50 hover:bg-purple-100 text-purple-800 border-purple-200"
-							>
-								👦 子どもアカウントでログイン
-							</Button>
+					{/* テストユーザーログイン（開発環境のみ） */}
+					{process.env.NODE_ENV === "development" && (
+						<div className="mt-6">
+							<div className="space-y-2">
+								<Button
+									type="button"
+									onClick={handleTestLogin}
+									disabled={isLoading}
+									variant="outline"
+									className="w-full border-dashed bg-green-50 hover:bg-green-100 text-green-800 border-green-200"
+								>
+									👨 親アカウントでログイン
+								</Button>
+								<Button
+									type="button"
+									onClick={handleChildLogin}
+									disabled={isLoading}
+									variant="outline"
+									className="w-full border-dashed bg-purple-50 hover:bg-purple-100 text-purple-800 border-purple-200"
+								>
+									👦 子どもアカウントでログイン
+								</Button>
+							</div>
 						</div>
-					</div>
-
+					)}{" "}
 					{/* サインアップリンク */}
 					<div className="mt-6 text-center">
 						<p className="text-sm text-gray-600">
