@@ -21,8 +21,10 @@ def to_domain_profile(db_profile: db_models.Profile) -> domain.Profile:
     """SQLAlchemyのProfileモデルをドメインエンティティに変換"""
     return domain.Profile(
         id=str(db_profile.id),
-        auth_user_id=str(db_profile.auth_user_id) if db_profile.auth_user_id is not None else None,  # type: ignore
-        email=str(db_profile.email) if db_profile.email is not None else None,  # type: ignore
+        # スキーマ変更により profiles から auth_user_id / email を廃止
+        # 認証IDは auth.users.id と profiles.id が一致するため None を返す
+        auth_user_id=None,
+        email=None,
         name=str(db_profile.name),  # type: ignore
         role=db_profile.role,  # type: ignore
         avatar_url=str(db_profile.avatar_url) if db_profile.avatar_url is not None else None,  # type: ignore

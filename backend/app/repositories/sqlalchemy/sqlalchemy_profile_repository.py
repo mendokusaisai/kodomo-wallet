@@ -38,23 +38,21 @@ class SQLAlchemyProfileRepository(ProfileRepository):
         return [to_domain_profile(p) for p in db_profiles]
 
     def get_by_auth_user_id(self, auth_user_id: str) -> Profile | None:
-        """認証ユーザーIDでプロフィールを取得"""
+        """認証ユーザーIDでプロフィールを取得
+        スキーマ変更により profiles.id と auth.users.id は同一のため、id 検索にフォールバック
+        """
         db_profile = (
             self.db.query(db_models.Profile)
-            .filter(db_models.Profile.auth_user_id == uuid.UUID(auth_user_id))
+            .filter(db_models.Profile.id == uuid.UUID(auth_user_id))
             .first()
         )
         return to_domain_profile(db_profile) if db_profile else None
 
     def get_by_email(self, email: str) -> Profile | None:
-        """メールアドレスで未認証プロフィールを取得（auth_user_idがNULL）"""
-        db_profile = (
-            self.db.query(db_models.Profile)
-            .filter(db_models.Profile.email == email)
-            .filter(db_models.Profile.auth_user_id.is_(None))  # 未認証のみ
-            .first()
-        )
-        return to_domain_profile(db_profile) if db_profile else None
+        """メールアドレスで未認証プロフィールを取得
+        現行スキーマでは profiles に email を保持しないため、常に None を返す
+        """
+        return None
 
     def create_child(self, name: str, parent_id: str, email: str | None = None) -> Profile:
         """
@@ -130,26 +128,17 @@ class SQLAlchemyProfileRepository(ProfileRepository):
             self.db.rollback()
 
     def link_to_auth(self, profile_id: str, auth_user_id: str) -> Profile:
-        """既存プロフィールを認証アカウントに紐付け"""
-        from datetime import UTC
-
+        """既存プロフィールを認証アカウントに紐付け
+        現行スキーマでは profiles に認証IDを保持しないため、この操作は不要。
+        プロフィールをそのまま返す。
+        """
         db_profile = (
             self.db.query(db_models.Profile)
             .filter(db_models.Profile.id == uuid.UUID(profile_id))
             .first()
         )
-
         if not db_profile:
             raise ValueError(f"Profile {profile_id} not found")
-
-        # 既に認証アカウントが紐づいている場合はエラー
-        if db_profile.auth_user_id is not None:  # type: ignore
-            raise ValueError(f"Profile {profile_id} already linked to auth account")
-
-        db_profile.auth_user_id = uuid.UUID(auth_user_id)  # type: ignore
-        db_profile.updated_at = str(datetime.now(UTC))  # type: ignore
-        self.db.flush()
-        self.db.refresh(db_profile)
         return to_domain_profile(db_profile)
 
     def delete(self, user_id: str) -> bool:

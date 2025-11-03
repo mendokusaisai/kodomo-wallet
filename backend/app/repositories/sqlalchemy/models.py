@@ -4,7 +4,7 @@ SQLAlchemy データベースモデル（インフラ層）
 
 import uuid
 
-from sqlalchemy import BigInteger, CheckConstraint, Column, ForeignKey, Text
+from sqlalchemy import BigInteger, CheckConstraint, Column, DateTime, ForeignKey, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
@@ -17,15 +17,12 @@ class Profile(Base):
     __tablename__ = "profiles"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    auth_user_id = Column(
-        UUID(as_uuid=True), nullable=True, unique=True
-    )  # 認証アカウントID（NULL可）
-    email = Column(Text, nullable=True)  # メールアドレス
     name = Column(Text, nullable=False)
     role = Column(Text, nullable=False)
     avatar_url = Column(Text, nullable=True)
-    created_at = Column(Text, nullable=False)
-    updated_at = Column(Text, nullable=False)
+    # DBは timestamptz を使用しているため DateTime(timezone=True) を使用
+    created_at = Column(DateTime(timezone=True), nullable=False)
+    updated_at = Column(DateTime(timezone=True), nullable=False)
 
     # リレーション
     accounts = relationship("Account", back_populates="user", cascade="all, delete-orphan")
