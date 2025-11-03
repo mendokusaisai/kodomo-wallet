@@ -7,7 +7,10 @@ services:
       curl -LsSf https://astral.sh/uv/install.sh | sh
       export PATH="$HOME/.cargo/bin:$PATH"
       uv sync --frozen --no-dev
-    startCommand: uv run uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    startCommand: |
+      export PATH="$HOME/.cargo/bin:$PATH"
+      . .venv/bin/activate
+      uvicorn app.main:app --host 0.0.0.0 --port $PORT
     plan: free
     autoDeploy: true
     healthCheckPath: /health
