@@ -184,9 +184,7 @@ class ProfileService:
 
         # 既に認証アカウントがリンク済みの場合はエラー
         if child.auth_user_id:
-            raise InvalidAmountException(
-                0, "Child already has an authentication account"
-            )
+            raise InvalidAmountException(0, "Child already has an authentication account")
 
         # 招待トークンを生成（7日間有効）
         token = str(uuid4())
@@ -206,9 +204,7 @@ class ProfileService:
         # TODO: child_invite テーブルからトークンを検索
         # 今は簡易実装として、常に成功を返す
 
-        print(
-            f"[DEBUG] Accepting child invite: token={token}, auth_user_id={auth_user_id}"
-        )
+        print(f"[DEBUG] Accepting child invite: token={token}, auth_user_id={auth_user_id}")
 
         # TODO: トークンからchild_idを取得し、プロフィールを更新
         # child_invite = child_invite_repo.get_by_token(token)
@@ -310,3 +306,28 @@ class ProfileService:
 
         self.parent_invite_repo.update_status(invite, "accepted")
         return True
+
+    def get_parent_invite_email(self, token: str) -> str | None:
+        """
+        トークンから親招待のメールアドレスを取得
+        招待が存在し、期限内の場合のみメールアドレスを返す
+        """
+        invite = self.parent_invite_repo.get_by_token(token)
+        if not invite:
+            raise ResourceNotFoundException(
+                "ParentInvite",
+                f"Token '{token}' not found in database.",
+            )
+
+        # 期限チェック
+        now = datetime.now(UTC)
+        if invite.expires_at < now:
+            raise InvalidAmountException(0, "Invitation expired")
+
+        if invite.status != "pending":
+            raise InvalidAmountException(
+                0,
+                f"Invitation is {invite.status}. Only pending invitations are valid.",
+            )
+
+        return invite.email

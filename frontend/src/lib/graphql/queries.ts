@@ -324,3 +324,9 @@ export const ACCEPT_PARENT_INVITE = gql`
     acceptParentInvite(token: $token, currentParentId: $currentParentId)
   }
 `;
+
+export const GET_PARENT_INVITE_EMAIL = gql`
+  query GetParentInviteEmail($token: String!) {
+    parentInviteByToken(token: $token)
+  }
+`;

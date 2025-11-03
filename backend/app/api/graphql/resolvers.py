@@ -257,3 +257,11 @@ def accept_parent_invite(
 ) -> bool:
     """親招待を受理し、親子関係を作成する"""
     return profile_service.accept_parent_invite(token, current_parent_id)
+
+
+def get_parent_invite_email(
+    token: str,
+    profile_service: ProfileService,
+) -> str | None:
+    """トークンから親招待のメールアドレスを取得"""
+    return profile_service.get_parent_invite_email(token)

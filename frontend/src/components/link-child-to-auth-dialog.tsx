@@ -39,7 +39,7 @@ export function LinkChildToAuthDialog({
 	childName,
 }: LinkChildToAuthDialogProps) {
 	const [inviteLink, setInviteLink] = useState<string | null>(null);
-	
+
 	const {
 		register,
 		handleSubmit,

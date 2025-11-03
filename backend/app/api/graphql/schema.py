@@ -90,6 +90,21 @@ class Query:
         except DomainException as e:
             raise Exception(f"Domain error: {e.message}") from e
 
+    @strawberry.field
+    def parent_invite_by_token(
+        self,
+        info: Info,
+        token: str,
+    ) -> str | None:
+        """トークンから親招待のメールアドレスを取得"""
+        profile_service = info.context["profile_service"]
+        try:
+            return resolvers.get_parent_invite_email(token, profile_service)
+        except ResourceNotFoundException as e:
+            raise Exception(f"Resource not found: {e.message}") from e
+        except DomainException as e:
+            raise Exception(f"Domain error: {e.message}") from e
+
 
 @strawberry.type
 class Mutation:
