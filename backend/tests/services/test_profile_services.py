@@ -359,21 +359,19 @@ class TestFamilyConsistency:
         # 準備: 親1と親2を作成
         parent1 = Profile(
             id=str(uuid.uuid4()),
-            name="Parent 1",
-            role="parent",
-            email="parent1@example.com",
             auth_user_id=str(uuid.uuid4()),
-            created_at=datetime.now(),
+            email=None,
+            name="Parent 1",
+            role="parent",            created_at=datetime.now(),
             updated_at=datetime.now(),
             avatar_url=None,
         )
         parent2 = Profile(
             id=str(uuid.uuid4()),
-            name="Parent 2",
-            role="parent",
-            email="parent2@example.com",
             auth_user_id=str(uuid.uuid4()),
-            created_at=datetime.now(),
+            email=None,
+            name="Parent 2",
+            role="parent",            created_at=datetime.now(),
             updated_at=datetime.now(),
             avatar_url=None,
         )
@@ -406,21 +404,19 @@ class TestFamilyConsistency:
         # 準備: 親1と親2を作成
         parent1 = Profile(
             id=str(uuid.uuid4()),
-            name="Parent 1",
-            role="parent",
-            email="parent1@example.com",
             auth_user_id=str(uuid.uuid4()),
-            created_at=datetime.now(),
+            email=None,
+            name="Parent 1",
+            role="parent",            created_at=datetime.now(),
             updated_at=datetime.now(),
             avatar_url=None,
         )
         parent2 = Profile(
             id=str(uuid.uuid4()),
-            name="Parent 2",
-            role="parent",
-            email="parent2@example.com",
             auth_user_id=str(uuid.uuid4()),
-            created_at=datetime.now(),
+            email=None,
+            name="Parent 2",
+            role="parent",            created_at=datetime.now(),
             updated_at=datetime.now(),
             avatar_url=None,
         )

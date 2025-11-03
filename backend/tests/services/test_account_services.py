@@ -201,21 +201,19 @@ class TestAccountService:
 
         child1 = Profile(
             id=str(uuid.uuid4()),
-            name="子供1",
-            role="child",
+            auth_user_id=str(uuid.uuid4()),
             email=None,
-            auth_user_id=None,
-            avatar_url=None,
+            name="子供1",
+            role="child",            avatar_url=None,
             created_at=datetime.now(UTC),
             updated_at=datetime.now(UTC),
         )
         child2 = Profile(
             id=str(uuid.uuid4()),
-            name="子供2",
-            role="child",
+            auth_user_id=str(uuid.uuid4()),
             email=None,
-            auth_user_id=None,
-            avatar_url=None,
+            name="子供2",
+            role="child",            avatar_url=None,
             created_at=datetime.now(UTC),
             updated_at=datetime.now(UTC),
         )

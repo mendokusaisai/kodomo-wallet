@@ -117,13 +117,9 @@ class TestSQLAlchemyRecurringDepositRepository:
         # プロフィールとアカウントを作成
         profile = Profile(
             id=uuid.uuid4(),
-            name="Parent",
-            email=None,
-            role="parent",
-            auth_user_id=None,
-            avatar_url=None,
-            created_at=str(datetime.now(UTC)),
-            updated_at=str(datetime.now(UTC)),
+            name="Parent",            role="parent",            avatar_url=None,
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC),
         )
         account = Account(
             id=uuid.uuid4(),
@@ -132,8 +128,8 @@ class TestSQLAlchemyRecurringDepositRepository:
             currency="JPY",
             goal_name=None,
             goal_amount=None,
-            created_at=str(datetime.now(UTC)),
-            updated_at=str(datetime.now(UTC)),
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC),
         )
         in_memory_db.add_all([profile, account])
         in_memory_db.commit()
@@ -158,13 +154,9 @@ class TestSQLAlchemyRecurringDepositRepository:
         # プロフィールとアカウントを作成
         profile = Profile(
             id=uuid.uuid4(),
-            name="Parent",
-            email=None,
-            role="parent",
-            auth_user_id=None,
-            avatar_url=None,
-            created_at=str(datetime.now(UTC)),
-            updated_at=str(datetime.now(UTC)),
+            name="Parent",            role="parent",            avatar_url=None,
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC),
         )
         account = Account(
             id=uuid.uuid4(),
@@ -173,8 +165,8 @@ class TestSQLAlchemyRecurringDepositRepository:
             currency="JPY",
             goal_name=None,
             goal_amount=None,
-            created_at=str(datetime.now(UTC)),
-            updated_at=str(datetime.now(UTC)),
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC),
         )
         in_memory_db.add_all([profile, account])
         in_memory_db.commit()
@@ -208,13 +200,9 @@ class TestSQLAlchemyRecurringDepositRepository:
         # プロフィールとアカウントを作成
         profile = Profile(
             id=uuid.uuid4(),
-            name="Parent",
-            email=None,
-            role="parent",
-            auth_user_id=None,
-            avatar_url=None,
-            created_at=str(datetime.now(UTC)),
-            updated_at=str(datetime.now(UTC)),
+            name="Parent",            role="parent",            avatar_url=None,
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC),
         )
         account = Account(
             id=uuid.uuid4(),
@@ -223,8 +211,8 @@ class TestSQLAlchemyRecurringDepositRepository:
             currency="JPY",
             goal_name=None,
             goal_amount=None,
-            created_at=str(datetime.now(UTC)),
-            updated_at=str(datetime.now(UTC)),
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC),
         )
         in_memory_db.add_all([profile, account])
         in_memory_db.commit()
@@ -258,13 +246,9 @@ class TestSQLAlchemyRecurringDepositRepository:
         # プロフィールとアカウントを作成
         profile = Profile(
             id=uuid.uuid4(),
-            name="Parent",
-            email=None,
-            role="parent",
-            auth_user_id=None,
-            avatar_url=None,
-            created_at=str(datetime.now(UTC)),
-            updated_at=str(datetime.now(UTC)),
+            name="Parent",            role="parent",            avatar_url=None,
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC),
         )
         account = Account(
             id=uuid.uuid4(),
@@ -273,8 +257,8 @@ class TestSQLAlchemyRecurringDepositRepository:
             currency="JPY",
             goal_name=None,
             goal_amount=None,
-            created_at=str(datetime.now(UTC)),
-            updated_at=str(datetime.now(UTC)),
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC),
         )
         in_memory_db.add_all([profile, account])
         in_memory_db.commit()

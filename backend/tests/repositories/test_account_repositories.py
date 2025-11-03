@@ -44,8 +44,8 @@ class TestSQLAlchemyAccountRepository:
             currency="JPY",
             goal_name=None,
             goal_amount=None,
-            created_at=str(datetime.now(UTC)),
-            updated_at=str(datetime.now(UTC)),
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC),
         )
         account2 = Account(
             id=uuid.uuid4(),
@@ -54,8 +54,8 @@ class TestSQLAlchemyAccountRepository:
             currency="JPY",
             goal_name=None,
             goal_amount=None,
-            created_at=str(datetime.now(UTC)),
-            updated_at=str(datetime.now(UTC)),
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC),
         )
 
         in_memory_db.add(sample_profile)
@@ -172,8 +172,8 @@ class TestSQLAlchemyAccountRepository:
             currency="JPY",
             goal_name="Old Goal",
             goal_amount=20000,
-            created_at=str(datetime.now(UTC)),
-            updated_at=str(datetime.now(UTC)),
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC),
         )
         in_memory_db.add(sample_profile)
         in_memory_db.add(account_with_goal)
@@ -255,8 +255,8 @@ class TestSQLAlchemyAccountRepository:
             currency="JPY",
             goal_name="自転車",
             goal_amount=25000,
-            created_at=str(datetime.now(UTC)),
-            updated_at=str(datetime.now(UTC)),
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC),
         )
         in_memory_db.add(sample_profile)
         in_memory_db.add(account_with_goal)

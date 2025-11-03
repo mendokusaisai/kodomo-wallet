@@ -1,6 +1,8 @@
+import os
+import secrets
 import uuid
-from datetime import datetime
 
+from sqlalchemy import update
 from sqlalchemy.orm import Session
 
 from app.domain.entities import Profile
@@ -48,97 +50,115 @@ class SQLAlchemyProfileRepository(ProfileRepository):
         )
         return to_domain_profile(db_profile) if db_profile else None
 
-    def get_by_email(self, email: str) -> Profile | None:
-        """メールアドレスで未認証プロフィールを取得
-        現行スキーマでは profiles に email を保持しないため、常に None を返す
-        """
-        return None
-
     def create_child(self, name: str, parent_id: str, email: str | None = None) -> Profile:
+        """子プロフィールを作成
+        現行スキーマでは profiles.id は auth.users.id のFKのため、
+        auth.users を先に作成し、トリガーで profiles が自動作成される流れを使用します。
         """
-        認証なしで子プロフィールを作成
-        作成した親および関連する全親との関係を自動作成
-        """
-        from datetime import UTC
+        import httpx
 
-        db_profile = db_models.Profile(
-            id=uuid.uuid4(),
-            auth_user_id=None,  # 認証なし
-            email=email,  # メールアドレス(任意)
-            name=name,
-            role="child",
-            created_at=str(datetime.now(UTC)),
-            updated_at=str(datetime.now(UTC)),
+        supabase_url = os.getenv("SUPABASE_URL")
+        supabase_service_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+
+        if not supabase_url or not supabase_service_key:
+            raise ValueError("Supabase configuration not found")
+
+        # 一時的なメールアドレスとパスワードを生成
+        if not email:
+            # ランダムなメールアドレスを生成
+            email = f"child_{secrets.token_hex(8)}@temp.kodomo-wallet.local"
+
+        temp_password = secrets.token_urlsafe(32)
+
+        # Supabase Admin APIで認証ユーザーを作成
+        headers = {
+            "apikey": supabase_service_key,
+            "Authorization": f"Bearer {supabase_service_key}",
+            "Content-Type": "application/json",
+        }
+
+        # 認証ユーザー作成
+        response = httpx.post(
+            f"{supabase_url}/auth/v1/admin/users",
+            json={
+                "email": email,
+                "password": temp_password,
+                "email_confirm": True,
+                "user_metadata": {"role": "child", "name": name},
+            },
+            headers=headers,
+            timeout=30.0,
         )
-        self.db.add(db_profile)
+
+        if response.status_code != 200:
+            raise ValueError(f"Failed to create auth user: {response.text}")
+
+        auth_user = response.json()
+        auth_user_id = auth_user["id"]
+
+        # トリガーで自動作成された profiles レコードを取得
+        self.db.flush()  # 保留中の変更をコミット
+        db_profile = (
+            self.db.query(db_models.Profile)
+            .filter(db_models.Profile.id == uuid.UUID(auth_user_id))
+            .first()
+        )
+
+        if not db_profile:
+            raise ValueError(f"Profile not created by trigger for auth_user_id: {auth_user_id}")
+
+        # 名前を更新（UPDATE文を使用）
+        self.db.execute(
+            update(db_models.Profile).where(db_models.Profile.id == db_profile.id).values(name=name)
+        )
         self.db.flush()
 
-        # 作成した親との関係を作成
-        self._create_family_relationship(parent_id, str(db_profile.id))
-
-        # 同じ家族の他の親との関係も作成
-        related_parents = self._get_related_parents(parent_id)
-        for other_parent_id in related_parents:
-            self._create_family_relationship(other_parent_id, str(db_profile.id))
-
-        self.db.refresh(db_profile)
-        return to_domain_profile(db_profile)
-
-    def _get_related_parents(self, parent_id: str) -> list[str]:
-        """指定した親と同じ子を持つ他の親を取得"""
-        children = (
-            self.db.query(db_models.FamilyRelationship.child_id)
-            .filter(db_models.FamilyRelationship.parent_id == uuid.UUID(parent_id))
-            .all()
-        )
-
-        if not children:
-            return []
-
-        child_ids = [c.child_id for c in children]
-
-        other_parents = (
-            self.db.query(db_models.FamilyRelationship.parent_id)
-            .filter(db_models.FamilyRelationship.child_id.in_(child_ids))
-            .filter(db_models.FamilyRelationship.parent_id != uuid.UUID(parent_id))
-            .distinct()
-            .all()
-        )
-
-        return [str(p.parent_id) for p in other_parents]
-
-    def _create_family_relationship(self, parent_id: str, child_id: str) -> None:
-        """親子関係を作成(重複は無視)"""
-        from datetime import UTC
+        # 親子関係を作成
+        from datetime import UTC, datetime
 
         from sqlalchemy.exc import IntegrityError
 
         relationship = db_models.FamilyRelationship(
             parent_id=uuid.UUID(parent_id),
-            child_id=uuid.UUID(child_id),
+            child_id=uuid.UUID(auth_user_id),
             relationship_type="parent",
-            created_at=str(datetime.now(UTC)),
+            created_at=datetime.now(UTC),
         )
         self.db.add(relationship)
 
         try:
             self.db.flush()
-        except IntegrityError:
-            # UNIQUE制約違反 = 既に関係が存在 → 無視
+        except IntegrityError as exc:
+            # UNIQUE制約違反の場合はロールバック
             self.db.rollback()
+            raise ValueError(
+                f"Family relationship already exists between {parent_id} and {auth_user_id}"
+            ) from exc
+
+        return to_domain_profile(db_profile)
 
     def link_to_auth(self, profile_id: str, auth_user_id: str) -> Profile:
         """既存プロフィールを認証アカウントに紐付け
-        現行スキーマでは profiles に認証IDを保持しないため、この操作は不要。
-        プロフィールをそのまま返す。
+        現行スキーマでは profiles.id = auth.users.id のFKなので、
+        プロフィールIDと認証IDが一致していることを確認するだけです。
         """
         db_profile = (
             self.db.query(db_models.Profile)
             .filter(db_models.Profile.id == uuid.UUID(profile_id))
             .first()
         )
+
         if not db_profile:
             raise ValueError(f"Profile {profile_id} not found")
+
+        # 現行スキーマでは profiles.id == auth.users.id なので、
+        # profile_id と auth_user_id が一致していることを確認
+        if str(db_profile.id) != auth_user_id:
+            raise ValueError(
+                f"Profile ID {profile_id} does not match auth_user_id {auth_user_id}. "
+                "In the current schema, profiles.id must equal auth.users.id."
+            )
+
         return to_domain_profile(db_profile)
 
     def delete(self, user_id: str) -> bool:

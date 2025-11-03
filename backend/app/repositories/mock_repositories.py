@@ -49,13 +49,6 @@ class MockProfileRepository(ProfileRepository):
                 return profile
         return None
 
-    def get_by_email(self, email: str) -> Profile | None:
-        """メールアドレスで未認証プロフィールを取得（auth_user_id が NULL）"""
-        for profile in self.profiles.values():
-            if profile.email == email and profile.auth_user_id is None:
-                return profile
-        return None
-
     def create_child(self, name: str, parent_id: str, email: str | None = None) -> Profile:
         """
         認証なしで子プロフィールを作成

@@ -172,17 +172,6 @@ class ProfileService:
         auth_user_id = str(result[0])
         return self.link_child_to_auth(child_id, auth_user_id)
 
-    def auto_link_on_signup(self, auth_user_id: str, email: str) -> Profile | None:
-        """サインアップ時にメールアドレスが一致する場合、未認証子供プロフィールを自動的にリンク"""
-        # メールアドレスで未認証子どもプロフィールを検索
-        child_profile = self.profile_repo.get_by_email(email)
-
-        if child_profile:
-            # 自動的に紐付け
-            return self.profile_repo.link_to_auth(str(child_profile.id), auth_user_id)
-
-        return None
-
     def invite_child_to_auth(self, child_id: str, email: str) -> Profile:
         """子供を認証アカウント作成に招待しプロフィールをリンク"""
         import os

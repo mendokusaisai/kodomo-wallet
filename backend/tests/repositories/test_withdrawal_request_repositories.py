@@ -68,23 +68,15 @@ class TestSQLAlchemyWithdrawalRequestRepository:
         # 親、子、アカウントを作成
         parent = Profile(
             id=uuid.uuid4(),
-            name="Parent",
-            email=None,
-            role="parent",
-            auth_user_id=None,
-            avatar_url=None,
-            created_at=str(datetime.now(UTC)),
-            updated_at=str(datetime.now(UTC)),
+            name="Parent",            role="parent",            avatar_url=None,
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC),
         )
         child = Profile(
             id=uuid.uuid4(),
-            name="Child",
-            email=None,
-            role="child",
-            auth_user_id=None,
-            avatar_url=None,
-            created_at=str(datetime.now(UTC)),
-            updated_at=str(datetime.now(UTC)),
+            name="Child",            role="child",            avatar_url=None,
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC),
         )
 
         account = Account(
@@ -94,15 +86,15 @@ class TestSQLAlchemyWithdrawalRequestRepository:
             currency="JPY",
             goal_name=None,
             goal_amount=None,
-            created_at=str(datetime.now(UTC)),
-            updated_at=str(datetime.now(UTC)),
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC),
         )
         fr = FamilyRelationship(
             id=uuid.uuid4(),
             parent_id=parent.id,
             child_id=child.id,
             relationship_type="parent",
-            created_at=str(datetime.now(UTC)),
+            created_at=datetime.now(UTC),
         )
         in_memory_db.add_all([parent, child, account, fr])
         in_memory_db.commit()

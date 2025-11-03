@@ -35,13 +35,8 @@ class ProfileRepository(ABC):
         pass
 
     @abstractmethod
-    def get_by_email(self, email: str) -> Profile | None:
-        """メールアドレスで未認証プロフィールを取得（auth_user_idがNULL）"""
-        pass
-
-    @abstractmethod
     def create_child(self, name: str, parent_id: str, email: str | None = None) -> Profile:
-        """認証なしで子プロフィールを作成"""
+        """子プロフィールを作成（auth.users経由）"""
         pass
 
     @abstractmethod

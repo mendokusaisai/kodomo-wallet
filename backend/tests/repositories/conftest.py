@@ -9,15 +9,14 @@ from app.repositories.sqlalchemy.models import Account, Profile
 @pytest.fixture
 def sample_profile() -> Profile:
     """テスト用のサンプルプロフィールを作成"""
+    now = datetime.now(UTC)
     return Profile(
         id=uuid.uuid4(),
         name="Test User",
-        email=None,
         role="parent",
-        auth_user_id=None,
         avatar_url=None,
-        created_at=str(datetime.now(UTC)),
-        updated_at=str(datetime.now(UTC)),
+        created_at=now,
+        updated_at=now,
     )
 
 
@@ -31,6 +30,6 @@ def sample_account(sample_profile: Profile) -> Account:
         currency="JPY",
         goal_name=None,
         goal_amount=None,
-        created_at=str(datetime.now(UTC)),
-        updated_at=str(datetime.now(UTC)),
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC),
     )

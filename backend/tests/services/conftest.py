@@ -71,7 +71,7 @@ def sample_profile() -> Profile:
     return Profile(
         id="sample-id",
         auth_user_id="sample-auth-user-id",
-        email="test@example.com",
+        email=None,
         name="Test User",
         role="parent",
         avatar_url=None,

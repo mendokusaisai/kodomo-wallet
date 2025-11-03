@@ -28,7 +28,7 @@ class TestParentInviteService:
         parent = Profile(
             id="p1",
             auth_user_id="auth-parent",
-            email="parent@example.com",
+            email=None,
             name="Parent",
             role="parent",
             avatar_url=None,
@@ -74,7 +74,7 @@ class TestParentInviteService:
         parent = Profile(
             id="p1",
             auth_user_id="auth-parent",
-            email="parent@example.com",
+            email=None,
             name="Parent",
             role="parent",
             avatar_url=None,
@@ -100,7 +100,7 @@ class TestParentInviteService:
         parent = Profile(
             id="p2",
             auth_user_id="auth-parent2",
-            email="parent2@example.com",
+            email=None,
             name="Parent2",
             role="parent",
             avatar_url=None,
@@ -146,7 +146,7 @@ class TestParentInviteService:
         parent = Profile(
             id="p3",
             auth_user_id="auth-parent3",
-            email="parent3@example.com",
+            email=None,
             name="Parent3",
             role="parent",
             avatar_url=None,

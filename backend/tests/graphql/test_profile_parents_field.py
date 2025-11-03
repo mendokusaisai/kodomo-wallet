@@ -20,7 +20,7 @@ class TestProfileParentsLogic:
         db = graphql_context["db"]
         profile_service: ProfileService = graphql_context["profile_service"]
 
-        now = datetime.now(UTC).isoformat()
+        now = datetime.now(UTC)
         child_profile_db = db_models.Profile(
             name="Orphan Child",
             role="child",
@@ -44,14 +44,13 @@ class TestProfileParentsLogic:
         db = graphql_context["db"]
         profile_service: ProfileService = graphql_context["profile_service"]
 
-        now = datetime.now(UTC).isoformat()
+        now = datetime.now(UTC)
 
         # 親プロフィール作成
         parent_profile_db = db_models.Profile(
             name="Parent One",
             role="parent",
             avatar_url=None,
-            email="parent@example.com",
             created_at=now,
             updated_at=now,
         )
@@ -89,7 +88,8 @@ class TestProfileParentsLogic:
         assert parents[0].id == str(parent_profile_db.id)
         assert parents[0].name == "Parent One"
         assert parents[0].role == "parent"
-        assert parents[0].email == "parent@example.com"
+        # email は profiles テーブルにないため None
+        assert parents[0].email is None
 
     def test_get_parents_with_two_parents(self, graphql_context):
         """2人の親を持つ子プロフィールの場合、両親が配列で返される"""
@@ -97,14 +97,13 @@ class TestProfileParentsLogic:
         db = graphql_context["db"]
         profile_service: ProfileService = graphql_context["profile_service"]
 
-        now = datetime.now(UTC).isoformat()
+        now = datetime.now(UTC)
 
         # 親1作成
         parent1_db = db_models.Profile(
             name="Parent One",
             role="parent",
             avatar_url=None,
-            email="parent1@example.com",
             created_at=now,
             updated_at=now,
         )
@@ -115,7 +114,6 @@ class TestProfileParentsLogic:
             name="Parent Two",
             role="parent",
             avatar_url=None,
-            email="parent2@example.com",
             created_at=now,
             updated_at=now,
         )
@@ -172,12 +170,11 @@ class TestProfileParentsLogic:
         db = graphql_context["db"]
         profile_service: ProfileService = graphql_context["profile_service"]
 
-        now = datetime.now(UTC).isoformat()
+        now = datetime.now(UTC)
         parent_profile_db = db_models.Profile(
             name="Solo Parent",
             role="parent",
             avatar_url=None,
-            email="solo@example.com",
             created_at=now,
             updated_at=now,
         )
@@ -197,7 +194,7 @@ class TestProfileParentsLogic:
         db = graphql_context["db"]
         profile_service: ProfileService = graphql_context["profile_service"]
 
-        now = datetime.now(UTC).isoformat()
+        now = datetime.now(UTC)
 
         # 親1作成
         parent1_db = db_models.Profile(
