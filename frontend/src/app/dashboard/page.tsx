@@ -186,30 +186,47 @@ export default function DashboardPage() {
 								{/* アカウント所有者名 */}
 								{account.user && (
 									<div className="mb-3 pb-3 border-b border-gray-200 dark:border-gray-700">
-										<div className="flex items-center gap-2 md:gap-3">
-											{/* アバター表示 */}
-											{account.user.avatarUrl ? (
-												<div className="w-10 h-10 md:w-12 md:h-12 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
-													<Image
-														src={account.user.avatarUrl}
-														alt={account.user.name}
-														width={48}
-														height={48}
-														className="w-full h-full object-cover"
-														onError={(e) => {
-															e.currentTarget.style.display = "none";
-														}}
-														unoptimized
-													/>
-												</div>
-											) : (
-												<div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-base md:text-lg font-bold flex-shrink-0">
-													{account.user.name?.charAt(0) || "?"}
-												</div>
+										<div className="flex items-center justify-between gap-2">
+											<div className="flex items-center gap-2 md:gap-3 flex-1 min-w-0">
+												{/* アバター表示 */}
+												{account.user.avatarUrl ? (
+													<div className="w-10 h-10 md:w-12 md:h-12 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
+														<Image
+															src={account.user.avatarUrl}
+															alt={account.user.name}
+															width={48}
+															height={48}
+															className="w-full h-full object-cover"
+															onError={(e) => {
+																e.currentTarget.style.display = "none";
+															}}
+															unoptimized
+														/>
+													</div>
+												) : (
+													<div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-base md:text-lg font-bold flex-shrink-0">
+														{account.user.name?.charAt(0) || "?"}
+													</div>
+												)}
+												<p className="text-base md:text-lg font-semibold text-gray-900 dark:text-gray-100 truncate">
+													{account.user.name}
+												</p>
+											</div>
+											{/* 設定ボタン（親のみ表示） */}
+											{meData?.me?.role === "parent" && (
+												<Button
+													onClick={() => {
+														if (account.user) {
+															router.push(`/settings/${account.user.id}`);
+														}
+													}}
+													variant="ghost"
+													size="icon"
+													className="flex-shrink-0 w-12 h-12"
+												>
+													<Settings className="!w-7 !h-7 text-gray-600 dark:text-gray-400" />
+												</Button>
 											)}
-											<p className="text-base md:text-lg font-semibold text-gray-900 dark:text-gray-100 truncate">
-												{account.user.name}
-											</p>
 										</div>
 									</div>
 								)}
@@ -266,23 +283,6 @@ export default function DashboardPage() {
 											accountId={account.id}
 											currentBalance={account.balance}
 										/>
-									</div>
-								)}
-								{/* 子どもアカウント設定ボタン（親のみ表示） */}
-								{meData?.me?.role === "parent" && account.user && (
-									<div className="mb-4">
-										<Button
-											onClick={() => {
-												if (account.user) {
-													router.push(`/settings/${account.user.id}`);
-												}
-											}}
-											variant="outline"
-											className="w-full border-gray-300 text-gray-700 hover:bg-gray-50"
-										>
-											<Settings className="w-4 h-4 mr-2" />
-											設定
-										</Button>
 									</div>
 								)}
 								{/* 貯金目標 */}
