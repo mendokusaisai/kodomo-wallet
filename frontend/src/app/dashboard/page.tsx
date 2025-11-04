@@ -8,7 +8,6 @@ import { useEffect, useState } from "react";
 import { CreateChildDialog } from "@/components/create-child-dialog";
 import { DashboardSkeleton } from "@/components/dashboard-skeleton";
 import { DepositDialog } from "@/components/deposit-dialog";
-import GoalDialog from "@/components/goal-dialog";
 import { LinkChildToAuthDialog } from "@/components/link-child-to-auth-dialog";
 import { LogoutButton } from "@/components/logout-button";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -99,7 +98,7 @@ export default function DashboardPage() {
 								サーバーを起動しています...
 							</h2>
 							<p className="text-gray-600 dark:text-gray-400 text-sm">
-								無料プランのため、起動に30秒〜1分程度かかる場合があります。
+								起動に30秒〜1分程度かかる場合があります。
 								<br />
 								自動的に再試行しています。
 							</p>
@@ -193,9 +192,6 @@ export default function DashboardPage() {
 								{/* アカウント所有者名 */}
 								{account.user && (
 									<div className="mb-3 pb-3 border-b border-gray-200 dark:border-gray-700">
-										<p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 mb-2">
-											アカウント所有者
-										</p>
 										<div className="flex items-center gap-2 md:gap-3">
 											{/* アバター表示 */}
 											{account.user.avatarUrl ? (
@@ -318,7 +314,7 @@ export default function DashboardPage() {
 											className="w-full border-gray-300 text-gray-700 hover:bg-gray-50"
 										>
 											<Settings className="w-4 h-4 mr-2" />
-											プロフィール設定
+											設定
 										</Button>
 									</div>
 								)}
@@ -328,7 +324,7 @@ export default function DashboardPage() {
 									{account.goalName && account.goalAmount ? (
 										<>
 											<div className="flex justify-between items-center mb-2">
-												<p className="text-sm font-medium text-gray-700">
+												<p className="text-sm font-medium text-gray-700 dark:text-gray-300">
 													目標: {account.goalName}
 												</p>
 												<p className="text-sm font-bold text-blue-600">
@@ -345,16 +341,11 @@ export default function DashboardPage() {
 												目標金額: ¥{account.goalAmount.toLocaleString()}
 											</p>
 										</>
-									) : null}
-
-									{/* 目標設定ボタン */}
-									<div className="mt-2">
-										<GoalDialog
-											accountId={account.id}
-											currentGoalName={account.goalName}
-											currentGoalAmount={account.goalAmount}
-										/>
-									</div>
+									) : (
+										<p className="text-sm text-gray-500 dark:text-gray-400">
+											貯金目標が設定されていません
+										</p>
+									)}
 								</div>
 
 								{/* トランザクション履歴 */}

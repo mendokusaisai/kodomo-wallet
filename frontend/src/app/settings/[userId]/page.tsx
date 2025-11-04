@@ -6,12 +6,18 @@ import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 import DeleteAccountDialog from "@/components/delete-account-dialog";
+import GoalDialog from "@/components/goal-dialog";
 import RecurringDepositSettings from "@/components/recurring-deposit-settings";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { DELETE_CHILD, GET_ME, UPDATE_PROFILE } from "@/lib/graphql/queries";
-import type { GetMeResponse } from "@/lib/graphql/types";
+import {
+	DELETE_CHILD,
+	GET_ACCOUNTS,
+	GET_ME,
+	UPDATE_PROFILE,
+} from "@/lib/graphql/queries";
+import type { GetAccountsResponse, GetMeResponse } from "@/lib/graphql/types";
 import { getUser } from "@/lib/supabase/auth";
 import { deleteAvatar, uploadAvatar } from "@/lib/supabase/storage";
 
@@ -61,6 +67,13 @@ export default function ChildSettingsPage() {
 		variables: { userId: childUserId },
 		skip: !childUserId,
 	});
+
+	// 子どものアカウント情報を取得
+	const { data: accountsData, loading: accountsLoading } =
+		useQuery<GetAccountsResponse>(GET_ACCOUNTS, {
+			variables: { userId: childUserId },
+			skip: !childUserId,
+		});
 
 	// 子どもプロフィールデータの初期化
 	useEffect(() => {
@@ -232,7 +245,7 @@ export default function ChildSettingsPage() {
 		}
 	}
 
-	if (childProfileLoading || meLoading) {
+	if (childProfileLoading || meLoading || accountsLoading) {
 		return (
 			<div className="min-h-screen bg-gray-100 p-6 flex items-center justify-center">
 				<div className="text-gray-600">読み込み中...</div>
@@ -350,6 +363,67 @@ export default function ChildSettingsPage() {
 						</div>
 					</div>
 				</div>
+
+				{/* 貯金目標セクション */}
+				{accountsData?.accounts && accountsData.accounts.length > 0 && (
+					<div className="bg-white rounded-lg shadow-md p-6 mb-6">
+						<h2 className="text-xl font-bold text-gray-900 mb-4">貯金目標</h2>
+						{accountsData.accounts.map((account) => {
+							const goalProgress = account.goalAmount
+								? Math.round((account.balance / account.goalAmount) * 100)
+								: 0;
+
+							return (
+								<div key={account.id} className="space-y-4">
+									<div className="flex justify-between items-center pb-2 border-b">
+										<div>
+											<p className="text-sm text-gray-600">残高</p>
+											<p className="text-2xl font-bold text-gray-900">
+												¥{account.balance.toLocaleString()}
+											</p>
+										</div>
+									</div>
+
+									{/* 目標表示 */}
+									{account.goalName && account.goalAmount ? (
+										<div className="space-y-2">
+											<div className="flex justify-between items-center">
+												<p className="text-sm font-medium text-gray-700">
+													目標: {account.goalName}
+												</p>
+												<p className="text-sm font-bold text-blue-600">
+													{goalProgress}%
+												</p>
+											</div>
+											<div className="w-full bg-gray-200 rounded-full h-2.5">
+												<div
+													className="bg-blue-600 h-2.5 rounded-full transition-all"
+													style={{ width: `${Math.min(goalProgress, 100)}%` }}
+												/>
+											</div>
+											<p className="text-xs text-gray-500">
+												目標金額: ¥{account.goalAmount.toLocaleString()}
+											</p>
+										</div>
+									) : (
+										<p className="text-sm text-gray-500">
+											貯金目標が設定されていません
+										</p>
+									)}
+
+									{/* 目標設定ボタン */}
+									<div className="mt-4">
+										<GoalDialog
+											accountId={account.id}
+											currentGoalName={account.goalName}
+											currentGoalAmount={account.goalAmount}
+										/>
+									</div>
+								</div>
+							);
+						})}
+					</div>
+				)}
 
 				{/* 定期お小遣い設定セクション（親が子どもに対してのみ表示） */}
 				{isParent && isParentOfChild && (
