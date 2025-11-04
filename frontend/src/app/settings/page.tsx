@@ -110,8 +110,8 @@ export default function SettingsPage() {
 		try {
 			let finalAvatarUrl = avatarUrl;
 
-			// 新しい画像ファイルが選択されている場合、アップロード
-			if (avatarFile) {
+			// 子どもロールの場合のみアバターアップロード処理
+			if (meData?.me?.role === "child" && avatarFile) {
 				// 古い画像を削除（オプション）
 				if (avatarUrl) {
 					await deleteAvatar(avatarUrl);
@@ -301,46 +301,51 @@ export default function SettingsPage() {
 							/>
 						</div>
 
-						<div>
-							<Label htmlFor={avatarInputId} className="mb-2 block">アバター画像（任意）</Label>
-							<div className="space-y-3">
-								<Input
-									ref={fileInputRef}
-									id={avatarInputId}
-									type="file"
-									accept="image/*"
-									onChange={handleFileChange}
-									className="cursor-pointer"
-								/>
-								<p className="text-xs text-gray-500 dark:text-gray-400">
-									JPG、PNG、GIF形式の画像ファイル（最大5MB）
-								</p>
-							</div>
-						</div>
-
-						{/* プレビュー表示 */}
-						{(avatarPreview || avatarUrl) && (
-							<div>
-								<Label>プレビュー</Label>
-								<div className="mt-2 flex items-center gap-4">
-									<Image
-										src={avatarPreview || avatarUrl}
-										alt="Avatar preview"
-										width={64}
-										height={64}
-										className="rounded-full object-cover"
-										unoptimized
-										onError={(e) => {
-											e.currentTarget.style.display = "none";
-										}}
-									/>
-									{avatarPreview && (
-										<p className="text-sm text-blue-600 dark:text-blue-400">
-											新しい画像（保存後に反映されます）
+						{/* 子どもロールの場合のみアバター設定を表示 */}
+						{meData?.me?.role === "child" && (
+							<>
+								<div>
+									<Label htmlFor={avatarInputId} className="mb-2 block">アバター画像（任意）</Label>
+									<div className="space-y-3">
+										<Input
+											ref={fileInputRef}
+											id={avatarInputId}
+											type="file"
+											accept="image/*"
+											onChange={handleFileChange}
+											className="cursor-pointer"
+										/>
+										<p className="text-xs text-gray-500 dark:text-gray-400">
+											JPG、PNG、GIF形式の画像ファイル（最大5MB）
 										</p>
-									)}
+									</div>
 								</div>
-							</div>
+
+								{/* プレビュー表示 */}
+								{(avatarPreview || avatarUrl) && (
+									<div>
+										<Label>プレビュー</Label>
+										<div className="mt-2 flex items-center gap-4">
+											<Image
+												src={avatarPreview || avatarUrl}
+												alt="Avatar preview"
+												width={64}
+												height={64}
+												className="rounded-full object-cover"
+												unoptimized
+												onError={(e) => {
+													e.currentTarget.style.display = "none";
+												}}
+											/>
+											{avatarPreview && (
+												<p className="text-sm text-blue-600 dark:text-blue-400">
+													新しい画像（保存後に反映されます）
+												</p>
+											)}
+										</div>
+									</div>
+								)}
+							</>
 						)}
 
 						<Button
