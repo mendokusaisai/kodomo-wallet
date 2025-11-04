@@ -119,33 +119,32 @@ export default function DashboardPage() {
 				{/* ヘッダー */}
 				<div className="mb-6 md:mb-8 flex flex-col sm:flex-row justify-between items-start gap-4">
 					<div className="flex items-center gap-3 md:gap-4">
-						{/* アバター表示 */}
-						{meData?.me?.avatarUrl ? (
-							<div className="w-12 h-12 md:w-16 md:h-16 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
-								<Image
-									src={meData.me.avatarUrl}
-									alt={meData.me.name}
-									width={64}
-									height={64}
-									className="w-full h-full object-cover"
-									onError={(e) => {
-										e.currentTarget.style.display = "none";
-									}}
-									unoptimized
-								/>
-							</div>
-						) : (
-							<div className="w-12 h-12 md:w-16 md:h-16 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-lg md:text-2xl font-bold flex-shrink-0">
-								{meData?.me?.name?.charAt(0) || "?"}
-							</div>
-						)}
 						<div>
-							<h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-gray-100">
-								こんにちは、{meData?.me?.name}さん
-							</h1>
-							<p className="text-sm md:text-base text-gray-600 dark:text-gray-400 mt-1">
-								ロール: {meData?.me?.role === "parent" ? "親" : "子供"}
-							</p>
+							<div className="flex items-center gap-3">
+								<div className="bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl p-2 shadow-lg">
+									<svg
+										className="w-6 h-6 md:w-8 md:h-8 text-white"
+										fill="none"
+										stroke="currentColor"
+										viewBox="0 0 24 24"
+									>
+										<path
+											strokeLinecap="round"
+											strokeLinejoin="round"
+											strokeWidth={2}
+											d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+										/>
+									</svg>
+								</div>
+								<div>
+									<h1 className="text-xl md:text-2xl lg:text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+										Kodomo Wallet
+									</h1>
+									<p className="text-xs md:text-sm text-gray-600 dark:text-gray-400">
+										おこづかい管理アプリ
+									</p>
+								</div>
+							</div>
 						</div>
 					</div>
 					<div className="flex gap-2 md:gap-3 w-full sm:w-auto">

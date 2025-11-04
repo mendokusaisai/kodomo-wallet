@@ -1,4 +1,4 @@
-import { ArrowRight, Coins, PiggyBank, Shield, Sparkles } from "lucide-react";
+import { ArrowRight, PiggyBank, Shield, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
@@ -14,13 +14,27 @@ export default function Home() {
 			<main className="text-center space-y-8 md:space-y-12 max-w-5xl mx-auto">
 				{/* ヒーローセクション */}
 				<div className="space-y-4 md:space-y-6">
-					<h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-blue-600 dark:text-blue-400 flex items-center justify-center gap-3">
-						<Coins className="w-12 h-12 md:w-16 md:h-16" />
-						Kodomo Wallet
-					</h1>
+					<div className="flex items-center justify-center gap-3">
+						<div className="bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl p-2 md:p-3 shadow-lg">
+							<svg
+								className="w-8 h-8 md:w-12 md:h-12 text-white"
+								fill="none"
+								stroke="currentColor"
+								viewBox="0 0 24 24"
+							>
+								<path
+									strokeLinecap="round"
+									strokeLinejoin="round"
+									strokeWidth={2}
+									d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+								/>
+							</svg>
+						</div>
+						<h1 className="text-4xl md:text-6xl lg:text-7xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+							Kodomo Wallet
+						</h1>
+					</div>
 					<p className="text-lg md:text-2xl text-gray-700 dark:text-gray-300">
-						親子で安心して使える
-						<br className="md:hidden" />
 						おこづかい管理アプリ
 					</p>
 				</div>

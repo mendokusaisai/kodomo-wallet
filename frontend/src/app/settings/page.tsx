@@ -290,7 +290,7 @@ export default function SettingsPage() {
 
 					<form onSubmit={handleUpdateProfile} className="space-y-4">
 						<div>
-							<Label htmlFor={nameInputId}>名前</Label>
+							<Label htmlFor={nameInputId} className="mb-2 block">名前</Label>
 							<Input
 								id={nameInputId}
 								type="text"
@@ -302,7 +302,7 @@ export default function SettingsPage() {
 						</div>
 
 						<div>
-							<Label htmlFor={avatarInputId}>アバター画像（任意）</Label>
+							<Label htmlFor={avatarInputId} className="mb-2 block">アバター画像（任意）</Label>
 							<div className="space-y-3">
 								<Input
 									ref={fileInputRef}
@@ -401,7 +401,7 @@ export default function SettingsPage() {
 						<div className="space-y-4">
 							{/* メールアドレス入力 */}
 							<div>
-								<Label htmlFor={inviteEmailId}>招待するメールアドレス</Label>
+								<Label htmlFor={inviteEmailId} className="mb-2 block">招待するメールアドレス</Label>
 								<Input
 									id={inviteEmailId}
 									type="email"

@@ -151,19 +151,19 @@ export default function RecurringDepositSettings({
 	const hasExistingSettings = !!recurringDepositData?.recurringDeposit;
 
 	return (
-		<div className="bg-white rounded-lg shadow-md p-6 mb-6">
+		<div className="bg-white dark:bg-gray-900 rounded-lg shadow-md p-6 mb-6">
 			<div className="flex items-center gap-3 mb-6">
-				<DollarSign className="w-6 h-6 text-green-600" />
-				<h2 className="text-xl font-bold text-gray-900">
+				<DollarSign className="w-6 h-6 text-green-600 dark:text-green-500" />
+				<h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">
 					定期お小遣い設定（親のみ）
 				</h2>
 			</div>
-			<p className="text-sm text-gray-600 mb-4">
+			<p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
 				毎月指定した日にちに自動でお小遣いを入金できます。
 			</p>
 			<form onSubmit={handleSave} className="space-y-4">
 				<div>
-					<Label htmlFor={amountInputId}>月額（円）</Label>
+					<Label htmlFor={amountInputId} className="mb-2 block">月額（円）</Label>
 					<Input
 						id={amountInputId}
 						type="number"
@@ -176,7 +176,7 @@ export default function RecurringDepositSettings({
 				</div>
 
 				<div>
-					<Label htmlFor={dayInputId} className="flex items-center gap-2">
+					<Label htmlFor={dayInputId} className="flex items-center gap-2 mb-2">
 						<Calendar className="w-4 h-4" />
 						入金日（毎月）
 					</Label>
@@ -190,7 +190,7 @@ export default function RecurringDepositSettings({
 						placeholder="1"
 						required
 					/>
-					<p className="text-xs text-gray-500 mt-1">
+					<p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
 						1〜31の範囲で指定してください（例：毎月25日 → 25）
 					</p>
 				</div>
@@ -236,8 +236,8 @@ export default function RecurringDepositSettings({
 				</div>
 			</form>{" "}
 			{hasExistingSettings && (
-				<div className="mt-4 p-4 bg-green-50 rounded-lg border border-green-200">
-					<p className="text-sm text-green-800">
+				<div className="mt-4 p-4 bg-green-50 dark:bg-green-950 rounded-lg border border-green-200 dark:border-green-800">
+					<p className="text-sm text-green-800 dark:text-green-300">
 						<strong>現在の設定：</strong>
 						毎月{recurringDepositData?.recurringDeposit?.dayOfMonth}日に
 						{recurringDepositData?.recurringDeposit?.amount.toLocaleString()}

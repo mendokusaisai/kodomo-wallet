@@ -229,10 +229,10 @@ export default function ChildSettingsPage() {
 
 		if (!hasAccess) {
 			return (
-				<div className="min-h-screen bg-gray-100 p-6 flex items-center justify-center">
-					<div className="bg-white rounded-lg shadow-md p-8 text-center">
+				<div className="min-h-screen bg-gray-100 dark:bg-gray-950 p-6 flex items-center justify-center">
+					<div className="bg-white dark:bg-gray-900 rounded-lg shadow-md p-8 text-center">
 						<p className="text-red-600 font-bold">アクセスが拒否されました</p>
-						<p className="text-gray-600 mt-2">
+						<p className="text-gray-600 dark:text-gray-400 mt-2">
 							このページにアクセスする権限がありません
 						</p>
 						<p className="text-xs text-gray-500 mt-2">
@@ -250,14 +250,14 @@ export default function ChildSettingsPage() {
 
 	if (childProfileLoading || meLoading || accountsLoading) {
 		return (
-			<div className="min-h-screen bg-gray-100 p-6 flex items-center justify-center">
-				<div className="text-gray-600">読み込み中...</div>
+			<div className="min-h-screen bg-gray-100 dark:bg-gray-950 p-6 flex items-center justify-center">
+				<div className="text-gray-600 dark:text-gray-400">読み込み中...</div>
 			</div>
 		);
 	}
 
 	return (
-		<div className="min-h-screen bg-gray-100 p-6">
+		<div className="min-h-screen bg-gray-100 dark:bg-gray-950 p-6">
 			<div className="max-w-2xl mx-auto">
 				{/* ヘッダー */}
 				<div className="mb-6 flex items-center gap-4">
@@ -269,21 +269,21 @@ export default function ChildSettingsPage() {
 						<ArrowLeft className="w-4 h-4 mr-2" />
 						戻る
 					</Button>
-					<h1 className="text-2xl font-bold text-gray-900">
+					<h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
 						{childProfileData?.me?.name || "子ども"}の設定
 					</h1>
 				</div>
 
 				{/* プロフィール編集セクション */}
-				<div className="bg-white rounded-lg shadow-md p-6 mb-6">
+				<div className="bg-white dark:bg-gray-900 rounded-lg shadow-md p-6 mb-6">
 					<div className="flex items-center gap-3 mb-6">
 						<User className="w-6 h-6 text-blue-600" />
-						<h2 className="text-xl font-bold text-gray-900">プロフィール</h2>
+						<h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">プロフィール</h2>
 					</div>
 
 					<form onSubmit={handleUpdateProfile} className="space-y-4">
 						<div>
-							<Label htmlFor={nameInputId}>名前</Label>
+							<Label htmlFor={nameInputId} className="mb-2 block">名前</Label>
 							<Input
 								id={nameInputId}
 								type="text"
@@ -295,7 +295,7 @@ export default function ChildSettingsPage() {
 						</div>
 
 						<div>
-							<Label htmlFor={avatarInputId}>アバター画像（任意）</Label>
+							<Label htmlFor={avatarInputId} className="mb-2 block">アバター画像（任意）</Label>
 							<div className="space-y-3">
 								<Input
 									ref={fileInputRef}
@@ -305,7 +305,7 @@ export default function ChildSettingsPage() {
 									onChange={handleFileChange}
 									className="cursor-pointer"
 								/>
-								<p className="text-xs text-gray-500">
+								<p className="text-xs text-gray-500 dark:text-gray-400">
 									JPG、PNG、GIF形式の画像ファイル（最大5MB）
 								</p>
 							</div>
@@ -327,7 +327,7 @@ export default function ChildSettingsPage() {
 										}}
 									/>
 									{avatarPreview && (
-										<p className="text-sm text-blue-600">
+										<p className="text-sm text-blue-600 dark:text-blue-400">
 											新しい画像（保存後に反映されます）
 										</p>
 									)}
@@ -347,20 +347,20 @@ export default function ChildSettingsPage() {
 				</div>
 
 				{/* アカウント情報セクション */}
-				<div className="bg-white rounded-lg shadow-md p-6 mb-6">
-					<h2 className="text-xl font-bold text-gray-900 mb-4">
+				<div className="bg-white dark:bg-gray-900 rounded-lg shadow-md p-6 mb-6">
+					<h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">
 						アカウント情報
 					</h2>
 					<div className="space-y-3">
 						<div>
-							<p className="text-sm text-gray-600">ロール</p>
-							<p className="text-lg font-semibold">
+							<p className="text-sm text-gray-600 dark:text-gray-400">ロール</p>
+							<p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
 								{childProfileData?.me?.role === "parent" ? "親" : "子ども"}
 							</p>
 						</div>
 						<div>
-							<p className="text-sm text-gray-600">ユーザーID</p>
-							<p className="text-sm font-mono text-gray-800 break-all">
+							<p className="text-sm text-gray-600 dark:text-gray-400">ユーザーID</p>
+							<p className="text-sm font-mono text-gray-800 dark:text-gray-300 break-all">
 								{childUserId}
 							</p>
 						</div>
@@ -369,8 +369,8 @@ export default function ChildSettingsPage() {
 
 				{/* 貯金目標セクション */}
 				{accountsData?.accounts && accountsData.accounts.length > 0 && (
-					<div className="bg-white rounded-lg shadow-md p-6 mb-6">
-						<h2 className="text-xl font-bold text-gray-900 mb-4">貯金目標</h2>
+					<div className="bg-white dark:bg-gray-900 rounded-lg shadow-md p-6 mb-6">
+						<h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">貯金目標</h2>
 						{accountsData.accounts.map((account) => {
 							const goalProgress = account.goalAmount
 								? Math.round((account.balance / account.goalAmount) * 100)
@@ -378,10 +378,10 @@ export default function ChildSettingsPage() {
 
 							return (
 								<div key={account.id} className="space-y-4">
-									<div className="flex justify-between items-center pb-2 border-b">
+									<div className="flex justify-between items-center pb-2 border-b border-gray-200 dark:border-gray-700">
 										<div>
-											<p className="text-sm text-gray-600">残高</p>
-											<p className="text-2xl font-bold text-gray-900">
+											<p className="text-sm text-gray-600 dark:text-gray-400">残高</p>
+											<p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
 												¥{account.balance.toLocaleString()}
 											</p>
 										</div>
@@ -391,25 +391,25 @@ export default function ChildSettingsPage() {
 									{account.goalName && account.goalAmount ? (
 										<div className="space-y-2">
 											<div className="flex justify-between items-center">
-												<p className="text-sm font-medium text-gray-700">
+												<p className="text-sm font-medium text-gray-700 dark:text-gray-300">
 													目標: {account.goalName}
 												</p>
-												<p className="text-sm font-bold text-blue-600">
+												<p className="text-sm font-bold text-blue-600 dark:text-blue-400">
 													{goalProgress}%
 												</p>
 											</div>
-											<div className="w-full bg-gray-200 rounded-full h-2.5">
+											<div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
 												<div
-													className="bg-blue-600 h-2.5 rounded-full transition-all"
+													className="bg-blue-600 dark:bg-blue-500 h-2.5 rounded-full transition-all"
 													style={{ width: `${Math.min(goalProgress, 100)}%` }}
 												/>
 											</div>
-											<p className="text-xs text-gray-500">
+											<p className="text-xs text-gray-500 dark:text-gray-400">
 												目標金額: ¥{account.goalAmount.toLocaleString()}
 											</p>
 										</div>
 									) : (
-										<p className="text-sm text-gray-500">
+										<p className="text-sm text-gray-500 dark:text-gray-400">
 											貯金目標が設定されていません
 										</p>
 									)}
@@ -442,11 +442,11 @@ export default function ChildSettingsPage() {
 					});
 					return shouldShow;
 				})() && (
-					<div className="bg-white rounded-lg shadow-md p-6 mb-6">
-						<h2 className="text-xl font-bold text-gray-900 mb-4">
+					<div className="bg-white dark:bg-gray-900 rounded-lg shadow-md p-6 mb-6">
+						<h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">
 							認証アカウント移行
 						</h2>
-						<p className="text-sm text-gray-700 mb-4">
+						<p className="text-sm text-gray-700 dark:text-gray-300 mb-4">
 							この子どもアカウントはまだ認証アカウントと連携していません。招待リンクを作成して、子どもが自分でログインできるようにすることができます。
 						</p>
 						<Button
@@ -476,11 +476,11 @@ export default function ChildSettingsPage() {
 
 				{/* アカウント削除セクション（親が子どもを削除する場合のみ表示） */}
 				{isParent && isParentOfChild && (
-					<div className="bg-white rounded-lg shadow-md p-6 border border-red-200">
-						<h2 className="text-xl font-bold text-red-600 mb-4">
+					<div className="bg-white dark:bg-gray-900 rounded-lg shadow-md p-6 border border-red-200 dark:border-red-800">
+						<h2 className="text-xl font-bold text-red-600 dark:text-red-400 mb-4">
 							アカウントの削除
 						</h2>
-						<p className="text-sm text-gray-700 mb-4">
+						<p className="text-sm text-gray-700 dark:text-gray-300 mb-4">
 							この操作は取り消せません。子どもアカウントに関連する
 							<strong>すべてのデータ</strong>
 							（残高、トランザクション履歴、目標など）が完全に削除されます。
@@ -493,7 +493,7 @@ export default function ChildSettingsPage() {
 							title={`${childProfileData?.me?.name || "子ども"}のアカウントを削除`}
 							description={
 								<span>
-									<span className="font-semibold text-gray-900">
+									<span className="font-semibold text-gray-900 dark:text-gray-100">
 										{childProfileData?.me?.name}
 									</span>{" "}
 									のアカウントを完全に削除します。すべてのお小遣いデータ、トランザクション履歴、目標などが削除されます。
