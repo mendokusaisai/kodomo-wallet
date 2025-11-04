@@ -8,7 +8,6 @@ import { useEffect, useState } from "react";
 import { CreateChildDialog } from "@/components/create-child-dialog";
 import { DashboardSkeleton } from "@/components/dashboard-skeleton";
 import { DepositDialog } from "@/components/deposit-dialog";
-import { LinkChildToAuthDialog } from "@/components/link-child-to-auth-dialog";
 import { LogoutButton } from "@/components/logout-button";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { TransactionHistory } from "@/components/transaction-history";
@@ -30,15 +29,10 @@ export default function DashboardPage() {
 	const [depositDialogOpen, setDepositDialogOpen] = useState(false);
 	const [withdrawDialogOpen, setWithdrawDialogOpen] = useState(false);
 	const [createChildDialogOpen, setCreateChildDialogOpen] = useState(false);
-	const [linkAuthDialogOpen, setLinkAuthDialogOpen] = useState(false);
 	const [selectedAccount, setSelectedAccount] = useState<{
 		id: string;
 		name: string;
 		balance: number;
-	} | null>(null);
-	const [selectedChild, setSelectedChild] = useState<{
-		id: string;
-		name: string;
 	} | null>(null);
 
 	// Supabaseからユーザー情報を取得
@@ -228,7 +222,6 @@ export default function DashboardPage() {
 										¥{account.balance.toLocaleString()}
 									</p>
 								</div>
-
 								{/* 入金ボタン（親のみ表示） */}
 								{meData?.me?.role === "parent" && (
 									<div className="mb-2">
@@ -247,7 +240,6 @@ export default function DashboardPage() {
 										</Button>
 									</div>
 								)}
-
 								{/* 出金ボタン（親のみ表示） */}
 								{meData?.me?.role === "parent" && (
 									<div className="mb-4">
@@ -267,7 +259,6 @@ export default function DashboardPage() {
 										</Button>
 									</div>
 								)}
-
 								{/* 出金申請ボタン（子どものみ表示） */}
 								{meData?.me?.role === "child" && (
 									<div className="mb-4">
@@ -277,30 +268,6 @@ export default function DashboardPage() {
 										/>
 									</div>
 								)}
-
-								{/* 認証アカウント移行ボタン（認証なし子どものみ表示） */}
-								{meData?.me?.role === "parent" &&
-									account.user &&
-									!account.user.authUserId && (
-										<div className="mb-4">
-											<Button
-												onClick={() => {
-													if (account.user) {
-														setSelectedChild({
-															id: account.user.id,
-															name: account.user.name,
-														});
-														setLinkAuthDialogOpen(true);
-													}
-												}}
-												variant="outline"
-												className="w-full border-purple-500 text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-950"
-											>
-												� 招待リンクを作成
-											</Button>
-										</div>
-									)}
-
 								{/* 子どもアカウント設定ボタン（親のみ表示） */}
 								{meData?.me?.role === "parent" && account.user && (
 									<div className="mb-4">
@@ -318,7 +285,6 @@ export default function DashboardPage() {
 										</Button>
 									</div>
 								)}
-
 								{/* 貯金目標 */}
 								<div className="mt-4">
 									{account.goalName && account.goalAmount ? (
@@ -342,21 +308,10 @@ export default function DashboardPage() {
 											</p>
 										</>
 									) : (
-										<p className="text-sm text-gray-500 dark:text-gray-400">
-											貯金目標が設定されていません
-										</p>
+										<p></p>
 									)}
 								</div>
-
-								{/* トランザクション履歴 */}
 								<TransactionHistory accountId={account.id} />
-
-								{/* アカウント情報 */}
-								<div className="mt-4 pt-4 border-t border-gray-200">
-									<p className="text-xs text-gray-500">
-										アカウントID: {account.id.slice(0, 8)}...
-									</p>
-								</div>
 							</div>
 						);
 					})}
@@ -401,15 +356,6 @@ export default function DashboardPage() {
 						open={createChildDialogOpen}
 						onOpenChange={setCreateChildDialogOpen}
 						parentId={userId}
-					/>
-				)}
-				{/* 認証アカウント移行ダイアログ */}
-				{selectedChild && (
-					<LinkChildToAuthDialog
-						open={linkAuthDialogOpen}
-						onOpenChange={setLinkAuthDialogOpen}
-						childId={selectedChild.id}
-						childName={selectedChild.name}
 					/>
 				)}
 			</div>

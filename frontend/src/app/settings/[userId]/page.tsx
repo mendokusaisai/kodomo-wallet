@@ -7,6 +7,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 import DeleteAccountDialog from "@/components/delete-account-dialog";
 import GoalDialog from "@/components/goal-dialog";
+import { LinkChildToAuthDialog } from "@/components/link-child-to-auth-dialog";
 import RecurringDepositSettings from "@/components/recurring-deposit-settings";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,6 +31,7 @@ export default function ChildSettingsPage() {
 	const [avatarUrl, setAvatarUrl] = useState("");
 	const [avatarFile, setAvatarFile] = useState<File | null>(null);
 	const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+	const [linkAuthDialogOpen, setLinkAuthDialogOpen] = useState(false);
 	const fileInputRef = useRef<HTMLInputElement>(null);
 	const nameInputId = useId();
 	const avatarInputId = useId();
@@ -105,6 +107,7 @@ export default function ChildSettingsPage() {
 				meRole: meData?.me?.role,
 				childRole: childProfileData?.me?.role,
 				childParents: childProfileData?.me?.parents?.map((p) => p.id),
+				childAuthUserId: childProfileData?.me?.authUserId,
 			});
 		}
 	}, [
@@ -422,6 +425,43 @@ export default function ChildSettingsPage() {
 								</div>
 							);
 						})}
+					</div>
+				)}
+
+				{/* 認証アカウント移行セクション（親が認証なし子どもに対してのみ表示） */}
+				{(() => {
+					const shouldShow =
+						isParent &&
+						isParentOfChild &&
+						childProfileData?.me?.authUserId === null;
+					console.log("認証アカウント移行セクション表示判定:", {
+						isParent,
+						isParentOfChild,
+						authUserId: childProfileData?.me?.authUserId,
+						shouldShow,
+					});
+					return shouldShow;
+				})() && (
+					<div className="bg-white rounded-lg shadow-md p-6 mb-6">
+						<h2 className="text-xl font-bold text-gray-900 mb-4">
+							認証アカウント移行
+						</h2>
+						<p className="text-sm text-gray-700 mb-4">
+							この子どもアカウントはまだ認証アカウントと連携していません。招待リンクを作成して、子どもが自分でログインできるようにすることができます。
+						</p>
+						<Button
+							onClick={() => setLinkAuthDialogOpen(true)}
+							variant="outline"
+							className="w-full border-purple-500 text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-950"
+						>
+							招待リンクを作成
+						</Button>
+						<LinkChildToAuthDialog
+							open={linkAuthDialogOpen}
+							onOpenChange={setLinkAuthDialogOpen}
+							childId={childUserId}
+							childName={childProfileData?.me?.name || ""}
+						/>
 					</div>
 				)}
 

@@ -9,6 +9,7 @@ export const GET_ME = gql`
       name
       role
       avatarUrl
+      authUserId
       email
       parents {
         id
