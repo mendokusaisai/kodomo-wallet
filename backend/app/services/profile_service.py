@@ -263,10 +263,12 @@ class ProfileService:
                 {"new_id": auth_user_id, "old_id": invite.child_id},
             )
 
-            # 3. 新しいプロフィールに子どもの名前を更新
+            # 3. 新しいプロフィールに子どもの名前とauth_user_idを更新
             db.execute(
-                text("UPDATE profiles SET name = :name, role = 'child' WHERE id = :id"),
-                {"name": old_child_profile.name, "id": auth_user_id},
+                text(
+                    "UPDATE profiles SET name = :name, role = 'child', auth_user_id = :auth_user_id WHERE id = :id"
+                ),
+                {"name": old_child_profile.name, "auth_user_id": auth_user_id, "id": auth_user_id},
             )
 
             # 4. 古い子どもプロフィールを削除

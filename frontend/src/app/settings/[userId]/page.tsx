@@ -430,14 +430,17 @@ export default function ChildSettingsPage() {
 
 				{/* 認証アカウント移行セクション（親が認証なし子どもに対してのみ表示） */}
 				{(() => {
-					const shouldShow =
-						isParent &&
-						isParentOfChild &&
-						childProfileData?.me?.authUserId === null;
+					// シンプルに: 親で、子どものプロフィールで、authUserIdがnullなら表示
+					const isChildProfile = childProfileData?.me?.role === "child";
+					const isNotLinked = !childProfileData?.me?.authUserId;
+					const shouldShow = isParent && isChildProfile && isNotLinked;
+
 					console.log("認証アカウント移行セクション表示判定:", {
 						isParent,
-						isParentOfChild,
+						isChildProfile,
+						childUserId,
 						authUserId: childProfileData?.me?.authUserId,
+						isNotLinked,
 						shouldShow,
 					});
 					return shouldShow;
