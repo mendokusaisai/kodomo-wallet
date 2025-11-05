@@ -54,10 +54,7 @@ export function LinkChildToAuthDialog({
 
 	const emailId = useId();
 
-	const [inviteChild, { loading }] = useMutation(INVITE_CHILD_TO_AUTH, {
-		refetchQueries: ["GetAccounts"],
-		awaitRefetchQueries: true,
-	});
+	const [inviteChild, { loading }] = useMutation(INVITE_CHILD_TO_AUTH);
 
 	const onSubmit = async (data: LinkAuthFormData) => {
 		try {
@@ -124,8 +121,15 @@ export function LinkChildToAuthDialog({
 		onOpenChange(false);
 	};
 
+	// ダイアログの開閉を制御（意図しない閉じを防ぐ）
+	const handleDialogOpenChange = (isOpen: boolean) => {
+		if (!isOpen) {
+			handleClose();
+		}
+	};
+
 	return (
-		<Dialog open={open} onOpenChange={handleClose}>
+		<Dialog open={open} onOpenChange={handleDialogOpenChange}>
 			<DialogContent className="sm:max-w-md">
 				<DialogHeader>
 					<DialogTitle>認証アカウント招待リンク作成</DialogTitle>
