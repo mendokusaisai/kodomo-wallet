@@ -3,7 +3,7 @@
 import { useMutation } from "@apollo/client/react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Copy } from "lucide-react";
-import { useEffect, useId, useState } from "react";
+import { useId, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -56,11 +56,6 @@ export function LinkChildToAuthDialog({
 
 	const [inviteChild, { loading }] = useMutation(INVITE_CHILD_TO_AUTH);
 
-	// デバッグ: inviteLinkの変更を監視
-	useEffect(() => {
-		console.log("🔄 inviteLink状態が変更されました:", inviteLink);
-	}, [inviteLink]);
-
 	const onSubmit = async (data: LinkAuthFormData) => {
 		try {
 			const response = await inviteChild({
@@ -70,37 +65,25 @@ export function LinkChildToAuthDialog({
 				},
 			});
 
-			console.log("🔍 招待リンク作成レスポンス:", response);
-			console.log("🔍 response.data:", response.data);
-
 			const token = (response.data as { inviteChildToAuth?: string })
 				?.inviteChildToAuth;
-			console.log("🔍 取得されたトークン:", token);
 
 			if (token) {
 				const origin =
 					typeof window !== "undefined" ? window.location.origin : "";
 				const link = `${origin}/child-signup?token=${token}`;
-				console.log("✅ 生成された招待リンク:", link);
 				setInviteLink(link);
-				console.log("✅ setInviteLink実行後の状態確認");
-
-				// 状態更新を待つため、少し遅延させる
-				setTimeout(() => {
-					console.log("🔍 setInviteLink後のinviteLink値:", link);
-				}, 100);
 
 				toast.success("招待リンクを作成しました", {
 					description: "リンクをコピーして子どもに送信してください",
 				});
 			} else {
-				console.error("❌ トークンが取得できませんでした");
 				toast.error("招待リンクの作成に失敗しました", {
 					description: "トークンが取得できませんでした",
 				});
 			}
 		} catch (error) {
-			console.error("❌ 招待リンク作成エラー:", error);
+			console.error("招待リンク作成エラー:", error);
 			toast.error("招待リンクの作成に失敗しました", {
 				description: "もう一度お試しください",
 			});
@@ -145,14 +128,6 @@ export function LinkChildToAuthDialog({
 						作成されたリンクを子どもに送信すると、パスワードを設定してログインできます。
 					</DialogDescription>
 				</DialogHeader>
-
-				{/* デバッグ用 */}
-				<div className="text-xs text-gray-500 bg-yellow-50 p-2 rounded">
-					🔍 inviteLink: {inviteLink || "(null)"}
-					<br />🔍 条件: !inviteLink = {String(!inviteLink)}
-					<br />🔍 inviteLink === null = {String(inviteLink === null)}
-					<br />🔍 typeof inviteLink = {typeof inviteLink}
-				</div>
 
 				{inviteLink === null || inviteLink === "" ? (
 					<form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
