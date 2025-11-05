@@ -2,6 +2,7 @@ from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 
 from injector import inject
+from sqlalchemy import text
 
 from app.core.config import settings
 from app.core.exceptions import InvalidAmountException, ResourceNotFoundException
@@ -200,7 +201,16 @@ class ProfileService:
         return invite.token
 
     def accept_child_invite(self, token: str, auth_user_id: str) -> bool:
-        """子どもの招待を受け入れ、認証アカウントとプロフィールを紐付ける"""
+        """
+        子どもの招待を受け入れる
+
+        新しいフロー:
+        1. Google認証後、handle_new_userトリガーで新しいプロフィールが作成される（profiles.id = auth_user_id）
+        2. この関数で、既存の子どもプロフィール（親が作成）のデータを新しいプロフィールに移行
+        3. 親子関係を更新
+        """
+        from app.core.database import get_db
+
         # child_invite テーブルからトークンを検索
         invite = self.child_invite_repo.get_by_token(token)
         if not invite:
@@ -217,18 +227,63 @@ class ProfileService:
             self.child_invite_repo.update_status(invite, "expired")
             raise InvalidAmountException(0, "Invitation expired")
 
-        # トークンからchild_idを取得し、プロフィールを更新
-        child = self.profile_repo.get_by_id(invite.child_id)
-        if not child:
+        # 招待されたメールアドレスと認証ユーザーのメールアドレスが一致するかチェック
+        auth_user_profile = self.profile_repo.get_by_auth_user_id(auth_user_id)
+        if not auth_user_profile:
+            raise ResourceNotFoundException("AuthUser", auth_user_id)
+
+        # メールアドレスの検証（大文字小文字を無視）
+        if (
+            auth_user_profile.email
+            and invite.email
+            and auth_user_profile.email.lower() != invite.email.lower()
+        ):
+            raise InvalidAmountException(
+                0,
+                f"認証アカウントのメールアドレス ({auth_user_profile.email}) が招待されたメールアドレス ({invite.email}) と一致しません",
+            )
+
+        # 既存の子どもプロフィールを取得
+        old_child_profile = self.profile_repo.get_by_id(invite.child_id)
+        if not old_child_profile:
             raise ResourceNotFoundException("Child", invite.child_id)
 
-        # 認証アカウントにリンク
-        self.profile_repo.link_to_auth(invite.child_id, auth_user_id)
+        # データ移行: 既存の子どもプロフィール → 認証済みプロフィール
+        db = next(get_db())
+        try:
+            # 1. アカウントのuser_idを更新
+            db.execute(
+                text("UPDATE accounts SET user_id = :new_id WHERE user_id = :old_id"),
+                {"new_id": auth_user_id, "old_id": invite.child_id},
+            )
+
+            # 2. 親子関係のchild_idを更新
+            db.execute(
+                text("UPDATE family_relationships SET child_id = :new_id WHERE child_id = :old_id"),
+                {"new_id": auth_user_id, "old_id": invite.child_id},
+            )
+
+            # 3. 新しいプロフィールに子どもの名前を更新
+            db.execute(
+                text("UPDATE profiles SET name = :name, role = 'child' WHERE id = :id"),
+                {"name": old_child_profile.name, "id": auth_user_id},
+            )
+
+            # 4. 古い子どもプロフィールを削除
+            db.execute(text("DELETE FROM profiles WHERE id = :id"), {"id": invite.child_id})
+
+            db.commit()
+
+        except Exception as e:
+            db.rollback()
+            raise InvalidAmountException(0, f"データ移行に失敗しました: {str(e)}") from e
 
         # ステータスを更新
         self.child_invite_repo.update_status(invite, "accepted")
 
-        print(f"[DEBUG] Accepted child invite: token={token}, auth_user_id={auth_user_id}")
+        print(
+            f"[DEBUG] Accepted child invite: token={token}, auth_user_id={auth_user_id}, migrated from {invite.child_id}"
+        )
 
         return True
 

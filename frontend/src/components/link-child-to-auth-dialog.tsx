@@ -123,9 +123,9 @@ export function LinkChildToAuthDialog({
 					<DialogTitle>認証アカウント招待リンク作成</DialogTitle>
 					<DialogDescription>
 						{childName}
-						さんのメールアドレスを入力して招待リンクを作成してください。
+						さんのGoogleアカウントのメールアドレスを入力してください。
 						<br />
-						作成されたリンクを子どもに送信すると、パスワードを設定してログインできます。
+						招待リンクから、そのGoogleアカウントでログインすることでアカウントが紐付けられます。
 					</DialogDescription>
 				</DialogHeader>
 
@@ -146,7 +146,7 @@ export function LinkChildToAuthDialog({
 							)}
 							<p className="text-xs text-gray-500">
 								※
-								招待リンクからパスワードを設定すると、自動的にアカウントが紐付けられます
+								招待リンクからGoogleアカウントでログインすると、自動的にアカウントが紐付けられます
 							</p>
 						</div>
 

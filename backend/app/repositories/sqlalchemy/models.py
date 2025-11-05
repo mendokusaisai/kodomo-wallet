@@ -17,6 +17,7 @@ class Profile(Base):
     __tablename__ = "profiles"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    auth_user_id = Column(UUID(as_uuid=True), nullable=True)
     name = Column(Text, nullable=False)
     role = Column(Text, nullable=False)
     avatar_url = Column(Text, nullable=True)
