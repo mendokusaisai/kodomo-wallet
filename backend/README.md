@@ -1,52 +1,78 @@
-# Kodomo Wallet - Backend API
+# こどもウォレット - バックエンド API 🚀
 
-FastAPI + GraphQL (Strawberry) + SQLAlchemy によるバックエンドAPI
+FastAPI + GraphQL (Strawberry) によるバックエンドAPI。
 
-## 🚀 起動方法
+## 技術スタック 🛠️
 
-### 前提条件
+- **Python 3.14**
+- **FastAPI**
+- **Strawberry GraphQL**
+- **SQLAlchemy** (ORM)
+- **PostgreSQL** (Supabase)
+- **uv** (パッケージマネージャー)
 
-- Python 3.14
-- uv (Python パッケージマネージャー)
-- Supabase プロジェクト（PostgreSQL）
+## 開発環境セットアップ 🚀
 
-### 環境変数の設定
-
-`.env` ファイルを作成して以下の環境変数を設定：
-
-```env
-# Supabase Database (Transaction Pooler)
-DATABASE_URL=postgresql://postgres.xxx:[YOUR-PASSWORD]@xxx.pooler.supabase.com:6543/postgres
-
-# Supabase Configuration
-SUPABASE_URL=https://xxx.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-
-# CORS Settings
-FRONTEND_URL=http://localhost:3000
-```
-
-### 依存関係のインストール
+### 1. 依存関係のインストール
 
 ```bash
-# uvでプロジェクトの依存関係をインストール
 uv sync
 ```
 
-### サーバー起動
+### 2. 環境変数の設定
+
+`.env` ファイルを作成:
+
+```env
+# データベース (Supabase Transaction Pooler)
+DATABASE_URL=postgresql://postgres.xxx:password@xxx.pooler.supabase.com:6543/postgres
+
+# Supabase設定
+SUPABASE_URL=https://xxx.supabase.co
+SUPABASE_KEY=eyJhbGci...  # service_role key
+```
+
+### 3. サーバー起動
 
 ```bash
-# 開発サーバーを起動（ホットリロード有効）
 uv run uvicorn app.main:app --reload
 ```
 
-サーバーが起動すると、以下のURLでアクセスできます：
+**アクセス先:**
+- GraphQL Playground: http://localhost:8000/graphql
+- API Docs: http://localhost:8000/docs
 
-- **API**: http://127.0.0.1:8000
-- **GraphQL Playground**: http://127.0.0.1:8000/graphql
-- **API Docs**: http://127.0.0.1:8000/docs
+## 主な機能 ✨
 
-## 📋 GraphQL API
+- 👨‍👩‍👧‍👦 プロフィール・親子関係管理
+- 💰 アカウント・残高管理
+- 📊 トランザクション (入金・出金・承認)
+- 🔄 定期お小遣い
+- ✉️ 親子招待システム
+- 🔐 Supabase認証統合
+
+## ディレクトリ構成 �
+
+```
+app/
+├── api/
+│   └── graphql/        # GraphQLスキーマ・リゾルバー
+├── core/               # 設定・DI・データベース
+├── domain/             # エンティティ
+├── repositories/       # データアクセス層
+│   └── sqlalchemy/     # SQLAlchemy実装
+└── services/           # ビジネスロジック
+```
+
+## テスト 🧪
+
+```bash
+uv run pytest
+```
+
+## デプロイ 🌐
+
+Render.comにデプロイ可能。環境変数を設定してください。
 
 ### クエリ例
 
@@ -194,4 +220,3 @@ uv sync --reinstall
 
 - [GraphQL Playground](http://127.0.0.1:8000/graphql) - APIテスト用
 - [FastAPI Docs](http://127.0.0.1:8000/docs) - 自動生成されたAPI仕様
-- [進捗ログ](../documents/progress-log.md) - 開発進捗
