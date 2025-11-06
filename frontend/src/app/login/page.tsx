@@ -175,7 +175,7 @@ function LoginForm() {
 						</Button>
 					</div>
 					{/* テストユーザーログイン（開発環境のみ） */}
-					{process.env.NODE_ENV === "development" && (
+					{process.env.NEXT_PUBLIC_ENABLE_TEST_LOGIN === "true" && (
 						<div className="mt-6">
 							<div className="space-y-2">
 								<Button
