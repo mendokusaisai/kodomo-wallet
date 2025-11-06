@@ -33,6 +33,7 @@ class CORSSettings:
     """CORS設定 - CORS関連の設定のみ"""
 
     cors_origins: list[str]
+    cors_origin_regex: str | None
 
     @classmethod
     def from_env(cls) -> CORSSettings:
@@ -56,7 +57,14 @@ class CORSSettings:
             if fe_origin and fe_origin not in origins:
                 origins.append(fe_origin)
 
-        return cls(cors_origins=origins)
+        # 正規表現パターンを環境変数から読み込む（Vercel preview環境用）
+        # デフォルト: kodomo-wallet で始まる Vercel ドメインとローカルホストを許可
+        regex_pattern = os.getenv(
+            "CORS_ORIGIN_REGEX",
+            r"^https://kodomo-wallet.*\.vercel\.app$|^http://localhost:3000$"
+        )
+
+        return cls(cors_origins=origins, cors_origin_regex=regex_pattern)
 
 
 @dataclass(frozen=True)
