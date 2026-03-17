@@ -1,0 +1,35 @@
+{
+  "skill_name": "implementation-workflow",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "実装を開始してください。docs/tasks.md に GCP 移行の計画が記載されています。Phase 1 から始めてください。",
+      "expected_output": "progress.md を初期化し、Phase 1 の計画内容を読み込んで、テスト設計フェーズを開始する。フェーズのスコープと受け入れ条件を明確に示す。",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Phase 1 のテスト設計を完了させてください。acceptance criteria を基にテストケースを設計し、テストファイルを作成してください。",
+      "expected_output": "テストケースが設計され、テストファイル（tests/ 配下）が作成される。各ケースが criteria にマップされていることを示す。テストは FAIL 状態で実行確認される。",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "テスト駆動で Phase 1 の実装を進めてください。テストが GREEN になるまで最小限の実装を進めます。",
+      "expected_output": "実装が進行し、テスト実行結果（FAIL → GREEN への進捗）を示す。実装ステップと進捗を progress.md に記録する。",
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "Phase 1 の全テストが通ったら、semantic commit を作成してください。",
+      "expected_output": "semantic commit メッセージが生成され、コミット対象ファイル一覧が表示される。progress.md で Phase 1 Status が Complete に更新される。",
+      "files": []
+    },
+    {
+      "id": 5,
+      "prompt": "実装中にテストが FAIL したままの状態です。原因を示唆してください。",
+      "expected_output": "エラー内容を分析し、考えられる原因と修正方針を提案する。デバッグは別フェーズであることを明示し、ユーザーの判断待機状態になる。",
+      "files": []
+    }
+  ]
+}
