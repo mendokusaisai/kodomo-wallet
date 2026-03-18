@@ -12,8 +12,8 @@ jobs:
     steps:
       - name: Ping Supabase (prevent free tier pause)
         env:
-          SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-          SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: |
           STATUS=$(curl -o /dev/null -s -w "%{http_code}" \
             -H "apikey: $SUPABASE_ANON_KEY" \
