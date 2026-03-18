@@ -1,0 +1,11 @@
+.next/
+node_modules/
+.env
+.env.*
+README.md
+.git/
+.gitignore
+jest.config.ts
+jest.setup.ts
+eslint.config.mjs
+biome.json

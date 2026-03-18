@@ -120,3 +120,66 @@ printf '%s' "$SERVICE_URL/graphql" \
 ## 補足
 - `FRONTEND_ORIGIN` は Phase4 の frontend デプロイ後に正式な URL に更新する。
 - stg は必要になった時点でスクリプトを複製して対応する。
+
+## Phase4: frontend Cloud Run デプロイ
+
+### 1. NEXT_PUBLIC_GRAPHQL_ENDPOINT が登録済みか確認
+
+Phase3 の疎通確認後に登録しているはず。未登録の場合は先に登録する（Phase3 手順 6 参照）。
+
+### 2. 初回デプロイ（手動）
+
+Secret Manager から値を取得してデプロイ：
+
+```bash
+export NEXT_PUBLIC_SUPABASE_URL=$(gcloud secrets versions access latest --secret=NEXT_PUBLIC_SUPABASE_URL --project=kodomo-wallet)
+export NEXT_PUBLIC_SUPABASE_ANON_KEY=$(gcloud secrets versions access latest --secret=NEXT_PUBLIC_SUPABASE_ANON_KEY --project=kodomo-wallet)
+export NEXT_PUBLIC_GRAPHQL_ENDPOINT=$(gcloud secrets versions access latest --secret=NEXT_PUBLIC_GRAPHQL_ENDPOINT --project=kodomo-wallet)
+export IMAGE_TAG=latest
+
+./scripts/gcp/deploy_frontend.sh
+```
+
+### 3. 以降のデプロイ
+
+`main` ブランチへの push で GitHub Actions (`deploy-frontend.yml`) が自動実行。
+
+### 4. Supabase OAuth リダイレクト URL に追加
+
+Supabase ダッシュボード → Authentication → URL Configuration → Redirect URLs に追加：
+
+```
+https://kodomo-wallet-frontend-<hash>-an.a.run.app/**
+```
+
+### 5. FRONTEND_ORIGIN を正式な URL に更新
+
+```bash
+FRONTEND_URL=$(gcloud run services describe kodomo-wallet-frontend \
+  --region asia-northeast1 --project kodomo-wallet --format "value(status.url)")
+
+printf '%s' "$FRONTEND_URL" | gcloud secrets versions add FRONTEND_ORIGIN \
+  --data-file=- --project kodomo-wallet
+```
+
+その後、backend を再デプロイして CORS 設定を反映：
+
+```bash
+export IMAGE_TAG=latest
+./scripts/gcp/deploy_backend.sh
+```
+
+### 6. 疎通確認
+
+```bash
+FRONTEND_URL=$(gcloud run services describe kodomo-wallet-frontend \
+  --region asia-northeast1 --project kodomo-wallet --format "value(status.url)")
+
+# トップページ
+curl -o /dev/null -s -w "%{http_code}" "$FRONTEND_URL"
+# → 200
+
+# ログインページ
+curl -o /dev/null -s -w "%{http_code}" "$FRONTEND_URL/login"
+# → 200
+```
