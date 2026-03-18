@@ -50,6 +50,73 @@ gcloud artifacts repositories list --location="$REGION" --project "$PROJECT_ID"
 gcloud secrets list --project "$PROJECT_ID"
 ```
 
+## Phase3: backend Cloud Run デプロイ
+
+### 1. WIF セットアップ（初回のみ）
+
+```bash
+export GITHUB_REPO="your-org/kodomo-wallet"
+./scripts/gcp/setup_wif.sh
+```
+
+出力された `WIF_PROVIDER` と `WIF_SERVICE_ACCOUNT` を GitHub リポジトリの Secrets に登録：
+- Settings → Secrets and variables → Actions → New repository secret
+
+### 2. FRONTEND_ORIGIN を Secret Manager に登録（placeholder でよい）
+
+Phase4 で URL が確定するまで仮値を入れておく：
+
+```bash
+printf '%s' "https://placeholder.run.app" \
+  | gcloud secrets create FRONTEND_ORIGIN \
+  --replication-policy="automatic" --data-file=- --project kodomo-wallet
+```
+
+### 3. 初回デプロイ（手動）
+
+```bash
+# Artifact Registry に Docker 認証
+gcloud auth configure-docker asia-northeast1-docker.pkg.dev
+
+# イメージをビルド＆プッシュ（amd64 を明示：Apple Silicon Mac でも Cloud Run で動く）
+docker build --platform linux/amd64 \
+  -t asia-northeast1-docker.pkg.dev/kodomo-wallet/kodomo-wallet/backend:latest \
+  ./backend
+docker push asia-northeast1-docker.pkg.dev/kodomo-wallet/kodomo-wallet/backend:latest
+
+# Cloud Run へデプロイ
+export IMAGE_TAG=latest
+./scripts/gcp/deploy_backend.sh
+```
+
+### 4. 以降のデプロイ
+
+`main` ブランチへの push で GitHub Actions (`deploy-backend.yml`) が自動実行。
+
+### 5. 疎通確認
+
+```bash
+SERVICE_URL=$(gcloud run services describe kodomo-wallet-backend \
+  --region asia-northeast1 --project kodomo-wallet --format "value(status.url)")
+
+curl "$SERVICE_URL/health"
+# → {"status":"healthy"}
+
+curl -X POST "$SERVICE_URL/graphql" \
+  -H "Content-Type: application/json" \
+  -d '{"query":"{ __typename }"}'
+```
+
+### 6. NEXT_PUBLIC_GRAPHQL_ENDPOINT を Secret Manager に登録
+
+疎通確認後、確定した URL で更新：
+
+```bash
+printf '%s' "$SERVICE_URL/graphql" \
+  | gcloud secrets create NEXT_PUBLIC_GRAPHQL_ENDPOINT \
+  --replication-policy="automatic" --data-file=- --project kodomo-wallet
+```
+
 ## 補足
-- `FRONTEND_ORIGIN` / `NEXT_PUBLIC_GRAPHQL_ENDPOINT` は Phase3/4 の Cloud Run デプロイ後に URL が確定してから登録する。
+- `FRONTEND_ORIGIN` は Phase4 の frontend デプロイ後に正式な URL に更新する。
 - stg は必要になった時点でスクリプトを複製して対応する。
