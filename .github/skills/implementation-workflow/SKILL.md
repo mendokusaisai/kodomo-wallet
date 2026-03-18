@@ -1,6 +1,6 @@
 ---
 name: implementation-workflow
-description: TDD ベースのフェーズ単位実装ワークフロー。docs/tasks.md の計画に基づき、各フェーズでテスト駆動開発を実施。テスト通過時に semantic commit でコミット。エラー発生時は示唆する。進捗を progress.md に記録。実装フェーズで使用。
+description: TDD ベースのフェーズ単位実装ワークフロー。tmp/tasks.md の計画に基づき、各フェーズでテスト駆動開発を実施。テスト通過時に semantic commit でコミット。エラー発生時は示唆する。進捗を tmp/progress.md に記録。実装フェーズで使用。
 ---
 
 # Implementation Workflow Skill
@@ -9,7 +9,7 @@ description: TDD ベースのフェーズ単位実装ワークフロー。docs/t
 
 ## 概要
 
-docs/tasks.md に記載された計画（Phase 単位）に基づき、以下のサイクルを反復実行：
+tmp/tasks.md に記載された計画（Phase 単位）に基づき、以下のサイクルを反復実行：
 
 ```
 1. Phase を読み込み、スコープを確認
@@ -23,21 +23,21 @@ docs/tasks.md に記載された計画（Phase 単位）に基づき、以下の
 ## 使用場面
 
 - ユーザーが「実装」と指示した場合
-- docs/tasks.md に詳細なタスク計画がある場合
+- tmp/tasks.md に詳細なタスク計画がある場合
 - テスト駆動開発で安定実装を重視する場合
 
 ## ワークフロー詳細
 
-### Step 1: docs/tasks.md を読み込み、フェーズリストを抽出
+### Step 1: tmp/tasks.md を読み込み、フェーズリストを抽出
 
 ファイルを読み、以下を確認：
 - フェーズ数とスコープ
 - 各フェーズの「要件に関連するファイルパス」
 - 各フェーズの「受け入れ条件」（テスト対象）
 
-### Step 2: progress.md を初期化
+### Step 2: tmp/progress.md を初期化
 
-プロジェクトのルートに progress.md を作成（既存時は追記）。以下の形式で記録開始：
+tmp/progress.md を作成（既存時は追記）。以下の形式で記録開始：
 
 ```markdown
 # Implementation Progress
@@ -237,7 +237,7 @@ class UserService:
 
 ## 重要な制約
 
-- **docs/tasks.md 厳格準拠** - 記載されている以上の実装を絶対に行わない
+- **tmp/tasks.md 厳格準拠** - 記載されている以上の実装を絶対に行わない
 - **テスト駆動** - 本実装はテストなしに進めない
 - **commit は Phase 単位** - ステップ単位の細切れ commit は避ける
 - **TDD の循環** - RED → GREEN → REFACTOR サイクルを守る
@@ -246,8 +246,8 @@ class UserService:
 ## ファイル構成
 
 実装スキル関連のファイル：
-- `docs/tasks.md` - 実装計画（Phase 単位）
-- `progress.md` - 進捗記録（このスキルが更新）
+- `tmp/tasks.md` - 実装計画（Phase 単位、実装完了後に破棄）
+- `tmp/progress.md` - 進捗記録（実装完了後に破棄）
 - `tests/` - テストコード（このスキルが作成・実行）
 - ソースコード - テスト駆動で実装
 
@@ -257,8 +257,8 @@ class UserService:
 ユーザー: 実装
 
 Skill:
-1. ✅ docs/tasks.md を読み込み
-2. ✅ progress.md を初期化
+1. ✅ tmp/tasks.md を読み込み
+2. ✅ tmp/progress.md を初期化
 3. 🔄 Phase 1 を開始
    - テスト設計を実施
    - テストコード作成
