@@ -16,28 +16,28 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
         with:
-          python-version: '3.14'
+          enable-cache: true
 
       - name: Install dependencies
         run: |
           cd backend
-          pip install --upgrade pip
-          pip install -r requirements.txt
+          uv sync --frozen --no-dev
 
       - name: Run recurring deposits batch
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
         run: |
           cd backend
-          python -m app.batch.process_recurring_deposits
+          uv run python -m app.batch.process_recurring_deposits
 
       - name: Notify on failure
         if: failure()
         run: |
           echo "❌ 定期入金バッチ処理が失敗しました"
           echo "ログを確認してください: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+

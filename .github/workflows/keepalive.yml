@@ -1,0 +1,49 @@
+name: Keepalive
+
+on:
+  schedule:
+    # 毎日 JST 09:00 (UTC 00:00) に実行
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase (prevent free tier pause)
+        env:
+          SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+        run: |
+          STATUS=$(curl -o /dev/null -s -w "%{http_code}" \
+            -H "apikey: $SUPABASE_ANON_KEY" \
+            -H "Authorization: Bearer $SUPABASE_ANON_KEY" \
+            "$SUPABASE_URL/rest/v1/")
+          echo "Supabase status: $STATUS"
+          # 200 or 404 (no tables matched) はどちらも正常
+          if [ "$STATUS" != "200" ] && [ "$STATUS" != "404" ]; then
+            echo "⚠️ Supabase ping failed (status: $STATUS)"
+            exit 1
+          fi
+
+      - name: Ping Cloud Run backend (prevent cold start)
+        env:
+          BACKEND_URL: ${{ secrets.CLOUD_RUN_BACKEND_URL }}
+        run: |
+          if [ -z "$BACKEND_URL" ]; then
+            echo "⏭️ CLOUD_RUN_BACKEND_URL not set, skipping"
+            exit 0
+          fi
+          STATUS=$(curl -o /dev/null -s -w "%{http_code}" "$BACKEND_URL/health")
+          echo "Cloud Run backend status: $STATUS"
+
+      - name: Ping Cloud Run frontend (prevent cold start)
+        env:
+          FRONTEND_URL: ${{ secrets.FRONTEND_ORIGIN }}
+        run: |
+          if [ -z "$FRONTEND_URL" ]; then
+            echo "⏭️ FRONTEND_ORIGIN not set, skipping"
+            exit 0
+          fi
+          STATUS=$(curl -o /dev/null -s -w "%{http_code}" "$FRONTEND_URL")
+          echo "Cloud Run frontend status: $STATUS"
