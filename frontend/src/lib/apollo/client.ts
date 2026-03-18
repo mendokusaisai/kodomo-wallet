@@ -9,7 +9,7 @@ import { RetryLink } from "@apollo/client/link/retry";
 import { createClient } from "@/lib/supabase/client";
 
 const httpLink = new HttpLink({
-	uri: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/graphql",
+	uri: process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT || "http://localhost:8000/graphql",
 });
 
 // リトライ設定（Renderの起動待ち対応）
