@@ -186,10 +186,6 @@ export default function DashboardPage() {
 									<div className="mb-3 pb-3 border-b border-gray-200 dark:border-gray-700">
 										<div className="flex items-center justify-between gap-2">
 											<div className="flex items-center gap-2 md:gap-3 flex-1 min-w-0">
-												{/* アバター表示 */}
-												<div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-base md:text-lg font-bold flex-shrink-0">
-													{account.user.name?.charAt(0) || "?"}
-												</div>
 												<p className="text-base md:text-lg font-semibold text-gray-900 dark:text-gray-100 truncate">
 													{account.user.name}
 												</p>
