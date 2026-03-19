@@ -64,4 +64,32 @@ describe('DepositDialog', () => {
 
     expect(mockOnOpenChange).toHaveBeenCalledWith(false)
   })
+
+  it('説明欄が空のまま送信できる', async () => {
+    const user = userEvent.setup()
+
+    render(<DepositDialog {...defaultProps} />)
+
+    await user.type(screen.getByLabelText(/金額/), '1000')
+    // 説明欄は入力しない
+
+    const submitButton = screen.getByRole('button', { name: /入金する/ })
+    await user.click(submitButton)
+
+    // 説明に関するバリデーションエラーが表示されないこと
+    await waitFor(() => {
+      expect(screen.queryByText('説明を入力してください')).not.toBeInTheDocument()
+    })
+
+    // ダイアログが閉じること（送信成功）
+    await waitFor(() => {
+      expect(mockOnOpenChange).toHaveBeenCalledWith(false)
+    })
+  })
+
+  it('説明欄のラベルが「説明（任意）」と表示される', () => {
+    render(<DepositDialog {...defaultProps} />)
+
+    expect(screen.getByText('説明（任意）')).toBeInTheDocument()
+  })
 })
