@@ -14,7 +14,6 @@ def sample_profile() -> Profile:
         id=uuid.uuid4(),
         name="Test User",
         role="parent",
-        avatar_url=None,
         created_at=now,
         updated_at=now,
     )

@@ -68,13 +68,15 @@ class TestSQLAlchemyWithdrawalRequestRepository:
         # 親、子、アカウントを作成
         parent = Profile(
             id=uuid.uuid4(),
-            name="Parent",            role="parent",            avatar_url=None,
+            name="Parent",
+            role="parent",
             created_at=datetime.now(UTC),
             updated_at=datetime.now(UTC),
         )
         child = Profile(
             id=uuid.uuid4(),
-            name="Child",            role="child",            avatar_url=None,
+            name="Child",
+            role="child",
             created_at=datetime.now(UTC),
             updated_at=datetime.now(UTC),
         )

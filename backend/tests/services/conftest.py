@@ -79,7 +79,6 @@ def sample_profile() -> Profile:
         email=None,
         name="Test User",
         role="parent",
-        avatar_url=None,
         created_at=datetime.now(UTC),
         updated_at=datetime.now(UTC),
     )
@@ -94,7 +93,6 @@ def sample_child(sample_profile: Profile) -> Profile:
         email=None,
         name="Test Child",
         role="child",
-        avatar_url=None,
         created_at=datetime.now(UTC),
         updated_at=datetime.now(UTC),
     )

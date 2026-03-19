@@ -321,13 +321,12 @@ class Mutation:
         user_id: str,
         current_user_id: str,
         name: str | None = None,
-        avatar_url: str | None = None,
     ) -> Profile:
         """ユーザープロフィールを更新（本人または親が子を編集可能）"""
         profile_service = info.context["profile_service"]
         try:
             return resolvers.update_profile(
-                user_id, current_user_id, name, avatar_url, profile_service
+                user_id, current_user_id, name, profile_service
             )
         except ResourceNotFoundException as e:
             raise Exception(f"Resource not found: {e.message}") from e

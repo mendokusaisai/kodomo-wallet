@@ -20,7 +20,6 @@ class Profile(Base):
     auth_user_id = Column(UUID(as_uuid=True), nullable=True)
     name = Column(Text, nullable=False)
     role = Column(Text, nullable=False)
-    avatar_url = Column(Text, nullable=True)
     # DBは timestamptz を使用しているため DateTime(timezone=True) を使用
     created_at = Column(DateTime(timezone=True), nullable=False)
     updated_at = Column(DateTime(timezone=True), nullable=False)

@@ -31,7 +31,6 @@ class TestParentInviteService:
             email=None,
             name="Parent",
             role="parent",
-            avatar_url=None,
             created_at=datetime.now(UTC),
             updated_at=datetime.now(UTC),
         )
@@ -41,7 +40,6 @@ class TestParentInviteService:
             email=None,
             name="Child",
             role="child",
-            avatar_url=None,
             created_at=datetime.now(UTC),
             updated_at=datetime.now(UTC),
         )
@@ -77,7 +75,6 @@ class TestParentInviteService:
             email=None,
             name="Parent",
             role="parent",
-            avatar_url=None,
             created_at=datetime.now(UTC),
             updated_at=datetime.now(UTC),
         )
@@ -103,7 +100,6 @@ class TestParentInviteService:
             email=None,
             name="Parent2",
             role="parent",
-            avatar_url=None,
             created_at=datetime.now(UTC),
             updated_at=datetime.now(UTC),
         )
@@ -113,7 +109,6 @@ class TestParentInviteService:
             email=None,
             name="Child2",
             role="child",
-            avatar_url=None,
             created_at=datetime.now(UTC),
             updated_at=datetime.now(UTC),
         )
@@ -149,7 +144,6 @@ class TestParentInviteService:
             email=None,
             name="Parent3",
             role="parent",
-            avatar_url=None,
             created_at=datetime.now(UTC),
             updated_at=datetime.now(UTC),
         )
@@ -159,7 +153,6 @@ class TestParentInviteService:
             email=None,
             name="Child3",
             role="child",
-            avatar_url=None,
             created_at=datetime.now(UTC),
             updated_at=datetime.now(UTC),
         )

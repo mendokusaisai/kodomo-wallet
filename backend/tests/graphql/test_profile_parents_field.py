@@ -24,7 +24,6 @@ class TestProfileParentsLogic:
         child_profile_db = db_models.Profile(
             name="Orphan Child",
             role="child",
-            avatar_url=None,
             created_at=now,
             updated_at=now,
         )
@@ -50,7 +49,6 @@ class TestProfileParentsLogic:
         parent_profile_db = db_models.Profile(
             name="Parent One",
             role="parent",
-            avatar_url=None,
             created_at=now,
             updated_at=now,
         )
@@ -62,7 +60,6 @@ class TestProfileParentsLogic:
         child_profile_db = db_models.Profile(
             name="Child One",
             role="child",
-            avatar_url=None,
             created_at=now,
             updated_at=now,
         )
@@ -103,7 +100,6 @@ class TestProfileParentsLogic:
         parent1_db = db_models.Profile(
             name="Parent One",
             role="parent",
-            avatar_url=None,
             created_at=now,
             updated_at=now,
         )
@@ -113,7 +109,6 @@ class TestProfileParentsLogic:
         parent2_db = db_models.Profile(
             name="Parent Two",
             role="parent",
-            avatar_url=None,
             created_at=now,
             updated_at=now,
         )
@@ -126,7 +121,6 @@ class TestProfileParentsLogic:
         child_profile_db = db_models.Profile(
             name="Child Shared",
             role="child",
-            avatar_url=None,
             created_at=now,
             updated_at=now,
         )
@@ -174,7 +168,6 @@ class TestProfileParentsLogic:
         parent_profile_db = db_models.Profile(
             name="Solo Parent",
             role="parent",
-            avatar_url=None,
             created_at=now,
             updated_at=now,
         )
@@ -200,7 +193,6 @@ class TestProfileParentsLogic:
         parent1_db = db_models.Profile(
             name="Parent One",
             role="parent",
-            avatar_url=None,
             created_at=now,
             updated_at=now,
         )
@@ -210,7 +202,6 @@ class TestProfileParentsLogic:
         parent2_db = db_models.Profile(
             name="Parent Two",
             role="parent",
-            avatar_url=None,
             created_at=now,
             updated_at=now,
         )
@@ -223,7 +214,6 @@ class TestProfileParentsLogic:
         child_profile_db = db_models.Profile(
             name="Child Shared",
             role="child",
-            avatar_url=None,
             created_at=now,
             updated_at=now,
         )
@@ -260,7 +250,6 @@ class TestProfileParentsLogic:
         unrelated_parent = db_models.Profile(
             name="Unrelated",
             role="parent",
-            avatar_url=None,
             created_at=now,
             updated_at=now,
         )

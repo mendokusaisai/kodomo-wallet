@@ -204,7 +204,7 @@ class TestAccountService:
             auth_user_id=str(uuid.uuid4()),
             email=None,
             name="子供1",
-            role="child",            avatar_url=None,
+            role="child",
             created_at=datetime.now(UTC),
             updated_at=datetime.now(UTC),
         )
@@ -213,7 +213,7 @@ class TestAccountService:
             auth_user_id=str(uuid.uuid4()),
             email=None,
             name="子供2",
-            role="child",            avatar_url=None,
+            role="child",
             created_at=datetime.now(UTC),
             updated_at=datetime.now(UTC),
         )

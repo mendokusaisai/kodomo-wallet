@@ -364,7 +364,6 @@ class TestFamilyConsistency:
             name="Parent 1",
             role="parent",            created_at=datetime.now(),
             updated_at=datetime.now(),
-            avatar_url=None,
         )
         parent2 = Profile(
             id=str(uuid.uuid4()),
@@ -373,7 +372,6 @@ class TestFamilyConsistency:
             name="Parent 2",
             role="parent",            created_at=datetime.now(),
             updated_at=datetime.now(),
-            avatar_url=None,
         )
         mock_profile_repository.add(parent1)
         mock_profile_repository.add(parent2)
@@ -409,7 +407,6 @@ class TestFamilyConsistency:
             name="Parent 1",
             role="parent",            created_at=datetime.now(),
             updated_at=datetime.now(),
-            avatar_url=None,
         )
         parent2 = Profile(
             id=str(uuid.uuid4()),
@@ -418,7 +415,6 @@ class TestFamilyConsistency:
             name="Parent 2",
             role="parent",            created_at=datetime.now(),
             updated_at=datetime.now(),
-            avatar_url=None,
         )
         mock_profile_repository.add(parent1)
         mock_profile_repository.add(parent2)

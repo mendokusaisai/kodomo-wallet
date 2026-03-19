@@ -54,7 +54,6 @@ class ProfileService:
         user_id: str,
         current_user_id: str,
         name: str | None = None,
-        avatar_url: str | None = None,
     ) -> Profile:
         """ユーザープロフィールを更新（自分自身または親が子供を編集可能）"""
         # 対象プロフィールを取得
@@ -83,8 +82,6 @@ class ProfileService:
         updates: dict = {"updated_at": datetime.now(UTC)}
         if name is not None:
             updates["name"] = name
-        if avatar_url is not None:
-            updates["avatar_url"] = avatar_url
 
         updated_profile = replace(profile, **updates)
 

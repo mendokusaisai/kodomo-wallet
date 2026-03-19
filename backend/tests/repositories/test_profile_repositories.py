@@ -41,7 +41,6 @@ class TestSQLAlchemyProfileRepository:
             id=uuid.uuid4(),
             name="Parent",
             role="parent",
-            avatar_url=None,
             created_at=now,
             updated_at=now,
         )
@@ -49,7 +48,6 @@ class TestSQLAlchemyProfileRepository:
             id=uuid.uuid4(),
             name="Child 1",
             role="child",
-            avatar_url=None,
             created_at=now,
             updated_at=now,
         )
@@ -57,7 +55,6 @@ class TestSQLAlchemyProfileRepository:
             id=uuid.uuid4(),
             name="Child 2",
             role="child",
-            avatar_url=None,
             created_at=now,
             updated_at=now,
         )
@@ -100,7 +97,6 @@ class TestSQLAlchemyProfileRepository:
             id=uuid.uuid4(),
             name="Parent",
             role="parent",
-            avatar_url=None,
             created_at=now,
             updated_at=now,
         )
@@ -120,7 +116,6 @@ class TestSQLAlchemyProfileRepository:
             id=auth_user_id,  # 現行スキーマでは profiles.id == auth.users.id
             name="Auth User",
             role="parent",
-            avatar_url=None,
             created_at=now,
             updated_at=now,
         )
@@ -147,7 +142,6 @@ class TestSQLAlchemyProfileRepository:
             id=uuid.uuid4(),
             name="To Delete",
             role="child",
-            avatar_url=None,
             created_at=now,
             updated_at=now,
         )

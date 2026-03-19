@@ -189,11 +189,10 @@ def update_profile(
     user_id: str,
     current_user_id: str,
     name: str | None,
-    avatar_url: str | None,
     profile_service: ProfileService,
 ) -> Profile:
     """ユーザープロフィールを更新（本人または親が子を編集可能）"""
-    entity = profile_service.update_profile(user_id, current_user_id, name, avatar_url)
+    entity = profile_service.update_profile(user_id, current_user_id, name)
     return converters.to_graphql_profile(entity)
 
 
