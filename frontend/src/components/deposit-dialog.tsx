@@ -32,7 +32,7 @@ const depositSchema = z.object({
 				message: "正の整数を入力してください",
 			},
 		),
-	description: z.string().min(1, "説明を入力してください"),
+	description: z.string().optional(),
 });
 
 type DepositFormValues = z.infer<typeof depositSchema>;
@@ -101,7 +101,7 @@ export function DepositDialog({
 				<DialogHeader>
 					<DialogTitle>入金</DialogTitle>
 					<DialogDescription>
-						{accountName}に入金する金額と説明を入力してください
+					{accountName}に入金する金額を入力してください
 					</DialogDescription>
 				</DialogHeader>
 				<form onSubmit={handleSubmit(onSubmit)}>
@@ -119,7 +119,7 @@ export function DepositDialog({
 							)}
 						</div>
 						<div className="grid gap-2">
-							<Label htmlFor={descriptionId}>説明</Label>
+							<Label htmlFor={descriptionId}>説明（任意）</Label>
 							<Input
 								id={descriptionId}
 								placeholder="お小遣い"
