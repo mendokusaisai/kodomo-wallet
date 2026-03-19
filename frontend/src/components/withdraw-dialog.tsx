@@ -32,7 +32,7 @@ const withdrawSchema = z.object({
 				message: "正の整数を入力してください",
 			},
 		),
-	description: z.string().min(1, "説明を入力してください"),
+	description: z.string().optional(),
 });
 
 type WithdrawFormValues = z.infer<typeof withdrawSchema>;
@@ -115,7 +115,7 @@ export function WithdrawDialog({
 				<DialogHeader>
 					<DialogTitle>出金</DialogTitle>
 					<DialogDescription>
-						{accountName}から出金する金額と説明を入力してください
+					{accountName}から出金する金額を入力してください
 						<br />
 						<span className="text-sm font-semibold text-gray-700">
 							現在の残高: ¥{currentBalance.toLocaleString()}
@@ -138,7 +138,7 @@ export function WithdrawDialog({
 							)}
 						</div>
 						<div className="grid gap-2">
-							<Label htmlFor={descriptionId}>説明</Label>
+							<Label htmlFor={descriptionId}>説明（任意）</Label>
 							<Input
 								id={descriptionId}
 								placeholder="おもちゃ購入"
