@@ -8,7 +8,6 @@ export const GET_ME = gql`
       id
       name
       role
-      avatarUrl
       authUserId
       email
       parents {
@@ -34,7 +33,6 @@ export const GET_CHILDREN = gql`
       id
       name
       role
-      avatarUrl
       email
     }
   }
@@ -56,7 +54,6 @@ export const GET_ACCOUNTS = gql`
 				name
 				role
 				authUserId
-				avatarUrl
 				email
 			}
 		}
@@ -251,17 +248,14 @@ export const UPDATE_PROFILE = gql`
     $userId: String!
     $currentUserId: String!
     $name: String
-    $avatarUrl: String
   ) {
     updateProfile(
       userId: $userId
       currentUserId: $currentUserId
       name: $name
-      avatarUrl: $avatarUrl
     ) {
       id
       name
-      avatarUrl
       updatedAt
     }
   }

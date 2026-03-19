@@ -2,9 +2,8 @@
 
 import { useMutation, useQuery } from "@apollo/client/react";
 import { ArrowLeft, Copy, Save, Trash2, User, UserPlus } from "lucide-react";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import DeleteAccountDialog from "@/components/delete-account-dialog";
 import { LogoutButton } from "@/components/logout-button";
 import { Button } from "@/components/ui/button";
@@ -20,7 +19,6 @@ import {
 import type { GetMeResponse } from "@/lib/graphql/types";
 import { getUser } from "@/lib/supabase/auth";
 import { createClient } from "@/lib/supabase/client";
-import { deleteAvatar, uploadAvatar } from "@/lib/supabase/storage";
 import { showError, showSuccess, showWarning } from "@/lib/toast";
 
 export default function SettingsPage() {
@@ -28,12 +26,7 @@ export default function SettingsPage() {
 	const supabase = createClient();
 	const [userId, setUserId] = useState<string | null>(null);
 	const [name, setName] = useState("");
-	const [avatarUrl, setAvatarUrl] = useState("");
-	const [avatarFile, setAvatarFile] = useState<File | null>(null);
-	const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
-	const fileInputRef = useRef<HTMLInputElement>(null);
 	const nameInputId = useId();
-	const avatarInputId = useId();
 
 	// 親招待用のstate
 	const [inviteEmail, setInviteEmail] = useState("");
@@ -89,7 +82,6 @@ export default function SettingsPage() {
 	useEffect(() => {
 		if (meData?.me) {
 			setName(meData.me.name);
-			setAvatarUrl(meData.me.avatarUrl || "");
 		}
 	}, [meData]);
 
@@ -108,66 +100,19 @@ export default function SettingsPage() {
 		if (!userId) return;
 
 		try {
-			let finalAvatarUrl = avatarUrl;
-
-			// 子どもロールの場合のみアバターアップロード処理
-			if (meData?.me?.role === "child" && avatarFile) {
-				// 古い画像を削除（オプション）
-				if (avatarUrl) {
-					await deleteAvatar(avatarUrl);
-				}
-
-				// 新しい画像をアップロード
-				finalAvatarUrl = await uploadAvatar(avatarFile, userId);
-			}
-
 			await updateProfile({
 				variables: {
 					userId,
 					currentUserId: userId,
 					name: name || null,
-					avatarUrl: finalAvatarUrl || null,
 				},
 			});
-
-			// アップロード後、ファイル選択とプレビューをクリア
-			setAvatarFile(null);
-			setAvatarPreview(null);
-			if (fileInputRef.current) {
-				fileInputRef.current.value = "";
-			}
 		} catch (error) {
 			showError(
 				"更新に失敗しました",
 				error instanceof Error ? error.message : "不明なエラー",
 			);
 		}
-	};
-
-	const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-		const file = e.target.files?.[0];
-		if (!file) return;
-
-		// ファイルサイズチェック（5MB以下）
-		if (file.size > 5 * 1024 * 1024) {
-			showError("ファイルサイズは5MB以下にしてください");
-			return;
-		}
-
-		// ファイルタイプチェック
-		if (!file.type.startsWith("image/")) {
-			showError("画像ファイルを選択してください");
-			return;
-		}
-
-		setAvatarFile(file);
-
-		// プレビュー用のURLを生成
-		const reader = new FileReader();
-		reader.onloadend = () => {
-			setAvatarPreview(reader.result as string);
-		};
-		reader.readAsDataURL(file);
 	};
 
 	const handleCreateInvite = async () => {
@@ -300,53 +245,6 @@ export default function SettingsPage() {
 								required
 							/>
 						</div>
-
-						{/* 子どもロールの場合のみアバター設定を表示 */}
-						{meData?.me?.role === "child" && (
-							<>
-								<div>
-									<Label htmlFor={avatarInputId} className="mb-2 block">アバター画像（任意）</Label>
-									<div className="space-y-3">
-										<Input
-											ref={fileInputRef}
-											id={avatarInputId}
-											type="file"
-											accept="image/*"
-											onChange={handleFileChange}
-											className="cursor-pointer"
-										/>
-										<p className="text-xs text-gray-500 dark:text-gray-400">
-											JPG、PNG、GIF形式の画像ファイル（最大5MB）
-										</p>
-									</div>
-								</div>
-
-								{/* プレビュー表示 */}
-								{(avatarPreview || avatarUrl) && (
-									<div>
-										<Label>プレビュー</Label>
-										<div className="mt-2 flex items-center gap-4">
-											<Image
-												src={avatarPreview || avatarUrl}
-												alt="Avatar preview"
-												width={64}
-												height={64}
-												className="rounded-full object-cover"
-												unoptimized
-												onError={(e) => {
-													e.currentTarget.style.display = "none";
-												}}
-											/>
-											{avatarPreview && (
-												<p className="text-sm text-blue-600 dark:text-blue-400">
-													新しい画像（保存後に反映されます）
-												</p>
-											)}
-										</div>
-									</div>
-								)}
-							</>
-						)}
 
 						<Button
 							type="submit"

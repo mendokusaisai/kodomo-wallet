@@ -4,7 +4,6 @@ export interface Profile {
 	id: string;
 	name: string;
 	role: "parent" | "child";
-	avatarUrl?: string;
 	createdAt: string;
 	authUserId?: string | null; // 認証アカウントID (認証なし子どもの場合null)
 	email?: string | null; // メールアドレス（未認証子どもの場合に事前登録）
