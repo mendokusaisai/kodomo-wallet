@@ -25,7 +25,6 @@ def to_domain_profile(db_profile: db_models.Profile) -> domain.Profile:
         email=None,  # 必要な時だけSupabaseから取得
         name=str(db_profile.name),  # type: ignore
         role=db_profile.role,  # type: ignore
-        avatar_url=str(db_profile.avatar_url) if db_profile.avatar_url is not None else None,  # type: ignore
         created_at=parse_datetime(db_profile.created_at),  # type: ignore
         updated_at=parse_datetime(db_profile.updated_at),  # type: ignore
     )

@@ -16,7 +16,6 @@ class Profile:
     email: str | None
     name: str
     role: Literal["parent", "child"]
-    avatar_url: str | None
     created_at: datetime
     updated_at: datetime
 

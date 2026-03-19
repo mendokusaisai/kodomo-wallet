@@ -64,7 +64,6 @@ class MockProfileRepository(ProfileRepository):
             auth_user_id=None,
             created_at=datetime.now(),
             updated_at=datetime.now(),
-            avatar_url=None,
         )
         self.profiles[profile.id] = profile
 

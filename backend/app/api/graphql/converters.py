@@ -21,7 +21,6 @@ def to_graphql_profile(entity: domain_entities.Profile) -> graphql_types.Profile
         id=str(entity.id),
         name=entity.name,
         role=entity.role,
-        avatar_url=entity.avatar_url,
         created_at=_to_iso_string(entity.created_at),
         updated_at=_to_iso_string(entity.updated_at),
         auth_user_id=entity.auth_user_id,

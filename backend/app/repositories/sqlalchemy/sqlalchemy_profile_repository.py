@@ -205,7 +205,6 @@ class SQLAlchemyProfileRepository(ProfileRepository):
             .where(db_models.Profile.id == uuid.UUID(profile.id))
             .values(
                 name=profile.name,
-                avatar_url=profile.avatar_url,
                 updated_at=profile.updated_at,
             )
         )

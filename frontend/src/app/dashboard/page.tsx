@@ -2,7 +2,6 @@
 
 import { useQuery } from "@apollo/client/react";
 import { Settings } from "lucide-react";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { CreateChildDialog } from "@/components/create-child-dialog";
@@ -188,25 +187,9 @@ export default function DashboardPage() {
 										<div className="flex items-center justify-between gap-2">
 											<div className="flex items-center gap-2 md:gap-3 flex-1 min-w-0">
 												{/* アバター表示 */}
-												{account.user.avatarUrl ? (
-													<div className="w-10 h-10 md:w-12 md:h-12 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
-														<Image
-															src={account.user.avatarUrl}
-															alt={account.user.name}
-															width={48}
-															height={48}
-															className="w-full h-full object-cover"
-															onError={(e) => {
-																e.currentTarget.style.display = "none";
-															}}
-															unoptimized
-														/>
-													</div>
-												) : (
-													<div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-base md:text-lg font-bold flex-shrink-0">
-														{account.user.name?.charAt(0) || "?"}
-													</div>
-												)}
+												<div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-base md:text-lg font-bold flex-shrink-0">
+													{account.user.name?.charAt(0) || "?"}
+												</div>
 												<p className="text-base md:text-lg font-semibold text-gray-900 dark:text-gray-100 truncate">
 													{account.user.name}
 												</p>

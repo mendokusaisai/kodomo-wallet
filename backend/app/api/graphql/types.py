@@ -17,7 +17,6 @@ class Profile:
     id: str
     name: str
     role: str
-    avatar_url: str | None
     created_at: str
     updated_at: str
     auth_user_id: str | None = None  # 認証アカウントID (認証なし子どもの場合None)
