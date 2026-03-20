@@ -1,0 +1,91 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ヘルパー関数: 家族メンバーかどうかを確認
+    function isFamilyMember(familyId) {
+      return exists(/databases/$(database)/documents/families/$(familyId)/members/$(request.auth.uid));
+    }
+
+    // ヘルパー関数: 家族の親かどうかを確認
+    function isFamilyParent(familyId) {
+      return isFamilyMember(familyId) &&
+        get(/databases/$(database)/documents/families/$(familyId)/members/$(request.auth.uid)).data.role == "parent";
+    }
+
+    // families コレクション
+    match /families/{familyId} {
+      // 家族メンバーのみ閲覧可能
+      allow read: if request.auth != null && isFamilyMember(familyId);
+      // 誰でも作成可能（新規家族作成）
+      allow create: if request.auth != null;
+      // 親のみ更新・削除可能
+      allow update, delete: if request.auth != null && isFamilyParent(familyId);
+
+      // members サブコレクション
+      match /members/{memberId} {
+        // 家族メンバーのみ閲覧可能
+        allow read: if request.auth != null && isFamilyMember(familyId);
+        // 親のみ操作可能（招待承認など）
+        allow write: if request.auth != null && isFamilyParent(familyId);
+        // 自分自身の参加は許可（招待トークンによる参加）
+        allow create: if request.auth != null && memberId == request.auth.uid;
+      }
+
+      // accounts サブコレクション
+      match /accounts/{accountId} {
+        // 家族メンバーのみ閲覧可能
+        allow read: if request.auth != null && isFamilyMember(familyId);
+        // 親のみ作成・更新・削除可能
+        allow write: if request.auth != null && isFamilyParent(familyId);
+
+        // transactions サブコレクション
+        match /transactions/{transactionId} {
+          // 家族メンバーのみ閲覧可能
+          allow read: if request.auth != null && isFamilyMember(familyId);
+          // 親のみ作成可能（子は入出金不可）
+          allow create: if request.auth != null && isFamilyParent(familyId);
+          // トランザクションは更新・削除不可（履歴として保持）
+          allow update, delete: if false;
+        }
+      }
+    }
+
+    // recurringDeposits コレクション
+    match /recurringDeposits/{depositId} {
+      // 対象家族のメンバーのみ閲覧可能
+      allow read: if request.auth != null &&
+        isFamilyMember(resource.data.familyId);
+      // 親のみ作成・更新・削除可能
+      allow write: if request.auth != null &&
+        isFamilyParent(request.resource.data.familyId);
+    }
+
+    // parentInvites コレクション（token がドキュメントID）
+    match /parentInvites/{token} {
+      // 認証済みユーザーは閲覧可能（参加時にトークン検証）
+      allow read: if request.auth != null;
+      // 親のみ作成可能
+      allow create: if request.auth != null &&
+        isFamilyParent(request.resource.data.familyId);
+      // 親のみ更新（usedAt を設定）
+      allow update: if request.auth != null &&
+        isFamilyParent(resource.data.familyId);
+      allow delete: if false;
+    }
+
+    // childInvites コレクション（token がドキュメントID）
+    match /childInvites/{token} {
+      // 認証済みユーザーは閲覧可能（参加時にトークン検証）
+      allow read: if request.auth != null;
+      // 親のみ作成可能
+      allow create: if request.auth != null &&
+        isFamilyParent(request.resource.data.familyId);
+      // 親のみ更新（usedAt を設定）
+      allow update: if request.auth != null &&
+        isFamilyParent(resource.data.familyId);
+      allow delete: if false;
+    }
+  }
+}

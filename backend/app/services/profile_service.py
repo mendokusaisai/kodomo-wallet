@@ -4,7 +4,7 @@ from datetime import UTC, datetime, timedelta
 from injector import inject
 from sqlalchemy import text
 
-from app.core.config import settings
+from app.core.config import frontend_settings
 from app.core.exceptions import InvalidAmountException, ResourceNotFoundException
 from app.domain.entities import Profile
 from app.repositories.interfaces import (
@@ -319,7 +319,7 @@ class ProfileService:
         )
 
         # 受け入れリンクを作成してスタブメール送信
-        accept_link = f"{settings.FRONTEND_ORIGIN}/accept-invite?token={invite.token}"
+        accept_link = f"{frontend_settings.origin}/accept-invite?token={invite.token}"
 
         # メール本文用に子どもの名前をリスト化
         children_names = ", ".join([child.name for child in children])

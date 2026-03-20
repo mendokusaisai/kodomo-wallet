@@ -1,0 +1,26 @@
+services:
+  firebase-emulator:
+    image: node:20-slim
+    working_dir: /app
+    volumes:
+      - ./firebase.json:/app/firebase.json
+      - ./firestore.rules:/app/firestore.rules
+      - ./.firebaserc:/app/.firebaserc
+      - firebase-emulator-data:/app/.firebase-export
+    ports:
+      - "4000:4000"  # Emulator UI
+      - "8080:8080"  # Firestore
+      - "9099:9099"  # Auth
+    environment:
+      - FIREBASE_PROJECT_ID=kodomo-wallet-dev
+    command: >
+      sh -c "npm install -g firebase-tools &&
+             firebase emulators:start --only firestore,auth --project kodomo-wallet-dev"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4000"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  firebase-emulator-data:

@@ -1,36 +1,44 @@
 """
-データベース設定と接続セットアップ
+Firestore クライアントの初期化
 """
 
-from sqlalchemy import create_engine
-from sqlalchemy.orm import declarative_base, sessionmaker
+import json
+import os
 
-from app.core.config import database_settings
+import firebase_admin
+from firebase_admin import credentials, firestore
 
-# SQLAlchemyエンジンの作成
-if not database_settings.database_url:
-    raise ValueError("DATABASE_URL environment variable is not set")
+from app.core.config import firebase_settings
 
-engine = create_engine(
-    database_settings.database_url,
-    pool_pre_ping=True,  # 接続の健全性チェック
-    pool_size=10,
-    max_overflow=20,
-)
-
-# セッションファクトリー
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-# ベースクラス
-Base = declarative_base()
+_app: firebase_admin.App | None = None
 
 
-def get_db():
-    """
-    データベースセッションを取得する依存性注入用関数
-    """
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+def _get_firebase_app() -> firebase_admin.App:
+    """Firebase Admin SDK アプリを取得（シングルトン）"""
+    global _app
+    if _app is not None:
+        return _app
+
+    # Emulator 使用時は認証不要
+    if os.getenv("FIRESTORE_EMULATOR_HOST"):
+        _app = firebase_admin.initialize_app(
+            options={"projectId": firebase_settings.project_id}
+        )
+        return _app
+
+    # サービスアカウント JSON が環境変数に設定されている場合
+    if firebase_settings.service_account_json:
+        cred_dict = json.loads(firebase_settings.service_account_json)
+        cred = credentials.Certificate(cred_dict)
+        _app = firebase_admin.initialize_app(cred)
+        return _app
+
+    # デフォルト認証情報（Cloud Run 等の GCP 環境）
+    _app = firebase_admin.initialize_app()
+    return _app
+
+
+def get_firestore_client() -> firestore.Client:
+    """Firestore クライアントを取得する"""
+    _get_firebase_app()
+    return firestore.client()
