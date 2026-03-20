@@ -5,6 +5,7 @@ set -euo pipefail
 # Run once to create the service, then let GitHub Actions handle subsequent deploys.
 # Required env vars: IMAGE_TAG (docker image tag, e.g. git SHA or "latest")
 # Optional env vars: PROJECT_ID, REGION
+# Secrets required in Secret Manager: FIREBASE_SERVICE_ACCOUNT, SECRET_KEY, FRONTEND_ORIGIN
 
 PROJECT_ID="${PROJECT_ID:-kodomo-wallet}"
 REGION="${REGION:-asia-northeast1}"
@@ -26,7 +27,7 @@ gcloud run deploy "$SERVICE" \
   --timeout 300s \
   --port 8080 \
   --set-env-vars "ENVIRONMENT=production" \
-  --set-secrets "DATABASE_URL=DATABASE_URL:latest,SUPABASE_URL=SUPABASE_URL:latest,SUPABASE_KEY=SUPABASE_KEY:latest,SECRET_KEY=SECRET_KEY:latest,FRONTEND_ORIGIN=FRONTEND_ORIGIN:latest" \
+  --set-secrets "FIREBASE_SERVICE_ACCOUNT=FIREBASE_SERVICE_ACCOUNT:latest,SECRET_KEY=SECRET_KEY:latest,FRONTEND_ORIGIN=FRONTEND_ORIGIN:latest" \
   --project "$PROJECT_ID"
 
 echo ""
