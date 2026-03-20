@@ -14,7 +14,6 @@ from app.services import (
     ProfileService,
     RecurringDepositService,
     TransactionService,
-    WithdrawalRequestService,
 )
 
 
@@ -46,6 +45,5 @@ def graphql_context(
         "profile_service": test_injector.get(ProfileService),
         "account_service": test_injector.get(AccountService),
         "transaction_service": test_injector.get(TransactionService),
-        "withdrawal_request_service": test_injector.get(WithdrawalRequestService),
         "recurring_deposit_service": test_injector.get(RecurringDepositService),
     }

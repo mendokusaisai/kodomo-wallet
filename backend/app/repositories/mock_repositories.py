@@ -11,7 +11,6 @@ from app.domain.entities import (
     Profile,
     RecurringDeposit,
     Transaction,
-    WithdrawalRequest,
 )
 from app.repositories.interfaces import (
     AccountRepository,
@@ -21,7 +20,6 @@ from app.repositories.interfaces import (
     ProfileRepository,
     RecurringDepositRepository,
     TransactionRepository,
-    WithdrawalRequestRepository,
 )
 
 
@@ -214,58 +212,6 @@ class MockTransactionRepository(TransactionRepository):
         )
         self.transactions.append(transaction)
         return transaction
-
-
-class MockWithdrawalRequestRepository(WithdrawalRequestRepository):
-    """テスト用の WithdrawalRequestRepository のモック実装"""
-
-    def __init__(self):
-        self.requests: dict[str, WithdrawalRequest] = {}
-
-    def get_by_id(self, request_id: str) -> WithdrawalRequest | None:
-        """ID で出金リクエストを取得"""
-        return self.requests.get(request_id)
-
-    def get_pending_by_parent(self, parent_id: str) -> list[WithdrawalRequest]:
-        """親の子供の全ての保留中出金リクエストを取得"""
-        # 注: モック実装では parent_id との関連付けは簡略化
-        # 実際の実装では Account -> Profile -> parent_id で絞り込む必要がある
-        _ = parent_id  # 将来の実装のためにパラメータを保持
-        return [req for req in self.requests.values() if req.status == "pending"]
-
-    def create(
-        self,
-        account_id: str,
-        amount: int,
-        description: str | None,
-        created_at: datetime,
-    ) -> WithdrawalRequest:
-        """新規出金リクエストを作成"""
-        request = WithdrawalRequest(
-            id=str(uuid4()),
-            account_id=account_id,
-            amount=amount,
-            description=description,
-            status="pending",
-            created_at=created_at,
-            updated_at=created_at,
-        )
-        self.requests[request.id] = request
-        return request
-
-    def update_status(
-        self, request: WithdrawalRequest, status: str, updated_at: datetime
-    ) -> WithdrawalRequest:
-        """出金リクエストのステータスを更新"""
-        from dataclasses import replace
-
-        updated_request = replace(
-            request,
-            status=status,  # type: ignore
-            updated_at=updated_at,
-        )
-        self.requests[request.id] = updated_request
-        return updated_request
 
 
 class MockRecurringDepositRepository(RecurringDepositRepository):

@@ -58,21 +58,6 @@ def to_domain_transaction(db_transaction: db_models.Transaction) -> domain.Trans
     )
 
 
-def to_domain_withdrawal_request(
-    db_request: db_models.WithdrawalRequest,
-) -> domain.WithdrawalRequest:
-    """SQLAlchemyのWithdrawalRequestモデルをドメインエンティティに変換"""
-    return domain.WithdrawalRequest(
-        id=str(db_request.id),
-        account_id=str(db_request.account_id),
-        amount=int(db_request.amount),  # type: ignore
-        description=str(db_request.description) if db_request.description is not None else None,  # type: ignore
-        status=db_request.status,  # type: ignore
-        created_at=parse_datetime(db_request.created_at),  # type: ignore
-        updated_at=parse_datetime(db_request.updated_at),  # type: ignore
-    )
-
-
 def to_domain_recurring_deposit(
     db_deposit: db_models.RecurringDeposit,
 ) -> domain.RecurringDeposit:

@@ -20,7 +20,6 @@ from app.repositories.interfaces import (
     RecurringDepositExecutionRepository,
     RecurringDepositRepository,
     TransactionRepository,
-    WithdrawalRequestRepository,
 )
 from app.repositories.sqlalchemy import (
     SQLAlchemyAccountRepository,
@@ -31,7 +30,6 @@ from app.repositories.sqlalchemy import (
     SQLAlchemyRecurringDepositExecutionRepository,
     SQLAlchemyRecurringDepositRepository,
     SQLAlchemyTransactionRepository,
-    SQLAlchemyWithdrawalRequestRepository,
 )
 from app.services.mailer import ConsoleMailer, Mailer
 
@@ -63,11 +61,6 @@ class RepositoryModule(Module):
         binder.bind(
             TransactionRepository,
             to=SQLAlchemyTransactionRepository(self.db),
-            scope=singleton,
-        )
-        binder.bind(
-            WithdrawalRequestRepository,
-            to=SQLAlchemyWithdrawalRequestRepository(self.db),
             scope=singleton,
         )
         binder.bind(

@@ -13,7 +13,6 @@ from app.repositories.mock_repositories import (
     MockProfileRepository,
     MockRecurringDepositRepository,
     MockTransactionRepository,
-    MockWithdrawalRequestRepository,
 )
 from app.services import RecurringDepositService
 
@@ -54,7 +53,6 @@ class TestRecurringDepositService:
                     mock_profile_repository,
                     mock_account_repository,
                     MockTransactionRepository(),
-                    MockWithdrawalRequestRepository(),
                     mock_recurring_deposit_repository,
                 ),
             ]
@@ -82,7 +80,6 @@ class TestRecurringDepositService:
                     mock_profile_repository,
                     mock_account_repository,
                     MockTransactionRepository(),
-                    MockWithdrawalRequestRepository(),
                     mock_recurring_deposit_repository,
                 ),
             ]
@@ -117,7 +114,6 @@ class TestRecurringDepositService:
                     mock_profile_repository,
                     mock_account_repository,
                     MockTransactionRepository(),
-                    MockWithdrawalRequestRepository(),
                     mock_recurring_deposit_repository,
                 ),
             ]
@@ -170,7 +166,6 @@ class TestRecurringDepositService:
                     mock_profile_repository,
                     mock_account_repository,
                     MockTransactionRepository(),
-                    MockWithdrawalRequestRepository(),
                     mock_recurring_deposit_repository,
                 ),
             ]
@@ -216,7 +211,6 @@ class TestRecurringDepositService:
                     mock_profile_repository,
                     mock_account_repository,
                     MockTransactionRepository(),
-                    MockWithdrawalRequestRepository(),
                     mock_recurring_deposit_repository,
                 ),
             ]
@@ -267,7 +261,6 @@ class TestRecurringDepositService:
                     mock_profile_repository,
                     mock_account_repository,
                     MockTransactionRepository(),
-                    MockWithdrawalRequestRepository(),
                     mock_recurring_deposit_repository,
                 ),
             ]
@@ -326,7 +319,6 @@ class TestRecurringDepositService:
                     mock_profile_repository,
                     mock_account_repository,
                     MockTransactionRepository(),
-                    MockWithdrawalRequestRepository(),
                     mock_recurring_deposit_repository,
                 ),
             ]
@@ -368,7 +360,6 @@ class TestRecurringDepositService:
                     mock_profile_repository,
                     mock_account_repository,
                     MockTransactionRepository(),
-                    MockWithdrawalRequestRepository(),
                     mock_recurring_deposit_repository,
                 ),
             ]

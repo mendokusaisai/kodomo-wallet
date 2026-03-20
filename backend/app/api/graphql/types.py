@@ -62,19 +62,6 @@ class Transaction:
 
 
 @strawberry.type
-class WithdrawalRequest:
-    """Withdrawal request type"""
-
-    id: str
-    account_id: str
-    amount: int
-    description: str | None
-    status: str
-    created_at: str
-    updated_at: str
-
-
-@strawberry.type
 class RecurringDeposit:
     """Recurring deposit type"""
 

@@ -6,7 +6,7 @@ import strawberry
 from strawberry.types import Info
 
 from app.api.graphql import resolvers
-from app.api.graphql.types import Account, Profile, RecurringDeposit, Transaction, WithdrawalRequest
+from app.api.graphql.types import Account, Profile, RecurringDeposit, Transaction
 from app.core.exceptions import (
     DomainException,
     InvalidAmountException,
@@ -59,16 +59,6 @@ class Query:
         """アカウントのトランザクション一覧を取得"""
         transaction_service = info.context["transaction_service"]
         return resolvers.get_transactions_by_account_id(account_id, transaction_service, limit)
-
-    @strawberry.field
-    def withdrawal_requests(
-        self,
-        info: Info,
-        parent_id: str,
-    ) -> list[WithdrawalRequest]:
-        """親ユーザーの子供に対する未承認の出金リクエスト一覧を取得"""
-        withdrawal_request_service = info.context["withdrawal_request_service"]
-        return resolvers.get_pending_withdrawal_requests(parent_id, withdrawal_request_service)
 
     @strawberry.field
     def recurring_deposit(
@@ -234,64 +224,6 @@ class Mutation:
             return resolvers.accept_child_invite(token, auth_user_id, profile_service)
         except ResourceNotFoundException as e:
             raise Exception(f"Resource not found: {e.message}") from e
-        except DomainException as e:
-            raise Exception(f"Domain error: {e.message}") from e
-
-    @strawberry.mutation
-    def create_withdrawal_request(
-        self,
-        info: Info,
-        account_id: str,
-        amount: int,
-        description: str | None = None,
-    ) -> WithdrawalRequest:
-        """出金リクエストを作成（子が発行）"""
-        withdrawal_request_service = info.context["withdrawal_request_service"]
-        try:
-            return resolvers.create_withdrawal_request(
-                account_id, amount, withdrawal_request_service, description
-            )
-        except ResourceNotFoundException as e:
-            raise Exception(f"Resource not found: {e.message}") from e
-        except InvalidAmountException as e:
-            raise Exception(f"Invalid amount: {e.message}") from e
-        except DomainException as e:
-            raise Exception(f"Domain error: {e.message}") from e
-
-    @strawberry.mutation
-    def approve_withdrawal_request(
-        self,
-        info: Info,
-        request_id: str,
-    ) -> WithdrawalRequest:
-        """出金リクエストを承認（親が承認）"""
-        withdrawal_request_service = info.context["withdrawal_request_service"]
-        transaction_service = info.context["transaction_service"]
-        try:
-            return resolvers.approve_withdrawal_request(
-                request_id, withdrawal_request_service, transaction_service
-            )
-        except ResourceNotFoundException as e:
-            raise Exception(f"Resource not found: {e.message}") from e
-        except InvalidAmountException as e:
-            raise Exception(f"Invalid operation: {e.message}") from e
-        except DomainException as e:
-            raise Exception(f"Domain error: {e.message}") from e
-
-    @strawberry.mutation
-    def reject_withdrawal_request(
-        self,
-        info: Info,
-        request_id: str,
-    ) -> WithdrawalRequest:
-        """出金リクエストを却下（親が却下）"""
-        withdrawal_request_service = info.context["withdrawal_request_service"]
-        try:
-            return resolvers.reject_withdrawal_request(request_id, withdrawal_request_service)
-        except ResourceNotFoundException as e:
-            raise Exception(f"Resource not found: {e.message}") from e
-        except InvalidAmountException as e:
-            raise Exception(f"Invalid operation: {e.message}") from e
         except DomainException as e:
             raise Exception(f"Domain error: {e.message}") from e
 

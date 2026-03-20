@@ -14,7 +14,6 @@ from app.domain.entities import (
     RecurringDeposit,
     RecurringDepositExecution,
     Transaction,
-    WithdrawalRequest,
 )
 
 
@@ -176,38 +175,6 @@ class TransactionRepository(ABC):
         created_at: datetime,
     ) -> Transaction:
         """新規トランザクションを作成"""
-        pass
-
-
-class WithdrawalRequestRepository(ABC):
-    """WithdrawalRequestのデータアクセスインターフェース"""
-
-    @abstractmethod
-    def get_by_id(self, request_id: str) -> WithdrawalRequest | None:
-        """IDで出金リクエストを取得"""
-        pass
-
-    @abstractmethod
-    def get_pending_by_parent(self, parent_id: str) -> list[WithdrawalRequest]:
-        """親の子供の全ての保留中出金リクエストを取得"""
-        pass
-
-    @abstractmethod
-    def create(
-        self,
-        account_id: str,
-        amount: int,
-        description: str | None,
-        created_at: datetime,
-    ) -> WithdrawalRequest:
-        """新規出金リクエストを作成"""
-        pass
-
-    @abstractmethod
-    def update_status(
-        self, request: WithdrawalRequest, status: str, updated_at: datetime
-    ) -> WithdrawalRequest:
-        """出金リクエストのステータスを更新"""
         pass
 
 

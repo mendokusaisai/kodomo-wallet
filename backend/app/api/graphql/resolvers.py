@@ -5,13 +5,12 @@
 """
 
 from app.api.graphql import converters
-from app.api.graphql.types import Account, Profile, RecurringDeposit, Transaction, WithdrawalRequest
+from app.api.graphql.types import Account, Profile, RecurringDeposit, Transaction
 from app.services import (
     AccountService,
     ProfileService,
     RecurringDepositService,
     TransactionService,
-    WithdrawalRequestService,
 )
 
 
@@ -133,45 +132,6 @@ def accept_child_invite(
 ) -> bool:
     """子どもの招待を受け入れ、認証アカウントとプロフィールを紐付ける"""
     return profile_service.accept_child_invite(token, auth_user_id)
-
-
-def get_pending_withdrawal_requests(
-    parent_id: str,
-    withdrawal_request_service: WithdrawalRequestService,
-) -> list[WithdrawalRequest]:
-    """親ユーザーの子供に対する未承認の出金リクエストを取得"""
-    entities = withdrawal_request_service.get_pending_requests_for_parent(parent_id)
-    return [converters.to_graphql_withdrawal_request(e) for e in entities]
-
-
-def create_withdrawal_request(
-    account_id: str,
-    amount: int,
-    withdrawal_request_service: WithdrawalRequestService,
-    description: str | None = None,
-) -> WithdrawalRequest:
-    """出金リクエストを作成（子が発行）"""
-    entity = withdrawal_request_service.create_withdrawal_request(account_id, amount, description)
-    return converters.to_graphql_withdrawal_request(entity)
-
-
-def approve_withdrawal_request(
-    request_id: str,
-    withdrawal_request_service: WithdrawalRequestService,
-    transaction_service: TransactionService,
-) -> WithdrawalRequest:
-    """出金リクエストを承認（親が承認）"""
-    entity = withdrawal_request_service.approve_withdrawal_request(request_id, transaction_service)
-    return converters.to_graphql_withdrawal_request(entity)
-
-
-def reject_withdrawal_request(
-    request_id: str,
-    withdrawal_request_service: WithdrawalRequestService,
-) -> WithdrawalRequest:
-    """出金リクエストを却下（親が却下）"""
-    entity = withdrawal_request_service.reject_withdrawal_request(request_id)
-    return converters.to_graphql_withdrawal_request(entity)
 
 
 def update_goal(
