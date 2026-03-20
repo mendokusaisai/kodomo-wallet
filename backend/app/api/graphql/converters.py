@@ -1,70 +1,76 @@
 """
-ドメインエンティティをGraphQL型に変換するコンバーター
+ドメインエンティティをGraphQL型に変換するコンバーター（家族中心モデル）
 """
 
 from datetime import datetime
 
-from app.api.graphql import types as graphql_types
-from app.domain import entities as domain_entities
+from app.api.graphql import types as t
+from app.domain import entities as e
 
 
-def _to_iso_string(dt: datetime | str) -> str:
-    """datetimeまたは文字列をISO形式の文字列に変換"""
+def _dt(dt: datetime | str) -> str:
+    """datetime または文字列を ISO 形式に変換"""
     if isinstance(dt, str):
         return dt
     return dt.isoformat()
 
 
-def to_graphql_profile(entity: domain_entities.Profile) -> graphql_types.Profile:
-    """ドメインのProfileをGraphQL型に変換"""
-    return graphql_types.Profile(
-        id=str(entity.id),
+def to_family_member(entity: e.FamilyMember) -> t.FamilyMemberType:
+    return t.FamilyMemberType(
+        uid=entity.uid,
+        family_id=entity.family_id,
         name=entity.name,
         role=entity.role,
-        created_at=_to_iso_string(entity.created_at),
-        updated_at=_to_iso_string(entity.updated_at),
-        auth_user_id=entity.auth_user_id,
         email=entity.email,
+        joined_at=_dt(entity.joined_at),
     )
 
 
-def to_graphql_account(entity: domain_entities.Account) -> graphql_types.Account:
-    """ドメインのAccountをGraphQL型に変換"""
-    return graphql_types.Account(
-        id=str(entity.id),
-        user_id=str(entity.user_id),
+def to_family(entity: e.Family, members: list[e.FamilyMember]) -> t.FamilyType:
+    return t.FamilyType(
+        id=entity.id,
+        name=entity.name,
+        created_at=_dt(entity.created_at),
+        members=[to_family_member(m) for m in members],
+    )
+
+
+def to_account(entity: e.Account) -> t.AccountType:
+    return t.AccountType(
+        id=entity.id,
+        family_id=entity.family_id,
+        name=entity.name,
         balance=entity.balance,
         currency=entity.currency,
         goal_name=entity.goal_name,
         goal_amount=entity.goal_amount,
-        created_at=_to_iso_string(entity.created_at),
-        updated_at=_to_iso_string(entity.updated_at),
-        user=None,  # リゾルバー側で設定
+        created_at=_dt(entity.created_at),
+        updated_at=_dt(entity.updated_at),
     )
 
 
-def to_graphql_transaction(entity: domain_entities.Transaction) -> graphql_types.Transaction:
-    """ドメインのTransactionをGraphQL型に変換"""
-    return graphql_types.Transaction(
-        id=str(entity.id),
-        account_id=str(entity.account_id),
+def to_transaction(entity: e.Transaction) -> t.TransactionType:
+    return t.TransactionType(
+        id=entity.id,
+        account_id=entity.account_id,
+        family_id=entity.family_id,
         type=entity.type,
         amount=entity.amount,
-        description=entity.description,
-        created_at=_to_iso_string(entity.created_at),
+        note=entity.note,
+        created_at=_dt(entity.created_at),
+        created_by_uid=entity.created_by_uid,
     )
 
 
-def to_graphql_recurring_deposit(
-    entity: domain_entities.RecurringDeposit,
-) -> graphql_types.RecurringDeposit:
-    """ドメインのRecurringDepositをGraphQL型に変換"""
-    return graphql_types.RecurringDeposit(
-        id=str(entity.id),
-        account_id=str(entity.account_id),
+def to_recurring_deposit(entity: e.RecurringDeposit) -> t.RecurringDepositType:
+    return t.RecurringDepositType(
+        id=entity.id,
+        family_id=entity.family_id,
+        account_id=entity.account_id,
         amount=entity.amount,
-        day_of_month=entity.day_of_month,
+        interval_days=entity.interval_days,
+        next_execute_at=_dt(entity.next_execute_at),
         is_active=entity.is_active,
-        created_at=_to_iso_string(entity.created_at),
-        updated_at=_to_iso_string(entity.updated_at),
+        created_at=_dt(entity.created_at),
+        created_by_uid=entity.created_by_uid,
     )

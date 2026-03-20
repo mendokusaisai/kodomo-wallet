@@ -1,12 +1,18 @@
 """
-StrawberryによるGraphQLスキーマ定義
+StrawberryによるGraphQLスキーマ定義（家族中心モデル）
 """
 
 import strawberry
 from strawberry.types import Info
 
 from app.api.graphql import resolvers
-from app.api.graphql.types import Account, Profile, RecurringDeposit, Transaction
+from app.api.graphql.types import (
+    AccountType,
+    FamilyMemberType,
+    FamilyType,
+    RecurringDepositType,
+    TransactionType,
+)
 from app.core.exceptions import (
     DomainException,
     InvalidAmountException,
@@ -16,80 +22,63 @@ from app.core.exceptions import (
 
 @strawberry.type
 class Query:
-    """GraphQL クエリ定義"""
+    """GraphQL クエリ定義（家族中心モデル）"""
 
     @strawberry.field
-    def me(
-        self,
-        info: Info,
-        user_id: str,
-    ) -> Profile | None:
-        """現在のユーザープロフィールを取得"""
-        profile_service = info.context["profile_service"]
-        return resolvers.get_profile_by_id(user_id, profile_service)
+    def my_family(self, info: Info) -> FamilyType | None:
+        """自分が属する家族（メンバー+口座）を取得"""
+        current_uid: str | None = info.context.get("current_uid")
+        if not current_uid:
+            return None
+        family_service = info.context["family_service"]
+        try:
+            return resolvers.get_my_family(current_uid, family_service)
+        except (ResourceNotFoundException, DomainException):
+            return None
 
     @strawberry.field
-    def children_count(
-        self,
-        info: Info,
-        parent_id: str,
-    ) -> int:
-        """親ユーザーの子供の人数を取得"""
-        profile_service = info.context["profile_service"]
-        return resolvers.get_children_count(parent_id, profile_service)
-
-    @strawberry.field
-    def accounts(
-        self,
-        info: Info,
-        user_id: str,
-    ) -> list[Account]:
-        """ユーザーのアカウント一覧を取得（親は子のアカウントも含む）"""
+    def family_accounts(self, info: Info, family_id: str) -> list[AccountType]:
+        """家族の口座一覧を取得"""
         account_service = info.context["account_service"]
-        profile_service = info.context["profile_service"]
-        return resolvers.get_accounts_by_user_id(user_id, account_service, profile_service)
+        try:
+            return resolvers.get_family_accounts(family_id, account_service)
+        except ResourceNotFoundException as e:
+            raise Exception(f"Resource not found: {e.message}") from e
+        except DomainException as e:
+            raise Exception(f"Domain error: {e.message}") from e
 
     @strawberry.field
-    def transactions(
+    def account_transactions(
         self,
         info: Info,
+        family_id: str,
         account_id: str,
         limit: int = 50,
-    ) -> list[Transaction]:
-        """アカウントのトランザクション一覧を取得"""
+    ) -> list[TransactionType]:
+        """口座のトランザクション一覧を取得"""
         transaction_service = info.context["transaction_service"]
-        return resolvers.get_transactions_by_account_id(account_id, transaction_service, limit)
+        try:
+            return resolvers.get_account_transactions(
+                family_id, account_id, transaction_service, limit
+            )
+        except ResourceNotFoundException as e:
+            raise Exception(f"Resource not found: {e.message}") from e
+        except DomainException as e:
+            raise Exception(f"Domain error: {e.message}") from e
 
     @strawberry.field
     def recurring_deposit(
         self,
         info: Info,
+        family_id: str,
         account_id: str,
-        current_user_id: str,
-    ) -> RecurringDeposit | None:
-        """アカウントの定期入金設定を取得（親のみ）"""
+    ) -> RecurringDepositType | None:
+        """口座の定期入金設定を取得"""
         recurring_deposit_service = info.context["recurring_deposit_service"]
         try:
             return resolvers.get_recurring_deposit(
-                account_id, current_user_id, recurring_deposit_service
+                family_id, account_id, recurring_deposit_service
             )
-        except ResourceNotFoundException as e:
-            raise Exception(f"Resource not found: {e.message}") from e
-        except InvalidAmountException as e:
-            raise Exception(f"Permission denied: {e.message}") from e
-        except DomainException as e:
-            raise Exception(f"Domain error: {e.message}") from e
-
-    @strawberry.field
-    def parent_invite_by_token(
-        self,
-        info: Info,
-        token: str,
-    ) -> str | None:
-        """トークンから親招待のメールアドレスを取得"""
-        profile_service = info.context["profile_service"]
-        try:
-            return resolvers.get_parent_invite_email(token, profile_service)
         except ResourceNotFoundException as e:
             raise Exception(f"Resource not found: {e.message}") from e
         except DomainException as e:
@@ -98,20 +87,144 @@ class Query:
 
 @strawberry.type
 class Mutation:
-    """GraphQL ミューテーション定義"""
+    """GraphQL ミューテーション定義（家族中心モデル）"""
+
+    @strawberry.mutation
+    def create_family(
+        self,
+        info: Info,
+        my_name: str,
+        email: str,
+        family_name: str | None = None,
+    ) -> FamilyType:
+        """家族を新規作成し呼び出し元を親として追加"""
+        current_uid: str | None = info.context.get("current_uid")
+        if not current_uid:
+            raise Exception("Authentication required")
+        family_service = info.context["family_service"]
+        try:
+            return resolvers.create_family(current_uid, my_name, email, family_service, family_name)
+        except (ResourceNotFoundException, InvalidAmountException, DomainException) as e:
+            raise Exception(e.message) from e
+
+    @strawberry.mutation
+    def invite_parent(
+        self,
+        info: Info,
+        family_id: str,
+        email: str,
+    ) -> str:
+        """親招待トークンを発行"""
+        current_uid: str | None = info.context.get("current_uid")
+        if not current_uid:
+            raise Exception("Authentication required")
+        family_service = info.context["family_service"]
+        try:
+            return resolvers.invite_parent(family_id, current_uid, email, family_service)
+        except ResourceNotFoundException as e:
+            raise Exception(f"Resource not found: {e.message}") from e
+        except DomainException as e:
+            raise Exception(f"Domain error: {e.message}") from e
+
+    @strawberry.mutation
+    def invite_child(
+        self,
+        info: Info,
+        family_id: str,
+        child_name: str,
+    ) -> str:
+        """子招待トークンを発行（親のみ）"""
+        current_uid: str | None = info.context.get("current_uid")
+        if not current_uid:
+            raise Exception("Authentication required")
+        family_service = info.context["family_service"]
+        try:
+            return resolvers.invite_child(family_id, current_uid, child_name, family_service)
+        except InvalidAmountException as e:
+            raise Exception(f"Permission denied: {e.message}") from e
+        except DomainException as e:
+            raise Exception(f"Domain error: {e.message}") from e
+
+    @strawberry.mutation
+    def join_as_parent(
+        self,
+        info: Info,
+        token: str,
+        name: str,
+        email: str,
+    ) -> FamilyMemberType:
+        """親招待トークンを使って家族に参加"""
+        current_uid: str | None = info.context.get("current_uid")
+        if not current_uid:
+            raise Exception("Authentication required")
+        family_service = info.context["family_service"]
+        try:
+            return resolvers.join_as_parent(token, current_uid, name, email, family_service)
+        except ResourceNotFoundException as e:
+            raise Exception(f"Resource not found: {e.message}") from e
+        except InvalidAmountException as e:
+            raise Exception(f"Invalid operation: {e.message}") from e
+        except DomainException as e:
+            raise Exception(f"Domain error: {e.message}") from e
+
+    @strawberry.mutation
+    def join_as_child(
+        self,
+        info: Info,
+        token: str,
+    ) -> FamilyMemberType:
+        """子招待トークンを使って家族に参加"""
+        current_uid: str | None = info.context.get("current_uid")
+        if not current_uid:
+            raise Exception("Authentication required")
+        family_service = info.context["family_service"]
+        try:
+            return resolvers.join_as_child(token, current_uid, family_service)
+        except ResourceNotFoundException as e:
+            raise Exception(f"Resource not found: {e.message}") from e
+        except InvalidAmountException as e:
+            raise Exception(f"Invalid operation: {e.message}") from e
+        except DomainException as e:
+            raise Exception(f"Domain error: {e.message}") from e
+
+    @strawberry.mutation
+    def create_account(
+        self,
+        info: Info,
+        family_id: str,
+        name: str,
+        currency: str = "JPY",
+    ) -> AccountType:
+        """口座を新規作成（親のみ）"""
+        current_uid: str | None = info.context.get("current_uid")
+        if not current_uid:
+            raise Exception("Authentication required")
+        account_service = info.context["account_service"]
+        try:
+            return resolvers.create_account(family_id, current_uid, name, account_service, currency)
+        except InvalidAmountException as e:
+            raise Exception(f"Permission denied: {e.message}") from e
+        except DomainException as e:
+            raise Exception(f"Domain error: {e.message}") from e
 
     @strawberry.mutation
     def deposit(
         self,
         info: Info,
+        family_id: str,
         account_id: str,
         amount: int,
-        description: str | None = None,
-    ) -> Transaction:
-        """入金（deposit）トランザクションを作成"""
+        note: str | None = None,
+    ) -> TransactionType:
+        """入金トランザクションを作成（親のみ）"""
+        current_uid: str | None = info.context.get("current_uid")
+        if not current_uid:
+            raise Exception("Authentication required")
         transaction_service = info.context["transaction_service"]
         try:
-            return resolvers.create_deposit(account_id, amount, transaction_service, description)
+            return resolvers.deposit(
+                family_id, account_id, current_uid, amount, transaction_service, note
+            )
         except ResourceNotFoundException as e:
             raise Exception(f"Resource not found: {e.message}") from e
         except InvalidAmountException as e:
@@ -123,107 +236,24 @@ class Mutation:
     def withdraw(
         self,
         info: Info,
+        family_id: str,
         account_id: str,
         amount: int,
-        description: str | None = None,
-    ) -> Transaction:
-        """出金（withdraw）トランザクションを作成"""
+        note: str | None = None,
+    ) -> TransactionType:
+        """出金トランザクションを作成（親のみ）"""
+        current_uid: str | None = info.context.get("current_uid")
+        if not current_uid:
+            raise Exception("Authentication required")
         transaction_service = info.context["transaction_service"]
         try:
-            return resolvers.create_withdraw(account_id, amount, transaction_service, description)
+            return resolvers.withdraw(
+                family_id, account_id, current_uid, amount, transaction_service, note
+            )
         except ResourceNotFoundException as e:
             raise Exception(f"Resource not found: {e.message}") from e
         except InvalidAmountException as e:
             raise Exception(f"Invalid amount: {e.message}") from e
-        except DomainException as e:
-            raise Exception(f"Domain error: {e.message}") from e
-
-    @strawberry.mutation
-    def create_child(
-        self,
-        info: Info,
-        parent_id: str,
-        child_name: str,
-        initial_balance: int = 0,
-    ) -> Profile:
-        """認証なしで子プロフィールを作成"""
-        profile_service = info.context["profile_service"]
-        try:
-            return resolvers.create_child_profile(
-                parent_id, child_name, profile_service, initial_balance
-            )
-        except ResourceNotFoundException as e:
-            raise Exception(f"Resource not found: {e.message}") from e
-        except DomainException as e:
-            raise Exception(f"Domain error: {e.message}") from e
-
-    @strawberry.mutation
-    def link_child_to_auth(
-        self,
-        info: Info,
-        child_id: str,
-        auth_user_id: str,
-    ) -> Profile:
-        """子プロフィールを認証アカウントに紐付け"""
-        profile_service = info.context["profile_service"]
-        try:
-            return resolvers.link_child_to_auth_account(child_id, auth_user_id, profile_service)
-        except ResourceNotFoundException as e:
-            raise Exception(f"Resource not found: {e.message}") from e
-        except InvalidAmountException as e:
-            raise Exception(f"Invalid operation: {e.message}") from e
-        except DomainException as e:
-            raise Exception(f"Domain error: {e.message}") from e
-
-    @strawberry.mutation
-    def link_child_to_auth_by_email(
-        self,
-        info: Info,
-        child_id: str,
-        email: str,
-    ) -> Profile:
-        """メールアドレスで子プロフィールを認証アカウントに紐付け"""
-        profile_service = info.context["profile_service"]
-        try:
-            return resolvers.link_child_to_auth_by_email(child_id, email, profile_service)
-        except ResourceNotFoundException as e:
-            raise Exception(f"Resource not found: {e.message}") from e
-        except InvalidAmountException as e:
-            raise Exception(f"Invalid operation: {e.message}") from e
-        except DomainException as e:
-            raise Exception(f"Domain error: {e.message}") from e
-
-    @strawberry.mutation
-    def invite_child_to_auth(
-        self,
-        info: Info,
-        child_id: str,
-        email: str,
-    ) -> str:
-        """子に認証アカウント作成を促す招待トークンを生成"""
-        profile_service = info.context["profile_service"]
-        try:
-            return resolvers.invite_child_to_auth(child_id, email, profile_service)
-        except ResourceNotFoundException as e:
-            raise Exception(f"Resource not found: {e.message}") from e
-        except InvalidAmountException as e:
-            raise Exception(f"Failed to create invitation: {e.message}") from e
-        except DomainException as e:
-            raise Exception(f"Domain error: {e.message}") from e
-
-    @strawberry.mutation
-    def accept_child_invite(
-        self,
-        info: Info,
-        token: str,
-        auth_user_id: str,
-    ) -> bool:
-        """子どもの招待を受け入れ、認証アカウントとプロフィールを紐付ける"""
-        profile_service = info.context["profile_service"]
-        try:
-            return resolvers.accept_child_invite(token, auth_user_id, profile_service)
-        except ResourceNotFoundException as e:
-            raise Exception(f"Resource not found: {e.message}") from e
         except DomainException as e:
             raise Exception(f"Domain error: {e.message}") from e
 
@@ -231,14 +261,20 @@ class Mutation:
     def update_goal(
         self,
         info: Info,
+        family_id: str,
         account_id: str,
         goal_name: str | None = None,
         goal_amount: int | None = None,
-    ) -> Account:
-        """アカウントの貯金目標を更新"""
+    ) -> AccountType:
+        """口座の貯金目標を更新（親のみ）"""
+        current_uid: str | None = info.context.get("current_uid")
+        if not current_uid:
+            raise Exception("Authentication required")
         account_service = info.context["account_service"]
         try:
-            return resolvers.update_goal(account_id, goal_name, goal_amount, account_service)
+            return resolvers.update_goal(
+                family_id, account_id, current_uid, account_service, goal_name, goal_amount
+            )
         except ResourceNotFoundException as e:
             raise Exception(f"Resource not found: {e.message}") from e
         except InvalidAmountException as e:
@@ -247,62 +283,24 @@ class Mutation:
             raise Exception(f"Domain error: {e.message}") from e
 
     @strawberry.mutation
-    def update_profile(
-        self,
-        info: Info,
-        user_id: str,
-        current_user_id: str,
-        name: str | None = None,
-    ) -> Profile:
-        """ユーザープロフィールを更新（本人または親が子を編集可能）"""
-        profile_service = info.context["profile_service"]
-        try:
-            return resolvers.update_profile(
-                user_id, current_user_id, name, profile_service
-            )
-        except ResourceNotFoundException as e:
-            raise Exception(f"Resource not found: {e.message}") from e
-        except DomainException as e:
-            raise Exception(f"Domain error: {e.message}") from e
-
-    @strawberry.mutation
-    def delete_child(
-        self,
-        info: Info,
-        parent_id: str,
-        child_id: str,
-    ) -> bool:
-        """子プロフィールを削除（親のみ）"""
-        profile_service = info.context["profile_service"]
-        try:
-            return resolvers.delete_child(parent_id, child_id, profile_service)
-        except ResourceNotFoundException as e:
-            raise Exception(f"Resource not found: {e.message}") from e
-        except InvalidAmountException as e:
-            raise Exception(f"Invalid operation: {e.message}") from e
-        except DomainException as e:
-            raise Exception(f"Domain error: {e.message}") from e
-
-    @strawberry.mutation
     def create_or_update_recurring_deposit(
         self,
         info: Info,
+        family_id: str,
         account_id: str,
-        current_user_id: str,
         amount: int,
-        day_of_month: int,
+        interval_days: int,
         is_active: bool = True,
-    ) -> RecurringDeposit:
+    ) -> RecurringDepositType:
         """定期入金設定を作成または更新（親のみ）"""
+        current_uid: str | None = info.context.get("current_uid")
+        if not current_uid:
+            raise Exception("Authentication required")
         recurring_deposit_service = info.context["recurring_deposit_service"]
         try:
             return resolvers.create_or_update_recurring_deposit(
-                account_id,
-                current_user_id,
-                amount,
-                day_of_month,
-                recurring_deposit_service,
-                is_active,
+                family_id, account_id, current_uid, amount, interval_days,
+                recurring_deposit_service, is_active,
             )
         except ResourceNotFoundException as e:
             raise Exception(f"Resource not found: {e.message}") from e
@@ -315,55 +313,22 @@ class Mutation:
     def delete_recurring_deposit(
         self,
         info: Info,
+        family_id: str,
         account_id: str,
-        current_user_id: str,
     ) -> bool:
         """定期入金設定を削除（親のみ）"""
+        current_uid: str | None = info.context.get("current_uid")
+        if not current_uid:
+            raise Exception("Authentication required")
         recurring_deposit_service = info.context["recurring_deposit_service"]
         try:
             return resolvers.delete_recurring_deposit(
-                account_id, current_user_id, recurring_deposit_service
+                family_id, account_id, current_uid, recurring_deposit_service
             )
         except ResourceNotFoundException as e:
             raise Exception(f"Resource not found: {e.message}") from e
         except InvalidAmountException as e:
             raise Exception(f"Permission denied: {e.message}") from e
-        except DomainException as e:
-            raise Exception(f"Domain error: {e.message}") from e
-
-    @strawberry.mutation
-    def create_parent_invite(
-        self,
-        info: Info,
-        inviter_id: str,
-        email: str,
-    ) -> str:
-        """親を招待する（トークンを返す）招待者の全ての子どもと受理者が紐づけられる"""
-        profile_service = info.context["profile_service"]
-        try:
-            return resolvers.create_parent_invite(inviter_id, email, profile_service)
-        except ResourceNotFoundException as e:
-            raise Exception(f"Resource not found: {e.message}") from e
-        except InvalidAmountException as e:
-            raise Exception(f"Invalid operation: {e.message}") from e
-        except DomainException as e:
-            raise Exception(f"Domain error: {e.message}") from e
-
-    @strawberry.mutation
-    def accept_parent_invite(
-        self,
-        info: Info,
-        token: str,
-        current_parent_id: str,
-    ) -> bool:
-        """親招待を受理して親子関係を作成"""
-        profile_service = info.context["profile_service"]
-        try:
-            return resolvers.accept_parent_invite(token, current_parent_id, profile_service)
-        except ResourceNotFoundException as e:
-            raise Exception(f"Resource not found: {e.message}") from e
-        except InvalidAmountException as e:
-            raise Exception(f"Invalid operation: {e.message}") from e
         except DomainException as e:
             raise Exception(f"Domain error: {e.message}") from e
 
@@ -373,3 +338,4 @@ schema = strawberry.Schema(
     query=Query,
     mutation=Mutation,
 )
+

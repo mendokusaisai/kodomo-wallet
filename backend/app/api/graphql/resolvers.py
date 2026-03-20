@@ -1,226 +1,221 @@
 """
-クエリとミューテーションのGraphQLリゾルバー
-
-これらのリゾルバーはデータベースの詳細を知ることなく、サービス層の依存性を使用します。
+クエリとミューテーションのGraphQLリゾルバー（家族中心モデル）
 """
 
 from app.api.graphql import converters
-from app.api.graphql.types import Account, Profile, RecurringDeposit, Transaction
-from app.services import (
-    AccountService,
-    ProfileService,
-    RecurringDepositService,
-    TransactionService,
+from app.api.graphql.types import (
+    AccountType,
+    FamilyMemberType,
+    FamilyType,
+    RecurringDepositType,
+    TransactionType,
 )
+from app.services import AccountService, FamilyService, RecurringDepositService, TransactionService
 
 
-def get_profile_by_id(
-    user_id: str,
-    profile_service: ProfileService,
-) -> Profile | None:
-    """IDでユーザープロフィールを取得"""
-    entity = profile_service.get_profile(user_id)
-    return converters.to_graphql_profile(entity) if entity else None
+# ── Queries ──────────────────────────────────────────────────────────────────────────────────
+
+def get_my_family(uid: str, family_service: FamilyService) -> FamilyType | None:
+    """自分が属する家族を返す"""
+    member = family_service.get_member(uid)
+    if not member:
+        return None
+    family = family_service.get_family(member.family_id)
+    if not family:
+        return None
+    members = family_service.get_members(family.id)
+    return converters.to_family(family, members)
 
 
-def get_children_count(
-    parent_id: str,
-    profile_service: ProfileService,
-) -> int:
-    """親の子供の数を取得"""
-    children = profile_service.get_children(parent_id)
-    return len(children)
+def get_family_accounts(family_id: str, account_service: AccountService) -> list[AccountType]:
+    """家族の口座一覧を返す"""
+    entities = account_service.get_family_accounts(family_id)
+    return [converters.to_account(e) for e in entities]
 
 
-def get_accounts_by_user_id(
-    user_id: str,
-    account_service: AccountService,
-    profile_service: ProfileService,
-) -> list[Account]:
-    """ユーザーとその子供（親の場合）の全アカウントを取得"""
-    entities = account_service.get_family_accounts(user_id)
-
-    # エンティティをGraphQL型に変換し、各アカウントにユーザー情報を付与
-    accounts = []
-    for entity in entities:
-        account = converters.to_graphql_account(entity)
-        user_entity = profile_service.get_profile(str(entity.user_id))
-        if user_entity:
-            account.user = converters.to_graphql_profile(user_entity)
-        accounts.append(account)
-
-    return accounts
-
-
-def get_transactions_by_account_id(
+def get_account_transactions(
+    family_id: str,
     account_id: str,
     transaction_service: TransactionService,
     limit: int = 50,
-) -> list[Transaction]:
-    """指定したアカウントのトランザクション一覧を取得"""
-    entities = transaction_service.get_account_transactions(account_id, limit)
-    return [converters.to_graphql_transaction(e) for e in entities]
-
-
-def create_deposit(
-    account_id: str,
-    amount: int,
-    transaction_service: TransactionService,
-    description: str | None = None,
-) -> Transaction:
-    """入金（deposit）トランザクションを作成"""
-    entity = transaction_service.create_deposit(account_id, amount, description)
-    return converters.to_graphql_transaction(entity)
-
-
-def create_withdraw(
-    account_id: str,
-    amount: int,
-    transaction_service: TransactionService,
-    description: str | None = None,
-) -> Transaction:
-    """出金（withdraw）トランザクションを作成"""
-    entity = transaction_service.create_withdraw(account_id, amount, description)
-    return converters.to_graphql_transaction(entity)
-
-
-def create_child_profile(
-    parent_id: str,
-    child_name: str,
-    profile_service: ProfileService,
-    initial_balance: int = 0,
-) -> Profile:
-    """認証なしで子プロフィールを作成"""
-    entity = profile_service.create_child(parent_id, child_name, initial_balance)
-    return converters.to_graphql_profile(entity)
-
-
-def link_child_to_auth_account(
-    child_id: str,
-    auth_user_id: str,
-    profile_service: ProfileService,
-) -> Profile:
-    """子プロフィールを認証アカウントに紐付け"""
-    entity = profile_service.link_child_to_auth(child_id, auth_user_id)
-    return converters.to_graphql_profile(entity)
-
-
-def link_child_to_auth_by_email(
-    child_id: str,
-    email: str,
-    profile_service: ProfileService,
-) -> Profile:
-    """メールアドレスで子プロフィールを認証アカウントに紐付け"""
-    entity = profile_service.link_child_to_auth_by_email(child_id, email)
-    return converters.to_graphql_profile(entity)
-
-
-def invite_child_to_auth(
-    child_id: str,
-    email: str,
-    profile_service: ProfileService,
-) -> str:
-    """子に認証アカウント作成を促す招待トークンを生成"""
-    token = profile_service.invite_child_to_auth(child_id, email)
-    return token
-
-
-def accept_child_invite(
-    token: str,
-    auth_user_id: str,
-    profile_service: ProfileService,
-) -> bool:
-    """子どもの招待を受け入れ、認証アカウントとプロフィールを紐付ける"""
-    return profile_service.accept_child_invite(token, auth_user_id)
-
-
-def update_goal(
-    account_id: str,
-    goal_name: str | None,
-    goal_amount: int | None,
-    account_service: AccountService,
-) -> Account:
-    """アカウントの貯金目標を更新"""
-    entity = account_service.update_goal(account_id, goal_name, goal_amount)
-    return converters.to_graphql_account(entity)
-
-
-def update_profile(
-    user_id: str,
-    current_user_id: str,
-    name: str | None,
-    profile_service: ProfileService,
-) -> Profile:
-    """ユーザープロフィールを更新（本人または親が子を編集可能）"""
-    entity = profile_service.update_profile(user_id, current_user_id, name)
-    return converters.to_graphql_profile(entity)
-
-
-def delete_child(
-    parent_id: str,
-    child_id: str,
-    profile_service: ProfileService,
-) -> bool:
-    """子プロフィールを削除（親のみ実行可能）"""
-    return profile_service.delete_child(parent_id, child_id)
+) -> list[TransactionType]:
+    """口座のトランザクション一覧を返す"""
+    entities = transaction_service.get_account_transactions(family_id, account_id, limit)
+    return [converters.to_transaction(e) for e in entities]
 
 
 def get_recurring_deposit(
+    family_id: str,
     account_id: str,
-    current_user_id: str,
     recurring_deposit_service: RecurringDepositService,
-) -> RecurringDeposit | None:
-    """アカウントの定期入金設定を取得（親のみ）"""
-    entity = recurring_deposit_service.get_recurring_deposit(account_id, current_user_id)
-    return converters.to_graphql_recurring_deposit(entity) if entity else None
+) -> RecurringDepositType | None:
+    """定期入金設定を取得"""
+    entity = recurring_deposit_service.get_recurring_deposit(family_id, account_id)
+    return converters.to_recurring_deposit(entity) if entity else None
+
+
+# ── Mutations ─────────────────────────────────────────────────────────────────────────────────
+def create_family(
+    uid: str,
+    my_name: str,
+    email: str,
+    family_service: FamilyService,
+    family_name: str | None = None,
+) -> FamilyType:
+    """家族を新規作成し呼び出し元を親として追加"""
+    family, member = family_service.create_family_with_parent(
+        uid=uid, name=my_name, email=email, family_name=family_name
+    )
+    return converters.to_family(family, [member])
+
+
+def invite_parent(
+    family_id: str,
+    inviter_uid: str,
+    email: str,
+    family_service: FamilyService,
+) -> str:
+    """親招待トークンを発行"""
+    invite = family_service.invite_parent(family_id, inviter_uid, email)
+    return invite.token
+
+
+def invite_child(
+    family_id: str,
+    inviter_uid: str,
+    child_name: str,
+    family_service: FamilyService,
+) -> str:
+    """子招待トークンを発行"""
+    invite = family_service.invite_child(family_id, inviter_uid, child_name)
+    return invite.token
+
+
+def join_as_parent(
+    token: str,
+    uid: str,
+    name: str,
+    email: str,
+    family_service: FamilyService,
+) -> FamilyMemberType:
+    """親招待を承認して家族に参加"""
+    member = family_service.accept_parent_invite(token=token, uid=uid, name=name, email=email)
+    return converters.to_family_member(member)
+
+
+def join_as_child(
+    token: str,
+    uid: str,
+    family_service: FamilyService,
+) -> FamilyMemberType:
+    """子招待を承認して家族に参加"""
+    member = family_service.accept_child_invite(token=token, uid=uid)
+    return converters.to_family_member(member)
+
+
+def create_account(
+    family_id: str,
+    current_uid: str,
+    name: str,
+    account_service: AccountService,
+    currency: str = "JPY",
+) -> AccountType:
+    """口座を新規作成（親のみ）"""
+    entity = account_service.create_account(
+        family_id=family_id, name=name, current_uid=current_uid, currency=currency
+    )
+    return converters.to_account(entity)
+
+
+def deposit(
+    family_id: str,
+    account_id: str,
+    current_uid: str,
+    amount: int,
+    transaction_service: TransactionService,
+    note: str | None = None,
+) -> TransactionType:
+    """入金トランザクションを作成（親のみ）"""
+    entity = transaction_service.create_deposit(
+        family_id=family_id,
+        account_id=account_id,
+        current_uid=current_uid,
+        amount=amount,
+        note=note,
+    )
+    return converters.to_transaction(entity)
+
+
+def withdraw(
+    family_id: str,
+    account_id: str,
+    current_uid: str,
+    amount: int,
+    transaction_service: TransactionService,
+    note: str | None = None,
+) -> TransactionType:
+    """出金トランザクションを作成（親のみ）"""
+    entity = transaction_service.create_withdraw(
+        family_id=family_id,
+        account_id=account_id,
+        current_uid=current_uid,
+        amount=amount,
+        note=note,
+    )
+    return converters.to_transaction(entity)
+
+
+def update_goal(
+    family_id: str,
+    account_id: str,
+    current_uid: str,
+    account_service: AccountService,
+    goal_name: str | None = None,
+    goal_amount: int | None = None,
+) -> AccountType:
+    """口座の貯金目標を更新（親のみ）"""
+    entity = account_service.update_goal(
+        family_id=family_id,
+        account_id=account_id,
+        current_uid=current_uid,
+        goal_name=goal_name,
+        goal_amount=goal_amount,
+    )
+    return converters.to_account(entity)
 
 
 def create_or_update_recurring_deposit(
+    family_id: str,
     account_id: str,
-    current_user_id: str,
+    current_uid: str,
     amount: int,
-    day_of_month: int,
+    interval_days: int,
     recurring_deposit_service: RecurringDepositService,
     is_active: bool = True,
-) -> RecurringDeposit:
+) -> RecurringDepositType:
     """定期入金設定を作成または更新（親のみ）"""
     entity = recurring_deposit_service.create_or_update_recurring_deposit(
-        account_id, current_user_id, amount, day_of_month, is_active
+        family_id=family_id,
+        account_id=account_id,
+        current_uid=current_uid,
+        amount=amount,
+        interval_days=interval_days,
+        is_active=is_active,
     )
-    return converters.to_graphql_recurring_deposit(entity)
+    return converters.to_recurring_deposit(entity)
 
 
 def delete_recurring_deposit(
+    family_id: str,
     account_id: str,
-    current_user_id: str,
+    current_uid: str,
     recurring_deposit_service: RecurringDepositService,
 ) -> bool:
     """定期入金設定を削除（親のみ）"""
-    return recurring_deposit_service.delete_recurring_deposit(account_id, current_user_id)
+    return recurring_deposit_service.delete_recurring_deposit(
+        family_id=family_id,
+        account_id=account_id,
+        current_uid=current_uid,
+    )
 
 
-# ===== 親招待（メール/リンク） =====
-def create_parent_invite(
-    inviter_id: str,
-    email: str,
-    profile_service: ProfileService,
-) -> str:
-    """親を招待するためのトークン(文字列)を返す。招待者の全ての子どもと受理者が紐づけられる"""
-    return profile_service.create_parent_invite(inviter_id, email)
-
-
-def accept_parent_invite(
-    token: str,
-    current_parent_id: str,
-    profile_service: ProfileService,
-) -> bool:
-    """親招待を受理し、親子関係を作成する"""
-    return profile_service.accept_parent_invite(token, current_parent_id)
-
-
-def get_parent_invite_email(
-    token: str,
-    profile_service: ProfileService,
-) -> str | None:
-    """トークンから親招待のメールアドレスを取得"""
-    return profile_service.get_parent_invite_email(token)

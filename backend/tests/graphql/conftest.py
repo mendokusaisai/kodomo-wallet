@@ -1,18 +1,8 @@
-"""GraphQL test fixtures（Phase 4 で更新予定）"""
+"""GraphQL test fixtures"""
 
 import pytest
-from injector import Injector
+from injector import Binder, Injector, Module, singleton
 
-from app.core.container import create_injector
-from app.repositories.mock_repositories import (
-    MockAccountRepository,
-    MockChildInviteRepository,
-    MockFamilyMemberRepository,
-    MockFamilyRepository,
-    MockParentInviteRepository,
-    MockRecurringDepositRepository,
-    MockTransactionRepository,
-)
 from app.repositories.interfaces import (
     AccountRepository,
     ChildInviteRepository,
@@ -22,9 +12,17 @@ from app.repositories.interfaces import (
     RecurringDepositRepository,
     TransactionRepository,
 )
+from app.repositories.mock_repositories import (
+    MockAccountRepository,
+    MockChildInviteRepository,
+    MockFamilyMemberRepository,
+    MockFamilyRepository,
+    MockParentInviteRepository,
+    MockRecurringDepositRepository,
+    MockTransactionRepository,
+)
 from app.services import AccountService, FamilyService, RecurringDepositService, TransactionService
 from app.services.mailer import ConsoleMailer, Mailer
-from injector import Binder, Module, singleton
 
 
 class MockRepositoryModule(Module):
@@ -47,8 +45,9 @@ def test_injector() -> Injector:
 
 @pytest.fixture
 def graphql_context(test_injector: Injector) -> dict:
-    """GraphQL コンテキストを作成"""
+    """GraphQL コンテキストを作成（current_uid は None がデフォルト）"""
     return {
+        "current_uid": None,
         "family_service": test_injector.get(FamilyService),
         "account_service": test_injector.get(AccountService),
         "transaction_service": test_injector.get(TransactionService),
