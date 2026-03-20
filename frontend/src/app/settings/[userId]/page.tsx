@@ -1,412 +1,164 @@
 "use client";
 
 import { useMutation, useQuery } from "@apollo/client/react";
-import { ArrowLeft, Save, User } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useId, useState } from "react";
-import DeleteAccountDialog from "@/components/delete-account-dialog";
-import GoalDialog from "@/components/goal-dialog";
-import { LinkChildToAuthDialog } from "@/components/link-child-to-auth-dialog";
-import RecurringDepositSettings from "@/components/recurring-deposit-settings";
+import { useId, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
-	DELETE_CHILD,
-	GET_ACCOUNTS,
-	GET_ME,
-	UPDATE_PROFILE,
+	FAMILY_ACCOUNTS,
+	MY_FAMILY,
+	UPDATE_GOAL,
 } from "@/lib/graphql/queries";
-import type { GetAccountsResponse, GetMeResponse } from "@/lib/graphql/types";
-import { getUser } from "@/lib/supabase/auth";
+import type {
+	FamilyAccountsResponse,
+	MyFamilyResponse,
+	UpdateGoalResponse,
+} from "@/lib/graphql/types";
 
-export default function ChildSettingsPage() {
+export default function AccountSettingsPage() {
 	const params = useParams();
-	const childUserId = params.userId as string;
+	const accountId = params.userId as string;
 	const router = useRouter();
-	const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-	const [name, setName] = useState("");
-	const [linkAuthDialogOpen, setLinkAuthDialogOpen] = useState(false);
-	const nameInputId = useId();
 
-	// 現在のログインユーザー情報を取得
-	useEffect(() => {
-		const fetchUser = async () => {
-			try {
-				const user = await getUser();
-				if (!user) {
-					router.push("/login");
-					return;
-				}
-				setCurrentUserId(user.id);
-			} catch (error) {
-				console.error("ユーザー取得エラー:", error);
-				router.push("/login");
-			}
-		};
-		fetchUser();
-	}, [router]);
+	const [goalName, setGoalName] = useState("");
+	const [goalAmount, setGoalAmount] = useState("");
+	const goalNameId = useId();
+	const goalAmountId = useId();
 
-	// 現在のログインユーザー情報を取得（権限チェック用）
-	const { data: meData, loading: meLoading } = useQuery<GetMeResponse>(GET_ME, {
-		variables: { userId: currentUserId || "" },
-		skip: !currentUserId,
-	});
+	const { data: familyData, loading: familyLoading } =
+		useQuery<MyFamilyResponse>(MY_FAMILY);
+	const familyId = familyData?.myFamily?.id;
 
-	// 子どものプロフィール情報を取得
-	const {
-		data: childProfileData,
-		loading: childProfileLoading,
-		refetch,
-	} = useQuery<GetMeResponse>(GET_ME, {
-		variables: { userId: childUserId },
-		skip: !childUserId,
-	});
-
-	// 子どものアカウント情報を取得
 	const { data: accountsData, loading: accountsLoading } =
-		useQuery<GetAccountsResponse>(GET_ACCOUNTS, {
-			variables: { userId: childUserId },
-			skip: !childUserId,
+		useQuery<FamilyAccountsResponse>(FAMILY_ACCOUNTS, {
+			variables: { familyId },
+			skip: !familyId,
 		});
 
-	// 子どもプロフィールデータの初期化
-	useEffect(() => {
-		if (childProfileData?.me) {
-			setName(childProfileData.me.name || "");
-		}
-	}, [childProfileData]);
+	const account = accountsData?.familyAccounts?.find((a) => a.id === accountId);
 
-	// 親権限チェック
-	const isParent = meData?.me?.role === "parent";
-	const isOwnProfile = currentUserId === childUserId;
-	const isParentOfChild =
-		isParent &&
-		childProfileData?.me?.role === "child" &&
-		childProfileData?.me?.parents?.some(
-			(parent) => parent.id === currentUserId,
-		);
-
-	// デバッグ用
-	useEffect(() => {
-		if (!meLoading && !childProfileLoading) {
-			console.log("権限チェック情報:", {
-				currentUserId,
-				childUserId,
-				isParent,
-				isOwnProfile,
-				isParentOfChild,
-				meRole: meData?.me?.role,
-				childRole: childProfileData?.me?.role,
-				childParents: childProfileData?.me?.parents?.map((p) => p.id),
-				childAuthUserId: childProfileData?.me?.authUserId,
-			});
-		}
-	}, [
-		meLoading,
-		childProfileLoading,
-		currentUserId,
-		childUserId,
-		isParent,
-		isOwnProfile,
-		isParentOfChild,
-		meData,
-		childProfileData,
-	]);
-
-	// 更新用mutation
-	const [updateProfile, { loading: updating }] = useMutation(UPDATE_PROFILE, {
-		onCompleted: () => {
-			alert("プロフィールを更新しました");
-			refetch();
+	const [updateGoal, { loading: updating }] = useMutation<UpdateGoalResponse>(
+		UPDATE_GOAL,
+		{
+			refetchQueries: [{ query: FAMILY_ACCOUNTS, variables: { familyId } }],
 		},
-		onError: (error: { message: string }) => {
-			alert(`更新に失敗しました: ${error.message}`);
-		},
-	});
+	);
 
-	// 削除用mutation
-	const [deleteChild] = useMutation(DELETE_CHILD, {
-		onCompleted: () => {
-			alert("子どもアカウントを削除しました");
-			router.push("/dashboard");
-		},
-		onError: (error: { message: string }) => {
-			alert(`削除に失敗しました: ${error.message}`);
-		},
-	});
-
-	const handleDeleteChild = async (childId: string) => {
-		if (!currentUserId) return;
-
-		await deleteChild({
-			variables: {
-				parentId: currentUserId,
-				childId: childId,
-			},
-		});
-	};
-
-	const handleUpdateProfile = async (e: React.FormEvent) => {
+	const handleUpdateGoal = async (e: React.FormEvent) => {
 		e.preventDefault();
-		if (!childUserId) return;
-
+		if (!familyId || !accountId) return;
 		try {
-			await updateProfile({
+			await updateGoal({
 				variables: {
-					userId: childUserId,
-					currentUserId: currentUserId || "",
-					name: name || null,
+					familyId,
+					accountId,
+					goalName: goalName || undefined,
+					goalAmount: goalAmount ? Number(goalAmount) : undefined,
 				},
 			});
+			alert("目標を更新しました");
 		} catch (error) {
-			alert(
-				`更新に失敗しました: ${error instanceof Error ? error.message : "不明なエラー"}`,
-			);
+			console.error("目標更新エラー:", error);
+			alert("更新に失敗しました");
 		}
 	};
 
-	// 権限チェック：親でない場合はアクセス拒否
-	// データ読み込み中は権限チェックをスキップ
-	if (!meLoading && !childProfileLoading && meData && childProfileData) {
-		// 自分自身のプロフィール、または親が自分の子どものプロフィールの場合のみアクセス可能
-		const hasAccess = isOwnProfile || isParentOfChild;
+	const loading = familyLoading || accountsLoading;
 
-		if (!hasAccess) {
-			return (
-				<div className="min-h-screen bg-gray-100 dark:bg-gray-950 p-6 flex items-center justify-center">
-					<div className="bg-white dark:bg-gray-900 rounded-lg shadow-md p-8 text-center">
-						<p className="text-red-600 font-bold">アクセスが拒否されました</p>
-						<p className="text-gray-600 dark:text-gray-400 mt-2">
-							このページにアクセスする権限がありません
-						</p>
-						<p className="text-xs text-gray-500 mt-2">
-							デバッグ: isParent={String(isParent)}, isOwnProfile=
-							{String(isOwnProfile)}, isParentOfChild={String(isParentOfChild)}
-						</p>
-						<Button onClick={() => router.push("/dashboard")} className="mt-4">
-							ダッシュボードに戻る
-						</Button>
-					</div>
-				</div>
-			);
-		}
-	}
-
-	if (childProfileLoading || meLoading || accountsLoading) {
+	if (loading) {
 		return (
-			<div className="min-h-screen bg-gray-100 dark:bg-gray-950 p-6 flex items-center justify-center">
-				<div className="text-gray-600 dark:text-gray-400">読み込み中...</div>
+			<div className="min-h-screen bg-gray-50 dark:bg-gray-950 p-4 md:p-6 lg:p-8">
+				<div className="max-w-xl mx-auto space-y-6">
+					<Skeleton className="h-10 w-32" />
+					<Skeleton className="h-48 w-full rounded-lg" />
+				</div>
 			</div>
 		);
 	}
 
 	return (
-		<div className="min-h-screen bg-gray-100 dark:bg-gray-950 p-6">
-			<div className="max-w-2xl mx-auto">
-				{/* ヘッダー */}
+		<div className="min-h-screen bg-gray-50 dark:bg-gray-950 p-4 md:p-6 lg:p-8">
+			<div className="max-w-xl mx-auto">
 				<div className="mb-6 flex items-center gap-4">
 					<Button
-						onClick={() => router.push("/dashboard")}
-						variant="ghost"
+						variant="outline"
 						size="sm"
+						onClick={() => router.push("/dashboard")}
 					>
 						<ArrowLeft className="w-4 h-4 mr-2" />
 						戻る
 					</Button>
 					<h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-						{childProfileData?.me?.name || "子ども"}の設定
+						口座設定
 					</h1>
 				</div>
 
-				{/* プロフィール編集セクション */}
-				<div className="bg-white dark:bg-gray-900 rounded-lg shadow-md p-6 mb-6">
-					<div className="flex items-center gap-3 mb-6">
-						<User className="w-6 h-6 text-blue-600" />
-						<h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">プロフィール</h2>
-					</div>
-
-					<form onSubmit={handleUpdateProfile} className="space-y-4">
-						<div>
-							<Label htmlFor={nameInputId} className="mb-2 block">名前</Label>
-							<Input
-								id={nameInputId}
-								type="text"
-								value={name}
-								onChange={(e) => setName(e.target.value)}
-								placeholder="山田 太郎"
-								required
-							/>
-						</div>
-
-						<Button
-							type="submit"
-							className="w-full bg-blue-600 hover:bg-blue-700"
-							disabled={updating}
-						>
-							<Save className="w-4 h-4 mr-2" />
-							{updating ? "保存中..." : "保存"}
-						</Button>
-					</form>
-				</div>
-
-				{/* アカウント情報セクション */}
-				<div className="bg-white dark:bg-gray-900 rounded-lg shadow-md p-6 mb-6">
-					<h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">
-						アカウント情報
-					</h2>
-					<div className="space-y-3">
-						<div>
-							<p className="text-sm text-gray-600 dark:text-gray-400">ロール</p>
-							<p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-								{childProfileData?.me?.role === "parent" ? "親" : "子ども"}
-							</p>
-						</div>
-						<div>
-							<p className="text-sm text-gray-600 dark:text-gray-400">ユーザーID</p>
-							<p className="text-sm font-mono text-gray-800 dark:text-gray-300 break-all">
-								{childUserId}
-							</p>
-						</div>
-					</div>
-				</div>
-
-				{/* 貯金目標セクション */}
-				{accountsData?.accounts && accountsData.accounts.length > 0 && (
-					<div className="bg-white dark:bg-gray-900 rounded-lg shadow-md p-6 mb-6">
-						<h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">貯金目標</h2>
-						{accountsData.accounts.map((account) => {
-							const goalProgress = account.goalAmount
-								? Math.round((account.balance / account.goalAmount) * 100)
-								: 0;
-
-							return (
-								<div key={account.id} className="space-y-4">
-									<div className="flex justify-between items-center pb-2 border-b border-gray-200 dark:border-gray-700">
-										<div>
-											<p className="text-sm text-gray-600 dark:text-gray-400">残高</p>
-											<p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-												¥{account.balance.toLocaleString()}
-											</p>
-										</div>
-									</div>
-
-									{/* 目標表示 */}
-									{account.goalName && account.goalAmount ? (
-										<div className="space-y-2">
-											<div className="flex justify-between items-center">
-												<p className="text-sm font-medium text-gray-700 dark:text-gray-300">
-													目標: {account.goalName}
-												</p>
-												<p className="text-sm font-bold text-blue-600 dark:text-blue-400">
-													{goalProgress}%
-												</p>
-											</div>
-											<div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
-												<div
-													className="bg-blue-600 dark:bg-blue-500 h-2.5 rounded-full transition-all"
-													style={{ width: `${Math.min(goalProgress, 100)}%` }}
-												/>
-											</div>
-											<p className="text-xs text-gray-500 dark:text-gray-400">
-												目標金額: ¥{account.goalAmount.toLocaleString()}
-											</p>
-										</div>
-									) : (
-										<p className="text-sm text-gray-500 dark:text-gray-400">
-											貯金目標が設定されていません
-										</p>
-									)}
-
-									{/* 目標設定ボタン */}
-									<div className="mt-4">
-										<GoalDialog
-											accountId={account.id}
-											currentGoalName={account.goalName}
-											currentGoalAmount={account.goalAmount}
-										/>
-									</div>
-								</div>
-							);
-						})}
-					</div>
-				)}
-
-				{/* 認証アカウント移行セクション（親が認証なし子どもに対してのみ表示） */}
-				{(() => {
-					// シンプルに: 親で、子どものプロフィールで、authUserIdがnullなら表示
-					const isChildProfile = childProfileData?.me?.role === "child";
-					const isNotLinked = !childProfileData?.me?.authUserId;
-					const shouldShow = isParent && isChildProfile && isNotLinked;
-
-					console.log("認証アカウント移行セクション表示判定:", {
-						isParent,
-						isChildProfile,
-						childUserId,
-						authUserId: childProfileData?.me?.authUserId,
-						isNotLinked,
-						shouldShow,
-					});
-					return shouldShow;
-				})() && (
-					<div className="bg-white dark:bg-gray-900 rounded-lg shadow-md p-6 mb-6">
-						<h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">
-							認証アカウント移行
+				{account && (
+					<div className="bg-white dark:bg-gray-900 rounded-lg shadow-md p-4 md:p-6 mb-6">
+						<h2 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-3">
+							{account.name}
 						</h2>
-						<p className="text-sm text-gray-700 dark:text-gray-300 mb-4">
-							この子どもアカウントはまだ認証アカウントと連携していません。招待リンクを作成して、子どもが自分でログインできるようにすることができます。
-						</p>
-						<Button
-							onClick={() => setLinkAuthDialogOpen(true)}
-							variant="outline"
-							className="w-full border-purple-500 text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-950"
-						>
-							招待リンクを作成
-						</Button>
-						<LinkChildToAuthDialog
-							open={linkAuthDialogOpen}
-							onOpenChange={setLinkAuthDialogOpen}
-							childId={childUserId}
-							childName={childProfileData?.me?.name || ""}
-						/>
+						<div className="text-2xl font-bold text-green-600 dark:text-green-400">
+							{account.balance.toLocaleString()}円
+						</div>
+						{account.goalName && (
+							<div className="mt-3 text-sm text-gray-600 dark:text-gray-400">
+								<span className="font-medium">現在の目標: </span>
+								{account.goalName}
+								{account.goalAmount != null && (
+									<span> (目標金額: {account.goalAmount.toLocaleString()}円)</span>
+								)}
+							</div>
+						)}
 					</div>
 				)}
 
-				{/* 定期お小遣い設定セクション（親が子どもに対してのみ表示） */}
-				{isParent && isParentOfChild && (
-					<RecurringDepositSettings
-						childUserId={childUserId}
-						currentUserId={currentUserId ?? ""}
-						childName={childProfileData?.me?.name || ""}
-					/>
+				{!account && !loading && (
+					<div className="bg-white dark:bg-gray-900 rounded-lg shadow-md p-6 mb-6 text-center text-gray-500">
+						口座が見つかりませんでした
+					</div>
 				)}
 
-				{/* アカウント削除セクション（親が子どもを削除する場合のみ表示） */}
-				{isParent && isParentOfChild && (
-					<div className="bg-white dark:bg-gray-900 rounded-lg shadow-md p-6 border border-red-200 dark:border-red-800">
-						<h2 className="text-xl font-bold text-red-600 dark:text-red-400 mb-4">
-							アカウントの削除
+				{account && (
+					<div className="bg-white dark:bg-gray-900 rounded-lg shadow-md p-4 md:p-6">
+						<h2 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4">
+							🎯 目標の設定
 						</h2>
-						<p className="text-sm text-gray-700 dark:text-gray-300 mb-4">
-							この操作は取り消せません。子どもアカウントに関連する
-							<strong>すべてのデータ</strong>
-							（残高、トランザクション履歴、目標など）が完全に削除されます。
-						</p>
-						<DeleteAccountDialog
-							accountId={childUserId}
-							accountName={childProfileData?.me?.name || ""}
-							onDelete={handleDeleteChild}
-							buttonText="アカウントを削除"
-							title={`${childProfileData?.me?.name || "子ども"}のアカウントを削除`}
-							description={
-								<span>
-									<span className="font-semibold text-gray-900 dark:text-gray-100">
-										{childProfileData?.me?.name}
-									</span>{" "}
-									のアカウントを完全に削除します。すべてのお小遣いデータ、トランザクション履歴、目標などが削除されます。
-								</span>
-							}
-						/>
+						<form onSubmit={handleUpdateGoal} className="space-y-4">
+							<div>
+								<Label htmlFor={goalNameId}>目標名</Label>
+								<Input
+									id={goalNameId}
+									value={goalName}
+									onChange={(e) => setGoalName(e.target.value)}
+									placeholder={account.goalName ?? "例: ゲームを買う"}
+									className="mt-1"
+								/>
+							</div>
+							<div>
+								<Label htmlFor={goalAmountId}>目標金額 (円)</Label>
+								<Input
+									id={goalAmountId}
+									type="number"
+									value={goalAmount}
+									onChange={(e) => setGoalAmount(e.target.value)}
+									placeholder={account.goalAmount != null ? String(account.goalAmount) : "3000"}
+									min="0"
+									className="mt-1"
+								/>
+							</div>
+							<Button
+								type="submit"
+								disabled={updating}
+								className="w-full"
+							>
+								{updating ? "更新中..." : "目標を保存"}
+							</Button>
+						</form>
 					</div>
 				)}
 			</div>

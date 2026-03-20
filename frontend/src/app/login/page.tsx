@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { signIn, signInWithGoogle } from "@/lib/supabase/auth";
+import { signIn, signInWithGoogle } from "@/lib/firebase/auth";
 
 function LoginForm() {
 	const router = useRouter();
@@ -138,6 +138,9 @@ function LoginForm() {
 								setIsSocialLoading(true);
 								try {
 									await signInWithGoogle();
+									toast.success("ログインしました");
+									const redirect = searchParams.get("redirect") || "/dashboard";
+									router.push(redirect);
 								} catch (error) {
 									console.error("Google login error:", error);
 									toast.error("Googleログインに失敗しました");

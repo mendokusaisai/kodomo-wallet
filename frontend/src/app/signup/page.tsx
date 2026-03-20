@@ -1,5 +1,6 @@
 "use client";
 
+import { useMutation } from "@apollo/client/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useId, useState } from "react";
@@ -7,7 +8,10 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { signInWithGoogle, signUp } from "@/lib/supabase/auth";
+import { signInWithGoogle, signUp } from "@/lib/firebase/auth";
+import { auth } from "@/lib/firebase/client";
+import { CREATE_FAMILY } from "@/lib/graphql/queries";
+import type { CreateFamilyResponse } from "@/lib/graphql/types";
 
 export default function SignUpPage() {
 	const router = useRouter();
@@ -21,6 +25,8 @@ export default function SignUpPage() {
 	const emailId = useId();
 	const passwordId = useId();
 	const confirmPasswordId = useId();
+
+	const [createFamily] = useMutation<CreateFamilyResponse>(CREATE_FAMILY);
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
@@ -40,11 +46,10 @@ export default function SignUpPage() {
 		setIsLoading(true);
 
 		try {
-			await signUp(email, password, name);
-			toast.success("アカウントを作成しました", {
-				description: "確認メールをご確認ください",
-			});
-			router.push("/login");
+			await signUp(email, password);
+			await createFamily({ variables: { myName: name, email } });
+			toast.success("アカウントを作成しました");
+			router.push("/dashboard");
 		} catch (error) {
 			console.error("サインアップエラー:", error);
 			const errorMessage =
@@ -77,10 +82,22 @@ export default function SignUpPage() {
 						<div className="space-y-3">
 							<Button
 								type="button"
-								onClick={async () => {
+					onClick={async () => {
 									setIsSocialLoading(true);
 									try {
 										await signInWithGoogle();
+										const user = auth.currentUser;
+										if (user) {
+											await createFamily({
+												variables: {
+													myName:
+														user.displayName || user.email || "ユーザー",
+													email: user.email || "",
+												},
+											});
+										}
+										toast.success("アカウントを作成しました");
+										router.push("/dashboard");
 									} catch (error) {
 										console.error("Google login error:", error);
 										toast.error("Googleログインに失敗しました");

@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { signOut } from "@/lib/supabase/auth";
+import { signOut } from "@/lib/firebase/auth";
 
 export function LogoutButton() {
 	const router = useRouter();

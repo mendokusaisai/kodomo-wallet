@@ -3,14 +3,13 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { createClient } from "@/lib/supabase/client";
+import { signInWithGoogle } from "@/lib/firebase/auth";
 
 function ChildSignupInner() {
 	const router = useRouter();
 	const searchParams = useSearchParams();
-	const supabase = createClient();
 
-	const [status, setStatus] = useState<"idle" | "error">("idle");
+	const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
 	const [message, setMessage] = useState<string>("");
 
 	const handleGoogleSignUp = async () => {
@@ -21,16 +20,17 @@ function ChildSignupInner() {
 			return;
 		}
 
-		const { error } = await supabase.auth.signInWithOAuth({
-			provider: "google",
-			options: {
-				redirectTo: `${window.location.origin}/auth/callback?invite_token=${token}`,
-			},
-		});
-
-		if (error) {
+		setStatus("loading");
+		try {
+			await signInWithGoogle();
+			// Firebase popup が完了後、child-invite-callback へ遷移
+			router.push(`/child-invite-callback?token=${token}`);
+		} catch (error) {
+			console.error("Google signup error:", error);
 			setStatus("error");
-			setMessage(error.message);
+			setMessage(
+				error instanceof Error ? error.message : "Googleログインに失敗しました",
+			);
 		}
 	};
 
@@ -43,7 +43,7 @@ function ChildSignupInner() {
 		}
 	}, [searchParams]);
 
-	// エラー画面
+	// エラー画面（トークンなし）
 	if (status === "error" && !searchParams.get("token")) {
 		return (
 			<div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950 p-6">
@@ -77,6 +77,7 @@ function ChildSignupInner() {
 
 				<Button
 					onClick={handleGoogleSignUp}
+					disabled={status === "loading"}
 					className="w-full bg-blue-600 hover:bg-blue-700 flex items-center justify-center gap-2"
 				>
 					<svg className="w-5 h-5" viewBox="0 0 24 24" aria-label="Google logo">
@@ -100,6 +101,11 @@ function ChildSignupInner() {
 					</svg>
 					Google でサインアップ
 				</Button>
+				{status === "loading" && (
+					<p className="text-center text-sm text-gray-500 mt-2">
+						Googleログイン処理中...
+					</p>
+				)}
 
 				<div className="mt-4 p-3 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-900 rounded">
 					<p className="text-xs text-blue-700 dark:text-blue-300">

@@ -4,10 +4,8 @@ import { useMutation } from "@apollo/client/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { ACCEPT_CHILD_INVITE } from "@/lib/graphql/queries";
-import { getUser } from "@/lib/supabase/auth";
-
-type AcceptChildInviteResponse = { acceptChildInvite: boolean };
+import { JOIN_AS_CHILD } from "@/lib/graphql/queries";
+import type { JoinAsChildResponse } from "@/lib/graphql/types";
 
 function ChildInviteCallbackInner() {
 	const router = useRouter();
@@ -17,8 +15,7 @@ function ChildInviteCallbackInner() {
 	);
 	const [message, setMessage] = useState<string>("招待を受け入れています...");
 
-	const [acceptInvite] =
-		useMutation<AcceptChildInviteResponse>(ACCEPT_CHILD_INVITE);
+	const [joinAsChild] = useMutation<JoinAsChildResponse>(JOIN_AS_CHILD);
 
 	useEffect(() => {
 		const processInvite = async () => {
@@ -30,20 +27,10 @@ function ChildInviteCallbackInner() {
 					return;
 				}
 
-				// 現在のログインユーザーを取得
-				const user = await getUser();
-				if (!user) {
-					setStatus("error");
-					setMessage("ログインユーザーが見つかりません");
-					return;
-				}
+				// 招待を受け入れる（JWTからUID取得）
+				const res = await joinAsChild({ variables: { token } });
 
-				// 招待を受け入れる
-				const res = await acceptInvite({
-					variables: { token, authUserId: user.id },
-				});
-
-				const ok = res.data?.acceptChildInvite === true;
+				const ok = !!res.data?.joinAsChild?.uid;
 				if (ok) {
 					setStatus("success");
 					setMessage(
@@ -63,7 +50,7 @@ function ChildInviteCallbackInner() {
 		};
 
 		processInvite();
-	}, [searchParams, acceptInvite, router]);
+	}, [searchParams, joinAsChild, router]);
 
 	return (
 		<div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950 p-6">

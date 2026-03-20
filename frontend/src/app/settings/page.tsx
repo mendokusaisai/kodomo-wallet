@@ -1,194 +1,122 @@
 "use client";
 
 import { useMutation, useQuery } from "@apollo/client/react";
-import { ArrowLeft, Copy, Save, Trash2, User, UserPlus } from "lucide-react";
+import { ArrowLeft, Copy, UserPlus, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useId, useState } from "react";
-import DeleteAccountDialog from "@/components/delete-account-dialog";
+import { useId, useState } from "react";
 import { LogoutButton } from "@/components/logout-button";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
+import { auth } from "@/lib/firebase/client";
 import {
-	CREATE_PARENT_INVITE,
-	GET_CHILDREN_COUNT,
-	GET_ME,
-	UPDATE_PROFILE,
+	CREATE_ACCOUNT,
+	INVITE_CHILD,
+	INVITE_PARENT,
+	MY_FAMILY,
 } from "@/lib/graphql/queries";
-import type { GetMeResponse } from "@/lib/graphql/types";
-import { getUser } from "@/lib/supabase/auth";
-import { createClient } from "@/lib/supabase/client";
-import { showError, showSuccess, showWarning } from "@/lib/toast";
+import type {
+	CreateAccountResponse,
+	InviteChildResponse,
+	InviteParentResponse,
+	MyFamilyResponse,
+} from "@/lib/graphql/types";
 
 export default function SettingsPage() {
 	const router = useRouter();
-	const supabase = createClient();
-	const [userId, setUserId] = useState<string | null>(null);
-	const [name, setName] = useState("");
-	const nameInputId = useId();
+	const currentUid = auth.currentUser?.uid;
 
-	// 親招待用のstate
-	const [inviteEmail, setInviteEmail] = useState("");
-	const [inviteLink, setInviteLink] = useState<string | null>(null);
-	const inviteEmailId = useId();
+	const [inviteParentEmail, setInviteParentEmail] = useState("");
+	const [parentInviteLink, setParentInviteLink] = useState<string | null>(null);
+	const inviteParentEmailId = useId();
 
-	// Supabaseからユーザー情報を取得
-	useEffect(() => {
-		const fetchUser = async () => {
-			try {
-				const user = await getUser();
-				if (!user) {
-					router.push("/login");
-					return;
-				}
-				setUserId(user.id);
-			} catch (error) {
-				console.error("ユーザー取得エラー:", error);
-				router.push("/login");
-			}
-		};
-		fetchUser();
-	}, [router]);
+	const [childName, setChildName] = useState("");
+	const [childInviteLink, setChildInviteLink] = useState<string | null>(null);
+	const childNameId = useId();
+
+	const [accountName, setAccountName] = useState("");
+	const [isCreatingAccount, setIsCreatingAccount] = useState(false);
+	const accountNameId = useId();
 
 	const {
-		data: meData,
-		loading: meLoading,
+		data: familyData,
+		loading: familyLoading,
 		refetch,
-	} = useQuery<GetMeResponse>(GET_ME, {
-		variables: { userId },
-		skip: !userId,
+	} = useQuery<MyFamilyResponse>(MY_FAMILY);
+
+	const family = familyData?.myFamily;
+	const currentMember = family?.members.find((m) => m.uid === currentUid);
+	const isParent = currentMember?.role === "parent";
+
+	const [inviteParent, { loading: invitingParent }] =
+		useMutation<InviteParentResponse>(INVITE_PARENT);
+	const [inviteChild, { loading: invitingChild }] =
+		useMutation<InviteChildResponse>(INVITE_CHILD);
+	const [createAccount] = useMutation<CreateAccountResponse>(CREATE_ACCOUNT, {
+		refetchQueries: [{ query: MY_FAMILY }],
 	});
 
-	// 子どもの数を取得（親の場合のみ）
-	const { data: childrenCountData } = useQuery<{ childrenCount: number }>(
-		GET_CHILDREN_COUNT,
-		{
-			variables: { parentId: userId },
-			skip: !userId || meData?.me?.role !== "parent",
-		},
-	);
-
-	// 親招待mutation
-	const [createParentInvite, { loading: inviting }] = useMutation<{
-		createParentInvite: string;
-	}>(CREATE_PARENT_INVITE, {
-		onError: (error: { message: string }) => {
-			showError("招待リンクの作成に失敗しました", error.message);
-		},
-	});
-
-	// プロフィールデータが読み込まれたら初期値を設定
-	useEffect(() => {
-		if (meData?.me) {
-			setName(meData.me.name);
-		}
-	}, [meData]);
-
-	const [updateProfile, { loading: updating }] = useMutation(UPDATE_PROFILE, {
-		onCompleted: () => {
-			showSuccess("プロフィールを更新しました");
-			refetch();
-		},
-		onError: (error: { message: string }) => {
-			showError("更新に失敗しました", error.message);
-		},
-	});
-
-	const handleUpdateProfile = async (e: React.FormEvent) => {
-		e.preventDefault();
-		if (!userId) return;
-
+	const handleInviteParent = async () => {
+		if (!family?.id || !inviteParentEmail) return;
 		try {
-			await updateProfile({
-				variables: {
-					userId,
-					currentUserId: userId,
-					name: name || null,
-				},
+			const res = await inviteParent({
+				variables: { familyId: family.id, email: inviteParentEmail },
 			});
-		} catch (error) {
-			showError(
-				"更新に失敗しました",
-				error instanceof Error ? error.message : "不明なエラー",
-			);
-		}
-	};
-
-	const handleCreateInvite = async () => {
-		if (!userId) return;
-		if (!inviteEmail) {
-			showWarning("メールアドレスを入力してください");
-			return;
-		}
-
-		try {
-			const res = await createParentInvite({
-				variables: {
-					inviterId: userId,
-					email: inviteEmail,
-				},
-			});
-
-			const token: string | undefined = res.data?.createParentInvite;
+			const token = res.data?.inviteParent;
 			if (token) {
-				const origin =
-					typeof window !== "undefined" ? window.location.origin : "";
-				const link = `${origin}/accept-invite?token=${token}`;
-				setInviteLink(link);
-				showSuccess("招待リンクを作成しました");
-				setInviteEmail("");
+				const link = `${window.location.origin}/accept-invite?token=${token}`;
+				setParentInviteLink(link);
+				setInviteParentEmail("");
 			}
+		} catch (error) {
+			console.error("親招待エラー:", error);
+		}
+	};
+
+	const handleInviteChild = async () => {
+		if (!family?.id || !childName.trim()) return;
+		try {
+			const res = await inviteChild({
+				variables: { familyId: family.id, childName: childName.trim() },
+			});
+			const token = res.data?.inviteChild;
+			if (token) {
+				const link = `${window.location.origin}/child-signup?token=${token}`;
+				setChildInviteLink(link);
+				setChildName("");
+			}
+		} catch (error) {
+			console.error("子招待エラー:", error);
+		}
+	};
+
+	const handleCreateAccount = async (e: React.FormEvent) => {
+		e.preventDefault();
+		if (!family?.id || !accountName.trim()) return;
+		setIsCreatingAccount(true);
+		try {
+			await createAccount({
+				variables: { familyId: family.id, name: accountName.trim() },
+			});
+			setAccountName("");
+			await refetch();
+		} catch (error) {
+			console.error("アカウント作成エラー:", error);
+		} finally {
+			setIsCreatingAccount(false);
+		}
+	};
+
+	const copyToClipboard = async (text: string) => {
+		try {
+			await navigator.clipboard.writeText(text);
 		} catch {
-			/* すでに onError で通知 */
+			// fallback
 		}
 	};
 
-	const handleCopyInviteLink = async () => {
-		if (!inviteLink) return;
-
-		try {
-			await navigator.clipboard.writeText(inviteLink);
-			showSuccess("招待リンクをコピーしました");
-		} catch (error) {
-			showError(
-				"コピーに失敗しました",
-				error instanceof Error ? error.message : "不明なエラー",
-			);
-		}
-	};
-
-	const handleDeleteAccount = async (accountId: string) => {
-		// 親の場合、子どもがいないかチェック
-		if (meData?.me?.role === "parent") {
-			const childrenCount = childrenCountData?.childrenCount || 0;
-			if (childrenCount > 0) {
-				showWarning(
-					"アカウントを削除できません",
-					`このアカウントには${childrenCount}人の子どもアカウントが紐づいています。先にすべての子どもアカウントを削除してから、再度お試しください。`,
-				);
-				return;
-			}
-		}
-
-		try {
-			// Supabase認証アカウントを削除（これによりプロフィールもカスケード削除される）
-			const { error } = await supabase.auth.admin.deleteUser(accountId);
-
-			if (error) throw error;
-
-			showSuccess("アカウントを削除しました");
-			router.push("/login");
-		} catch (error) {
-			console.error("削除エラー:", error);
-			showError(
-				"アカウントの削除に失敗しました",
-				"サポートにお問い合わせください",
-			);
-		}
-	};
-
-	if (meLoading) {
+	if (familyLoading) {
 		return (
 			<div className="min-h-screen bg-gray-50 dark:bg-gray-950 p-4 md:p-6 lg:p-8">
 				<div className="max-w-2xl mx-auto space-y-6">
@@ -196,7 +124,7 @@ export default function SettingsPage() {
 						<Skeleton className="h-10 w-20" />
 						<Skeleton className="h-8 w-32" />
 					</div>
-					<Skeleton className="h-64 w-full rounded-lg" />
+					<Skeleton className="h-48 w-full rounded-lg" />
 					<Skeleton className="h-48 w-full rounded-lg" />
 				</div>
 			</div>
@@ -224,172 +152,202 @@ export default function SettingsPage() {
 					<LogoutButton />
 				</div>
 
-				{/* プロフィール編集セクション */}
-				<div className="bg-white dark:bg-gray-900 rounded-lg shadow-md p-4 md:p-6 mb-6">
-					<div className="flex items-center gap-3 mb-6">
-						<User className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-						<h2 className="text-lg md:text-xl font-bold text-gray-900 dark:text-gray-100">
-							プロフィール
-						</h2>
-					</div>
-
-					<form onSubmit={handleUpdateProfile} className="space-y-4">
-						<div>
-							<Label htmlFor={nameInputId} className="mb-2 block">名前</Label>
-							<Input
-								id={nameInputId}
-								type="text"
-								value={name}
-								onChange={(e) => setName(e.target.value)}
-								placeholder="山田 太郎"
-								required
-							/>
-						</div>
-
-						<Button
-							type="submit"
-							className="w-full bg-blue-600 hover:bg-blue-700"
-							disabled={updating}
-						>
-							<Save className="w-4 h-4 mr-2" />
-							{updating ? "保存中..." : "保存"}
-						</Button>
-					</form>
-				</div>
-
-				{/* アカウント情報セクション */}
-				<div className="bg-white dark:bg-gray-900 rounded-lg shadow-md p-4 md:p-6 mb-6">
-					<h2 className="text-lg md:text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">
-						アカウント情報
-					</h2>
-					<div className="space-y-3">
-						<div>
-							<p className="text-sm text-gray-600 dark:text-gray-400">ロール</p>
-							<p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-								{meData?.me?.role === "parent" ? "親" : "子ども"}
-							</p>
-						</div>
-						<div>
-							<p className="text-sm text-gray-600 dark:text-gray-400">
-								ユーザーID
-							</p>
-							<p className="text-xs font-mono text-gray-700 dark:text-gray-300 break-all">
-								{userId}
-							</p>
-						</div>
-						<div>
-							<p className="text-sm text-gray-600 dark:text-gray-400">作成日</p>
-							<p className="text-sm text-gray-900 dark:text-gray-100">
-								{meData?.me?.createdAt
-									? new Date(meData.me.createdAt).toLocaleDateString("ja-JP")
-									: "-"}
-							</p>
-						</div>
-					</div>
-				</div>
-
-				{/* 親招待セクション（親の場合のみ表示） */}
-				{meData?.me?.role === "parent" && (
+				{/* 現在のユーザー情報 */}
+				{currentMember && (
 					<div className="bg-white dark:bg-gray-900 rounded-lg shadow-md p-4 md:p-6 mb-6">
-						<div className="flex items-center gap-3 mb-4">
-							<UserPlus className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-							<h2 className="text-lg md:text-xl font-bold text-gray-900 dark:text-gray-100">
-								もう一人の親を招待
-							</h2>
-						</div>
-						<p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-							配偶者やパートナーを招待して、子どものお小遣いを一緒に管理できます。
-						</p>
-
-						<div className="space-y-4">
-							{/* メールアドレス入力 */}
+						<h2 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4">
+							アカウント情報
+						</h2>
+						<div className="space-y-2">
 							<div>
-								<Label htmlFor={inviteEmailId} className="mb-2 block">招待するメールアドレス</Label>
-								<Input
-									id={inviteEmailId}
-									type="email"
-									placeholder="partner@example.com"
-									value={inviteEmail}
-									onChange={(e) => setInviteEmail(e.target.value)}
-								/>
+								<p className="text-xs text-gray-500">名前</p>
+								<p className="font-semibold">{currentMember.name}</p>
 							</div>
-
-							{/* 招待ボタン */}
-							<Button
-								onClick={handleCreateInvite}
-								disabled={inviting || !inviteEmail}
-								className="w-full bg-blue-600 hover:bg-blue-700"
-							>
-								<UserPlus className="w-4 h-4 mr-2" />
-								{inviting ? "作成中..." : "招待リンクを作成"}
-							</Button>
-
-							{/* 招待リンク表示 */}
-							{inviteLink && (
-								<div className="mt-4 p-4 bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-900 rounded-lg">
-									<Label className="text-green-800 dark:text-green-400 font-semibold">
-										招待リンク
-									</Label>
-									<div className="mt-2 flex gap-2">
-										<Input
-											value={inviteLink}
-											readOnly
-											className="text-sm font-mono"
-										/>
-										<Button
-											onClick={handleCopyInviteLink}
-											variant="outline"
-											size="sm"
-										>
-											<Copy className="w-4 h-4" />
-										</Button>
-									</div>
-									<p className="text-xs text-green-700 dark:text-green-300 mt-2">
-										このリンクを相手に送信してください。リンクは7日間有効です。
-									</p>
+							<div>
+								<p className="text-xs text-gray-500">ロール</p>
+								<p className="font-semibold">
+									{currentMember.role === "parent" ? "👨‍👩‍👧 親" : "👦 子ども"}
+								</p>
+							</div>
+							{currentMember.email && (
+								<div>
+									<p className="text-xs text-gray-500">メール</p>
+									<p className="font-mono text-sm">{currentMember.email}</p>
 								</div>
 							)}
 						</div>
 					</div>
 				)}
 
-				{/* 危険な操作セクション */}
-				<div className="bg-white dark:bg-gray-900 rounded-lg shadow-md p-4 md:p-6 border-2 border-red-200 dark:border-red-900">
-					<div className="flex items-center gap-3 mb-4">
-						<Trash2 className="w-6 h-6 text-red-600 dark:text-red-400" />
-						<h2 className="text-lg md:text-xl font-bold text-red-900 dark:text-red-400">
-							危険な操作
-						</h2>
-					</div>
-
-					<div className="space-y-4">
-						<div className="bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-900 rounded-lg p-4">
-							<h3 className="font-semibold text-red-900 dark:text-red-400 mb-2">
-								アカウントの削除
-							</h3>
-							<p className="text-sm text-red-700 dark:text-red-300 mb-4">
-								アカウントを削除すると、すべてのデータが完全に削除されます。この操作は取り消せません。
-							</p>
-							{meData?.me && userId && (
-								<DeleteAccountDialog
-									accountId={userId}
-									accountName={meData.me.name}
-									onDelete={handleDeleteAccount}
-									buttonText="アカウントを削除"
-									title="アカウントの削除"
-									description={
-										<span>
-											<span className="font-semibold text-gray-900">
-												{meData.me.name}
-											</span>{" "}
-											のアカウントを完全に削除します。すべてのお小遣いデータ、トランザクション履歴、目標などが削除されます。
-										</span>
-									}
-								/>
-							)}
+				{/* 家族メンバー一覧 */}
+				{family && (
+					<div className="bg-white dark:bg-gray-900 rounded-lg shadow-md p-4 md:p-6 mb-6">
+						<div className="flex items-center gap-3 mb-4">
+							<Users className="w-5 h-5 text-blue-600" />
+							<h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">
+								家族メンバー{family.name ? ` (${family.name}家)` : ""}
+							</h2>
+						</div>
+						<div className="space-y-2">
+							{family.members.map((member) => (
+								<div
+									key={member.uid}
+									className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg"
+								>
+									<div>
+										<p className="font-medium">{member.name}</p>
+										<p className="text-xs text-gray-500">
+											{member.role === "parent" ? "親" : "子ども"}
+											{member.uid === currentUid && " (あなた)"}
+										</p>
+									</div>
+								</div>
+							))}
 						</div>
 					</div>
-				</div>
+				)}
+
+				{/* 親のみ表示セクション */}
+				{isParent && family && (
+					<>
+						{/* 口座作成 */}
+						<div className="bg-white dark:bg-gray-900 rounded-lg shadow-md p-4 md:p-6 mb-6">
+							<h2 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4">
+								💰 口座を作成
+							</h2>
+							<form onSubmit={handleCreateAccount} className="space-y-4">
+								<div>
+									<Label htmlFor={accountNameId}>口座名</Label>
+									<Input
+										id={accountNameId}
+										value={accountName}
+										onChange={(e) => setAccountName(e.target.value)}
+										placeholder="太郎のおこづかい"
+										required
+										className="mt-1"
+									/>
+								</div>
+								<Button
+									type="submit"
+									disabled={isCreatingAccount}
+									className="w-full"
+								>
+									{isCreatingAccount ? "作成中..." : "口座を作成"}
+								</Button>
+							</form>
+						</div>
+
+						{/* 子ども招待 */}
+						<div className="bg-white dark:bg-gray-900 rounded-lg shadow-md p-4 md:p-6 mb-6">
+							<div className="flex items-center gap-3 mb-4">
+								<UserPlus className="w-5 h-5 text-green-600" />
+								<h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">
+									👦 子どもを招待
+								</h2>
+							</div>
+							<div className="space-y-4">
+								<div>
+									<Label htmlFor={childNameId}>子どもの名前</Label>
+									<Input
+										id={childNameId}
+										value={childName}
+										onChange={(e) => setChildName(e.target.value)}
+										placeholder="太郎"
+										className="mt-1"
+									/>
+								</div>
+								<Button
+									onClick={handleInviteChild}
+									disabled={invitingChild || !childName.trim()}
+									className="w-full bg-green-600 hover:bg-green-700"
+								>
+									{invitingChild ? "作成中..." : "招待リンクを作成"}
+								</Button>
+								{childInviteLink && (
+									<div className="p-4 bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-900 rounded-lg">
+										<Label className="text-green-800 dark:text-green-400 font-semibold">
+											子ども招待リンク
+										</Label>
+										<div className="mt-2 flex gap-2">
+											<Input
+												value={childInviteLink}
+												readOnly
+												className="text-xs font-mono"
+											/>
+											<Button
+												onClick={() => copyToClipboard(childInviteLink)}
+												variant="outline"
+												size="sm"
+											>
+												<Copy className="w-4 h-4" />
+											</Button>
+										</div>
+										<p className="text-xs text-green-700 dark:text-green-300 mt-2">
+											このリンクを子どもに送ってください。
+										</p>
+									</div>
+								)}
+							</div>
+						</div>
+
+						{/* 親招待 */}
+						<div className="bg-white dark:bg-gray-900 rounded-lg shadow-md p-4 md:p-6 mb-6">
+							<div className="flex items-center gap-3 mb-4">
+								<UserPlus className="w-5 h-5 text-blue-600" />
+								<h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">
+									👨 もう一人の親を招待
+								</h2>
+							</div>
+							<p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+								配偶者やパートナーを招待して、お小遣いを一緒に管理できます。
+							</p>
+							<div className="space-y-4">
+								<div>
+									<Label htmlFor={inviteParentEmailId}>メールアドレス</Label>
+									<Input
+										id={inviteParentEmailId}
+										type="email"
+										value={inviteParentEmail}
+										onChange={(e) => setInviteParentEmail(e.target.value)}
+										placeholder="partner@example.com"
+										className="mt-1"
+									/>
+								</div>
+								<Button
+									onClick={handleInviteParent}
+									disabled={invitingParent || !inviteParentEmail}
+									className="w-full bg-blue-600 hover:bg-blue-700"
+								>
+									{invitingParent ? "作成中..." : "招待リンクを作成"}
+								</Button>
+								{parentInviteLink && (
+									<div className="p-4 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-900 rounded-lg">
+										<Label className="text-blue-800 dark:text-blue-400 font-semibold">
+											親招待リンク
+										</Label>
+										<div className="mt-2 flex gap-2">
+											<Input
+												value={parentInviteLink}
+												readOnly
+												className="text-xs font-mono"
+											/>
+											<Button
+												onClick={() => copyToClipboard(parentInviteLink)}
+												variant="outline"
+												size="sm"
+											>
+												<Copy className="w-4 h-4" />
+											</Button>
+										</div>
+										<p className="text-xs text-blue-700 dark:text-blue-300 mt-2">
+											このリンクを相手に送信してください。リンクは7日間有効です。
+										</p>
+									</div>
+								)}
+							</div>
+						</div>
+					</>
+				)}
 			</div>
 		</div>
 	);

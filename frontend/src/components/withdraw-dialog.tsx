@@ -32,7 +32,7 @@ const withdrawSchema = z.object({
 				message: "正の整数を入力してください",
 			},
 		),
-	description: z.string().optional(),
+	note: z.string().optional(),
 });
 
 type WithdrawFormValues = z.infer<typeof withdrawSchema>;
@@ -42,7 +42,9 @@ interface WithdrawDialogProps {
 	onOpenChange: (open: boolean) => void;
 	accountId: string;
 	accountName: string;
+	familyId: string;
 	currentBalance: number;
+	onSuccess?: () => void;
 }
 
 export function WithdrawDialog({
@@ -50,11 +52,13 @@ export function WithdrawDialog({
 	onOpenChange,
 	accountId,
 	accountName,
+	familyId,
 	currentBalance,
+	onSuccess,
 }: WithdrawDialogProps) {
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const amountId = useId();
-	const descriptionId = useId();
+	const noteId = useId();
 
 	const {
 		register,
@@ -66,7 +70,7 @@ export function WithdrawDialog({
 	});
 
 	const [withdrawMutation] = useMutation(WITHDRAW, {
-		refetchQueries: ["GetAccounts", "GetTransactions"],
+		refetchQueries: ["FamilyAccounts", "AccountTransactions"],
 		awaitRefetchQueries: true,
 	});
 
@@ -85,9 +89,10 @@ export function WithdrawDialog({
 		try {
 			await withdrawMutation({
 				variables: {
+					familyId,
 					accountId,
 					amount,
-					description: data.description,
+					note: data.note,
 				},
 			});
 
@@ -97,6 +102,7 @@ export function WithdrawDialog({
 
 			reset();
 			onOpenChange(false);
+			onSuccess?.();
 		} catch (error) {
 			console.error("出金エラー:", error);
 			const errorMessage =
@@ -138,15 +144,15 @@ export function WithdrawDialog({
 							)}
 						</div>
 						<div className="grid gap-2">
-							<Label htmlFor={descriptionId}>説明（任意）</Label>
+							<Label htmlFor={noteId}>メモ（任意）</Label>
 							<Input
-								id={descriptionId}
+								id={noteId}
 								placeholder="おもちゃ購入"
-								{...register("description")}
+								{...register("note")}
 							/>
-							{errors.description && (
+							{errors.note && (
 								<p className="text-sm text-red-500">
-									{errors.description.message}
+									{errors.note.message}
 								</p>
 							)}
 						</div>

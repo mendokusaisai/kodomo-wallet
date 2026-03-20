@@ -5,19 +5,20 @@ import { format } from "date-fns";
 import { ja } from "date-fns/locale";
 import { ArrowDownIcon, ArrowUpIcon, GiftIcon } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { GET_TRANSACTIONS } from "@/lib/graphql/queries";
-import type { GetTransactionsResponse } from "@/lib/graphql/types";
+import { ACCOUNT_TRANSACTIONS } from "@/lib/graphql/queries";
+import type { AccountTransactionsResponse } from "@/lib/graphql/types";
 
 interface TransactionHistoryProps {
 	accountId: string;
+	familyId: string;
 }
 
-export function TransactionHistory({ accountId }: TransactionHistoryProps) {
-	const { data, loading, error } = useQuery<GetTransactionsResponse>(
-		GET_TRANSACTIONS,
+export function TransactionHistory({ accountId, familyId }: TransactionHistoryProps) {
+	const { data, loading, error } = useQuery<AccountTransactionsResponse>(
+		ACCOUNT_TRANSACTIONS,
 		{
-			variables: { accountId },
-			skip: !accountId,
+			variables: { familyId, accountId, limit: 20 },
+			skip: !accountId || !familyId,
 		},
 	);
 
@@ -44,7 +45,7 @@ export function TransactionHistory({ accountId }: TransactionHistoryProps) {
 		);
 	}
 
-	if (!data?.transactions || data.transactions.length === 0) {
+	if (!data?.accountTransactions || data.accountTransactions.length === 0) {
 		return (
 			<div className="mt-4 p-4 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg">
 				<p className="text-sm text-gray-500 dark:text-gray-400 text-center">
@@ -98,7 +99,7 @@ export function TransactionHistory({ accountId }: TransactionHistoryProps) {
 				取引履歴
 			</h3>
 			<div className="space-y-2 max-h-64 md:max-h-80 overflow-y-auto">
-				{data.transactions.map((transaction) => {
+				{data.accountTransactions.map((transaction) => {
 					const style = getTransactionStyle(transaction.type);
 					const date = new Date(transaction.createdAt);
 					const formattedDate = format(date, "M月d日 HH:mm", { locale: ja });
@@ -117,7 +118,7 @@ export function TransactionHistory({ accountId }: TransactionHistoryProps) {
 								</div>
 								<div className="min-w-0 flex-1">
 									<p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
-										{transaction.description || style.label}
+										{transaction.note || style.label}
 									</p>
 									<p className="text-xs text-gray-500 dark:text-gray-400">
 										{formattedDate}

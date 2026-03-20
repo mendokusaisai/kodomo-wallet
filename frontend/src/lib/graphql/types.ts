@@ -1,76 +1,90 @@
-// GraphQL の型定義
+// GraphQL の型定義（家族中心モデル）
 
-export interface Profile {
-	id: string;
+export interface FamilyMember {
+	uid: string;
+	familyId: string;
 	name: string;
 	role: "parent" | "child";
+	email: string | null;
+	joinedAt: string;
+}
+
+export interface Family {
+	id: string;
+	name: string | null;
 	createdAt: string;
-	authUserId?: string | null; // 認証アカウントID (認証なし子どもの場合null)
-	email?: string | null; // メールアドレス（未認証子どもの場合に事前登録）
-	parents?: Profile[]; // 親プロフィール一覧（子の場合、複数親対応）
+	members: FamilyMember[];
 }
 
 export interface Account {
 	id: string;
-	userId: string;
+	familyId: string;
+	name: string;
 	balance: number;
 	currency: string;
-	goalName?: string;
-	goalAmount?: number;
+	goalName?: string | null;
+	goalAmount?: number | null;
 	createdAt: string;
 	updatedAt: string;
-	user?: Profile; // アカウント所有者の情報
 }
 
 export interface Transaction {
 	id: string;
 	accountId: string;
+	familyId: string;
 	type: "deposit" | "withdraw" | "reward";
 	amount: number;
-	description?: string;
+	note?: string | null;
 	createdAt: string;
-}
-
-export interface RecurringDeposit {
-	id: string;
-	accountId: string;
-	amount: number;
-	dayOfMonth: number;
-	isActive: boolean;
-	createdAt: string;
-	updatedAt: string;
+	createdByUid: string;
 }
 
 // Query のレスポンス型
-export interface GetMeResponse {
-	me: Profile | null;
+export interface MyFamilyResponse {
+	myFamily: Family | null;
 }
 
-export interface GetAccountsResponse {
-	accounts: Account[];
+export interface FamilyAccountsResponse {
+	familyAccounts: Account[];
 }
 
-export interface GetTransactionsResponse {
-	transactions: Transaction[];
-}
-
-export interface GetRecurringDepositResponse {
-	recurringDeposit: RecurringDeposit | null;
+export interface AccountTransactionsResponse {
+	accountTransactions: Transaction[];
 }
 
 // Mutation のレスポンス型
+export interface CreateFamilyResponse {
+	createFamily: Family;
+}
+
+export interface CreateAccountResponse {
+	createAccount: Account;
+}
+
 export interface DepositResponse {
 	deposit: Transaction;
+}
+
+export interface WithdrawResponse {
+	withdraw: Transaction;
 }
 
 export interface UpdateGoalResponse {
 	updateGoal: Account;
 }
 
-export interface CreateOrUpdateRecurringDepositResponse {
-	createOrUpdateRecurringDeposit: RecurringDeposit;
+export interface InviteChildResponse {
+	inviteChild: string; // token
 }
 
-export interface DeleteRecurringDepositResponse {
-	deleteRecurringDeposit: boolean;
+export interface InviteParentResponse {
+	inviteParent: string; // token
+}
+
+export interface JoinAsChildResponse {
+	joinAsChild: FamilyMember;
+}
+
+export interface JoinAsParentResponse {
+	joinAsParent: FamilyMember;
 }

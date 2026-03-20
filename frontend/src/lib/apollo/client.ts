@@ -6,13 +6,13 @@ import {
 } from "@apollo/client/core";
 import { setContext } from "@apollo/client/link/context";
 import { RetryLink } from "@apollo/client/link/retry";
-import { createClient } from "@/lib/supabase/client";
+import { auth } from "@/lib/firebase/client";
 
 const httpLink = new HttpLink({
 	uri: process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT || "http://localhost:8000/graphql",
 });
 
-// リトライ設定（Renderの起動待ち対応）
+// リトライ設定（Cloud Run の起動待ち対応）
 const retryLink = new RetryLink({
 	delay: {
 		initial: 1000, // 初回リトライまで1秒
@@ -32,19 +32,22 @@ const retryLink = new RetryLink({
 	},
 });
 
-// Supabase のセッショントークンを GraphQL リクエストのヘッダーに追加
+// Firebase ID トークンを GraphQL リクエストのヘッダーに追加
 const authLink = setContext(async (_, { headers }) => {
-	const supabase = createClient();
-	const {
-		data: { session },
-	} = await supabase.auth.getSession();
+	let token: string | null = null;
+	try {
+		const user = auth.currentUser;
+		if (user) {
+			token = await user.getIdToken();
+		}
+	} catch (e) {
+		console.error("Firebase ID トークンの取得に失敗しました:", e);
+	}
 
 	return {
 		headers: {
 			...headers,
-			authorization: session?.access_token
-				? `Bearer ${session.access_token}`
-				: "",
+			authorization: token ? `Bearer ${token}` : "",
 		},
 	};
 });
@@ -59,3 +62,4 @@ export const apolloClient = new ApolloClient({
 		},
 	},
 });
+

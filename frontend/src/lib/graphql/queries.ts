@@ -2,184 +2,111 @@ import { gql } from "@apollo/client";
 
 // ==================== Query ====================
 
-export const GET_ME = gql`
-  query GetMe($userId: String!) {
-    me(userId: $userId) {
+export const MY_FAMILY = gql`
+  query MyFamily {
+    myFamily {
       id
       name
-      role
-      authUserId
-      email
-      parents {
-        id
+      createdAt
+      members {
+        uid
+        familyId
         name
         role
         email
+        joinedAt
       }
-      createdAt
     }
   }
 `;
 
-export const GET_CHILDREN_COUNT = gql`
-  query GetChildrenCount($parentId: String!) {
-    childrenCount(parentId: $parentId)
-  }
-`;
-
-export const GET_CHILDREN = gql`
-  query GetChildren($parentId: String!) {
-    children(parentId: $parentId) {
+export const FAMILY_ACCOUNTS = gql`
+  query FamilyAccounts($familyId: String!) {
+    familyAccounts(familyId: $familyId) {
       id
+      familyId
       name
-      role
-      email
-    }
-  }
-`;
-
-export const GET_ACCOUNTS = gql`
-	query GetAccounts($userId: String!) {
-		accounts(userId: $userId) {
-			id
-			userId
-			balance
-			currency
-			goalName
-			goalAmount
-			createdAt
-			updatedAt
-			user {
-				id
-				name
-				role
-				authUserId
-				email
-			}
-		}
-	}
-`;
-export const GET_TRANSACTIONS = gql`
-  query GetTransactions($accountId: String!) {
-    transactions(accountId: $accountId) {
-      id
-      accountId
-      type
-      amount
-      description
-      createdAt
-    }
-  }
-`;
-
-export const GET_RECURRING_DEPOSIT = gql`
-  query GetRecurringDeposit($accountId: String!, $currentUserId: String!) {
-    recurringDeposit(accountId: $accountId, currentUserId: $currentUserId) {
-      id
-      accountId
-      amount
-      dayOfMonth
-      isActive
+      balance
+      currency
+      goalName
+      goalAmount
       createdAt
       updatedAt
     }
   }
 `;
 
-// ==================== Mutation ====================
+export const ACCOUNT_TRANSACTIONS = gql`
+  query AccountTransactions($familyId: String!, $accountId: String!, $limit: Int) {
+    accountTransactions(familyId: $familyId, accountId: $accountId, limit: $limit) {
+      id
+      accountId
+      familyId
+      type
+      amount
+      note
+      createdAt
+      createdByUid
+    }
+  }
+`;
 
 // ==================== Mutation ====================
+
+export const CREATE_FAMILY = gql`
+  mutation CreateFamily($myName: String!, $email: String!, $familyName: String) {
+    createFamily(myName: $myName, email: $email, familyName: $familyName) {
+      id
+      name
+      createdAt
+      members {
+        uid
+        name
+        role
+      }
+    }
+  }
+`;
+
+export const CREATE_ACCOUNT = gql`
+  mutation CreateAccount($familyId: String!, $name: String!, $currency: String) {
+    createAccount(familyId: $familyId, name: $name, currency: $currency) {
+      id
+      familyId
+      name
+      balance
+      currency
+    }
+  }
+`;
 
 export const DEPOSIT = gql`
-	mutation Deposit($accountId: String!, $amount: Int!, $description: String!) {
-		deposit(accountId: $accountId, amount: $amount, description: $description) {
-			id
-			accountId
-			type
-			amount
-			description
-			createdAt
-		}
-	}
+  mutation Deposit($familyId: String!, $accountId: String!, $amount: Int!, $note: String) {
+    deposit(familyId: $familyId, accountId: $accountId, amount: $amount, note: $note) {
+      id
+      type
+      amount
+      note
+      createdAt
+    }
+  }
 `;
 
 export const WITHDRAW = gql`
-	mutation Withdraw($accountId: String!, $amount: Int!, $description: String!) {
-		withdraw(accountId: $accountId, amount: $amount, description: $description) {
-			id
-			accountId
-			type
-			amount
-			description
-			createdAt
-		}
-	}
-`;
-
-export const CREATE_CHILD = gql`
-	mutation CreateChild(
-		$parentId: String!
-		$childName: String!
-		$initialBalance: Int
-	) {
-		createChild(
-			parentId: $parentId
-			childName: $childName
-			initialBalance: $initialBalance
-		) {
-			id
-			name
-			role
-			createdAt
-		}
-	}
-`;
-
-export const LINK_CHILD_TO_AUTH = gql`
-	mutation LinkChildToAuth($childId: String!, $authUserId: String!) {
-		linkChildToAuth(childId: $childId, authUserId: $authUserId) {
-			id
-			name
-			role
-			createdAt
-		}
-	}
-`;
-
-export const LINK_CHILD_TO_AUTH_BY_EMAIL = gql`
-	mutation LinkChildToAuthByEmail($childId: String!, $email: String!) {
-		linkChildToAuthByEmail(childId: $childId, email: $email) {
-			id
-			name
-			role
-			createdAt
-		}
-	}
-`;
-
-export const INVITE_CHILD_TO_AUTH = gql`
-	mutation InviteChildToAuth($childId: String!, $email: String!) {
-		inviteChildToAuth(childId: $childId, email: $email)
-	}
-`;
-
-export const ACCEPT_CHILD_INVITE = gql`
-	mutation AcceptChildInvite($token: String!, $authUserId: String!) {
-		acceptChildInvite(token: $token, authUserId: $authUserId)
-	}
+  mutation Withdraw($familyId: String!, $accountId: String!, $amount: Int!, $note: String) {
+    withdraw(familyId: $familyId, accountId: $accountId, amount: $amount, note: $note) {
+      id
+      type
+      amount
+      note
+      createdAt
+    }
+  }
 `;
 
 export const UPDATE_GOAL = gql`
-  mutation UpdateGoal(
-    $accountId: String!
-    $goalName: String
-    $goalAmount: Int
-  ) {
-    updateGoal(
-      accountId: $accountId
-      goalName: $goalName
-      goalAmount: $goalAmount
-    ) {
+  mutation UpdateGoal($familyId: String!, $accountId: String!, $goalName: String, $goalAmount: Int) {
+    updateGoal(familyId: $familyId, accountId: $accountId, goalName: $goalName, goalAmount: $goalAmount) {
       id
       goalName
       goalAmount
@@ -188,85 +115,36 @@ export const UPDATE_GOAL = gql`
   }
 `;
 
-export const UPDATE_PROFILE = gql`
-  mutation UpdateProfile(
-    $userId: String!
-    $currentUserId: String!
-    $name: String
-  ) {
-    updateProfile(
-      userId: $userId
-      currentUserId: $currentUserId
-      name: $name
-    ) {
-      id
+export const INVITE_CHILD = gql`
+  mutation InviteChild($familyId: String!, $childName: String!) {
+    inviteChild(familyId: $familyId, childName: $childName)
+  }
+`;
+
+export const INVITE_PARENT = gql`
+  mutation InviteParent($familyId: String!, $email: String!) {
+    inviteParent(familyId: $familyId, email: $email)
+  }
+`;
+
+export const JOIN_AS_CHILD = gql`
+  mutation JoinAsChild($token: String!) {
+    joinAsChild(token: $token) {
+      uid
+      familyId
       name
-      updatedAt
+      role
     }
   }
 `;
 
-export const DELETE_CHILD = gql`
-  mutation DeleteChild($parentId: String!, $childId: String!) {
-    deleteChild(parentId: $parentId, childId: $childId)
-  }
-`;
-
-export const CREATE_OR_UPDATE_RECURRING_DEPOSIT = gql`
-  mutation CreateOrUpdateRecurringDeposit(
-    $accountId: String!
-    $currentUserId: String!
-    $amount: Int!
-    $dayOfMonth: Int!
-    $isActive: Boolean
-  ) {
-    createOrUpdateRecurringDeposit(
-      accountId: $accountId
-      currentUserId: $currentUserId
-      amount: $amount
-      dayOfMonth: $dayOfMonth
-      isActive: $isActive
-    ) {
-      id
-      accountId
-      amount
-      dayOfMonth
-      isActive
-      updatedAt
+export const JOIN_AS_PARENT = gql`
+  mutation JoinAsParent($token: String!, $name: String!, $email: String!) {
+    joinAsParent(token: $token, name: $name, email: $email) {
+      uid
+      familyId
+      name
+      role
     }
-  }
-`;
-
-export const DELETE_RECURRING_DEPOSIT = gql`
-  mutation DeleteRecurringDeposit(
-    $accountId: String!
-    $currentUserId: String!
-  ) {
-    deleteRecurringDeposit(
-      accountId: $accountId
-      currentUserId: $currentUserId
-    )
-  }
-`;
-
-// ===== Parent invite (email/link) =====
-export const CREATE_PARENT_INVITE = gql`
-  mutation CreateParentInvite(
-    $inviterId: String!
-    $email: String!
-  ) {
-    createParentInvite(inviterId: $inviterId, email: $email)
-  }
-`;
-
-export const ACCEPT_PARENT_INVITE = gql`
-  mutation AcceptParentInvite($token: String!, $currentParentId: String!) {
-    acceptParentInvite(token: $token, currentParentId: $currentParentId)
-  }
-`;
-
-export const GET_PARENT_INVITE_EMAIL = gql`
-  query GetParentInviteEmail($token: String!) {
-    parentInviteByToken(token: $token)
   }
 `;
