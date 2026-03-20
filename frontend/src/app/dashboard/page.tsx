@@ -12,8 +12,6 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { TransactionHistory } from "@/components/transaction-history";
 import { Button } from "@/components/ui/button";
 import { WithdrawDialog } from "@/components/withdraw-dialog";
-import WithdrawalRequestDialog from "@/components/withdrawal-request-dialog";
-import WithdrawalRequestsList from "@/components/withdrawal-requests-list";
 import { GET_ACCOUNTS, GET_ME } from "@/lib/graphql/queries";
 import type {
 	Account,
@@ -254,15 +252,6 @@ export default function DashboardPage() {
 										</Button>
 									</div>
 								)}
-								{/* 出金申請ボタン（子どものみ表示） */}
-								{meData?.me?.role === "child" && (
-									<div className="mb-4">
-										<WithdrawalRequestDialog
-											accountId={account.id}
-											currentBalance={account.balance}
-										/>
-									</div>
-								)}
 								{/* 貯金目標 */}
 								<div className="mt-4">
 									{account.goalName && account.goalAmount ? (
@@ -298,15 +287,6 @@ export default function DashboardPage() {
 				{accountsData?.accounts.length === 0 && (
 					<div className="bg-white rounded-lg shadow-md p-8 text-center">
 						<p className="text-gray-600">アカウントがありません</p>
-					</div>
-				)}
-				{/* 親の場合、出金申請リストを表示 */}
-				{meData?.me?.role === "parent" && userId && (
-					<div className="mt-8">
-						<h2 className="text-2xl font-bold text-gray-900 mb-4">
-							出金申請リスト
-						</h2>
-						<WithdrawalRequestsList parentId={userId} />
 					</div>
 				)}
 				{/* 入金ダイアログ */}

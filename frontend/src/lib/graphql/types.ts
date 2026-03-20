@@ -31,16 +31,6 @@ export interface Transaction {
 	createdAt: string;
 }
 
-export interface WithdrawalRequest {
-	id: string;
-	accountId: string;
-	amount: number;
-	description?: string;
-	status: "pending" | "approved" | "rejected";
-	createdAt: string;
-	updatedAt: string;
-}
-
 export interface RecurringDeposit {
 	id: string;
 	accountId: string;
@@ -64,10 +54,6 @@ export interface GetTransactionsResponse {
 	transactions: Transaction[];
 }
 
-export interface GetWithdrawalRequestsResponse {
-	withdrawalRequests: WithdrawalRequest[];
-}
-
 export interface GetRecurringDepositResponse {
 	recurringDeposit: RecurringDeposit | null;
 }
@@ -75,18 +61,6 @@ export interface GetRecurringDepositResponse {
 // Mutation のレスポンス型
 export interface DepositResponse {
 	deposit: Transaction;
-}
-
-export interface CreateWithdrawalRequestResponse {
-	createWithdrawalRequest: WithdrawalRequest;
-}
-
-export interface ApproveWithdrawalResponse {
-	approveWithdrawal: WithdrawalRequest;
-}
-
-export interface RejectWithdrawalResponse {
-	rejectWithdrawal: WithdrawalRequest;
 }
 
 export interface UpdateGoalResponse {
