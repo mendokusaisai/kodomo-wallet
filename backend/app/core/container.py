@@ -12,7 +12,6 @@ from app.repositories.firestore import (
     FirestoreFamilyMemberRepository,
     FirestoreFamilyRepository,
     FirestoreParentInviteRepository,
-    FirestoreRecurringDepositRepository,
     FirestoreTransactionRepository,
 )
 from app.repositories.interfaces import (
@@ -21,7 +20,6 @@ from app.repositories.interfaces import (
     FamilyMemberRepository,
     FamilyRepository,
     ParentInviteRepository,
-    RecurringDepositRepository,
     TransactionRepository,
 )
 from app.services.mailer import ConsoleMailer, Mailer
@@ -36,11 +34,6 @@ class RepositoryModule(Module):
         binder.bind(FamilyMemberRepository, to=FirestoreFamilyMemberRepository, scope=singleton)
         binder.bind(AccountRepository, to=FirestoreAccountRepository, scope=singleton)
         binder.bind(TransactionRepository, to=FirestoreTransactionRepository, scope=singleton)
-        binder.bind(
-            RecurringDepositRepository,
-            to=FirestoreRecurringDepositRepository,
-            scope=singleton,
-        )
         binder.bind(ParentInviteRepository, to=FirestoreParentInviteRepository, scope=singleton)
         binder.bind(ChildInviteRepository, to=FirestoreChildInviteRepository, scope=singleton)
         binder.bind(Mailer, to=ConsoleMailer(), scope=singleton)

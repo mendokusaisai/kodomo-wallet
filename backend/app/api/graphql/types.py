@@ -57,17 +57,3 @@ class TransactionType:
     created_at: str
     created_by_uid: str
 
-
-@strawberry.type
-class RecurringDepositType:
-    """定期入金型"""
-
-    id: str
-    family_id: str
-    account_id: str
-    amount: int
-    interval_days: int
-    next_execute_at: str
-    is_active: bool
-    created_at: str
-    created_by_uid: str

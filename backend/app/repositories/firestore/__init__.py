@@ -5,9 +5,6 @@ from app.repositories.firestore.child_invite_repository import FirestoreChildInv
 from app.repositories.firestore.family_member_repository import FirestoreFamilyMemberRepository
 from app.repositories.firestore.family_repository import FirestoreFamilyRepository
 from app.repositories.firestore.parent_invite_repository import FirestoreParentInviteRepository
-from app.repositories.firestore.recurring_deposit_repository import (
-    FirestoreRecurringDepositRepository,
-)
 from app.repositories.firestore.transaction_repository import FirestoreTransactionRepository
 
 __all__ = [
@@ -15,7 +12,6 @@ __all__ = [
     "FirestoreFamilyMemberRepository",
     "FirestoreAccountRepository",
     "FirestoreTransactionRepository",
-    "FirestoreRecurringDepositRepository",
     "FirestoreParentInviteRepository",
     "FirestoreChildInviteRepository",
 ]

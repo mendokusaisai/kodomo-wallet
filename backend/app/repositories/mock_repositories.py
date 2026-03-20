@@ -10,7 +10,6 @@ from app.domain.entities import (
     Family,
     FamilyMember,
     ParentInvite,
-    RecurringDeposit,
     Transaction,
 )
 from app.repositories.interfaces import (
@@ -19,7 +18,6 @@ from app.repositories.interfaces import (
     FamilyMemberRepository,
     FamilyRepository,
     ParentInviteRepository,
-    RecurringDepositRepository,
     TransactionRepository,
 )
 
@@ -192,81 +190,6 @@ class MockTransactionRepository(TransactionRepository):
         )
         self.transactions.append(transaction)
         return transaction
-
-
-class MockRecurringDepositRepository(RecurringDepositRepository):
-    """テスト用の RecurringDepositRepository のモック実装"""
-
-    def __init__(self):
-        # account_id をキーに保持（同一口座に1設定）
-        self.deposits: dict[str, RecurringDeposit] = {}
-
-    def get_by_id(self, recurring_deposit_id: str) -> RecurringDeposit | None:
-        for d in self.deposits.values():
-            if d.id == recurring_deposit_id:
-                return d
-        return None
-
-    def get_by_account_id(self, family_id: str, account_id: str) -> RecurringDeposit | None:
-        return self.deposits.get(account_id)
-
-    def create(
-        self,
-        family_id: str,
-        account_id: str,
-        amount: int,
-        interval_days: int,
-        next_execute_at: datetime,
-        created_by_uid: str,
-        created_at: datetime,
-    ) -> RecurringDeposit:
-        deposit = RecurringDeposit(
-            id=str(uuid4()),
-            family_id=family_id,
-            account_id=account_id,
-            amount=amount,
-            interval_days=interval_days,
-            next_execute_at=next_execute_at,
-            is_active=True,
-            created_at=created_at,
-            created_by_uid=created_by_uid,
-        )
-        self.deposits[account_id] = deposit
-        return deposit
-
-    def update(
-        self,
-        recurring_deposit: RecurringDeposit,
-        amount: int | None,
-        interval_days: int | None,
-        is_active: bool | None,
-        next_execute_at: datetime | None,
-    ) -> RecurringDeposit:
-        updates: dict = {}
-        if amount is not None:
-            updates["amount"] = amount
-        if interval_days is not None:
-            updates["interval_days"] = interval_days
-        if is_active is not None:
-            updates["is_active"] = is_active
-        if next_execute_at is not None:
-            updates["next_execute_at"] = next_execute_at
-        updated = replace(recurring_deposit, **updates)
-        self.deposits[recurring_deposit.account_id] = updated
-        return updated
-
-    def delete(self, recurring_deposit_id: str) -> bool:
-        for key, d in list(self.deposits.items()):
-            if d.id == recurring_deposit_id:
-                del self.deposits[key]
-                return True
-        return False
-
-    def get_due(self, now: datetime) -> list[RecurringDeposit]:
-        return [d for d in self.deposits.values() if d.is_active and d.next_execute_at <= now]
-
-    def add(self, deposit: RecurringDeposit) -> None:
-        self.deposits[deposit.account_id] = deposit
 
 
 class MockParentInviteRepository(ParentInviteRepository):

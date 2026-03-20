@@ -7,10 +7,9 @@ from app.api.graphql.types import (
     AccountType,
     FamilyMemberType,
     FamilyType,
-    RecurringDepositType,
     TransactionType,
 )
-from app.services import AccountService, FamilyService, RecurringDepositService, TransactionService
+from app.services import AccountService, FamilyService, TransactionService
 
 
 # ── Queries ──────────────────────────────────────────────────────────────────────────────────
@@ -43,15 +42,6 @@ def get_account_transactions(
     entities = transaction_service.get_account_transactions(family_id, account_id, limit)
     return [converters.to_transaction(e) for e in entities]
 
-
-def get_recurring_deposit(
-    family_id: str,
-    account_id: str,
-    recurring_deposit_service: RecurringDepositService,
-) -> RecurringDepositType | None:
-    """定期入金設定を取得"""
-    entity = recurring_deposit_service.get_recurring_deposit(family_id, account_id)
-    return converters.to_recurring_deposit(entity) if entity else None
 
 
 # ── Mutations ─────────────────────────────────────────────────────────────────────────────────
@@ -183,39 +173,5 @@ def update_goal(
     )
     return converters.to_account(entity)
 
-
-def create_or_update_recurring_deposit(
-    family_id: str,
-    account_id: str,
-    current_uid: str,
-    amount: int,
-    interval_days: int,
-    recurring_deposit_service: RecurringDepositService,
-    is_active: bool = True,
-) -> RecurringDepositType:
-    """定期入金設定を作成または更新（親のみ）"""
-    entity = recurring_deposit_service.create_or_update_recurring_deposit(
-        family_id=family_id,
-        account_id=account_id,
-        current_uid=current_uid,
-        amount=amount,
-        interval_days=interval_days,
-        is_active=is_active,
-    )
-    return converters.to_recurring_deposit(entity)
-
-
-def delete_recurring_deposit(
-    family_id: str,
-    account_id: str,
-    current_uid: str,
-    recurring_deposit_service: RecurringDepositService,
-) -> bool:
-    """定期入金設定を削除（親のみ）"""
-    return recurring_deposit_service.delete_recurring_deposit(
-        family_id=family_id,
-        account_id=account_id,
-        current_uid=current_uid,
-    )
 
 

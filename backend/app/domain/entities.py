@@ -61,21 +61,6 @@ class Transaction:
 
 
 @dataclass
-class RecurringDeposit:
-    """定期入金エンティティ（自動お小遣い）"""
-
-    id: str
-    family_id: str
-    account_id: str
-    amount: int
-    interval_days: int
-    next_execute_at: datetime
-    is_active: bool
-    created_at: datetime
-    created_by_uid: str
-
-
-@dataclass
 class ParentInvite:
     """親招待エンティティ（子が親を家族に招待）"""
 

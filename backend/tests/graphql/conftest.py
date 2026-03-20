@@ -9,7 +9,6 @@ from app.repositories.interfaces import (
     FamilyMemberRepository,
     FamilyRepository,
     ParentInviteRepository,
-    RecurringDepositRepository,
     TransactionRepository,
 )
 from app.repositories.mock_repositories import (
@@ -18,10 +17,9 @@ from app.repositories.mock_repositories import (
     MockFamilyMemberRepository,
     MockFamilyRepository,
     MockParentInviteRepository,
-    MockRecurringDepositRepository,
     MockTransactionRepository,
 )
-from app.services import AccountService, FamilyService, RecurringDepositService, TransactionService
+from app.services import AccountService, FamilyService, TransactionService
 from app.services.mailer import ConsoleMailer, Mailer
 
 
@@ -31,7 +29,6 @@ class MockRepositoryModule(Module):
         binder.bind(FamilyMemberRepository, to=MockFamilyMemberRepository(), scope=singleton)
         binder.bind(AccountRepository, to=MockAccountRepository(), scope=singleton)
         binder.bind(TransactionRepository, to=MockTransactionRepository(), scope=singleton)
-        binder.bind(RecurringDepositRepository, to=MockRecurringDepositRepository(), scope=singleton)
         binder.bind(ParentInviteRepository, to=MockParentInviteRepository(), scope=singleton)
         binder.bind(ChildInviteRepository, to=MockChildInviteRepository(), scope=singleton)
         binder.bind(Mailer, to=ConsoleMailer(), scope=singleton)
@@ -51,6 +48,5 @@ def graphql_context(test_injector: Injector) -> dict:
         "family_service": test_injector.get(FamilyService),
         "account_service": test_injector.get(AccountService),
         "transaction_service": test_injector.get(TransactionService),
-        "recurring_deposit_service": test_injector.get(RecurringDepositService),
     }
 

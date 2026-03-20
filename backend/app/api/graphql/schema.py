@@ -10,7 +10,6 @@ from app.api.graphql.types import (
     AccountType,
     FamilyMemberType,
     FamilyType,
-    RecurringDepositType,
     TransactionType,
 )
 from app.core.exceptions import (
@@ -66,23 +65,6 @@ class Query:
         except DomainException as e:
             raise Exception(f"Domain error: {e.message}") from e
 
-    @strawberry.field
-    def recurring_deposit(
-        self,
-        info: Info,
-        family_id: str,
-        account_id: str,
-    ) -> RecurringDepositType | None:
-        """口座の定期入金設定を取得"""
-        recurring_deposit_service = info.context["recurring_deposit_service"]
-        try:
-            return resolvers.get_recurring_deposit(
-                family_id, account_id, recurring_deposit_service
-            )
-        except ResourceNotFoundException as e:
-            raise Exception(f"Resource not found: {e.message}") from e
-        except DomainException as e:
-            raise Exception(f"Domain error: {e.message}") from e
 
 
 @strawberry.type
@@ -281,57 +263,6 @@ class Mutation:
             raise Exception(f"Invalid amount: {e.message}") from e
         except DomainException as e:
             raise Exception(f"Domain error: {e.message}") from e
-
-    @strawberry.mutation
-    def create_or_update_recurring_deposit(
-        self,
-        info: Info,
-        family_id: str,
-        account_id: str,
-        amount: int,
-        interval_days: int,
-        is_active: bool = True,
-    ) -> RecurringDepositType:
-        """定期入金設定を作成または更新（親のみ）"""
-        current_uid: str | None = info.context.get("current_uid")
-        if not current_uid:
-            raise Exception("Authentication required")
-        recurring_deposit_service = info.context["recurring_deposit_service"]
-        try:
-            return resolvers.create_or_update_recurring_deposit(
-                family_id, account_id, current_uid, amount, interval_days,
-                recurring_deposit_service, is_active,
-            )
-        except ResourceNotFoundException as e:
-            raise Exception(f"Resource not found: {e.message}") from e
-        except InvalidAmountException as e:
-            raise Exception(f"Invalid input: {e.message}") from e
-        except DomainException as e:
-            raise Exception(f"Domain error: {e.message}") from e
-
-    @strawberry.mutation
-    def delete_recurring_deposit(
-        self,
-        info: Info,
-        family_id: str,
-        account_id: str,
-    ) -> bool:
-        """定期入金設定を削除（親のみ）"""
-        current_uid: str | None = info.context.get("current_uid")
-        if not current_uid:
-            raise Exception("Authentication required")
-        recurring_deposit_service = info.context["recurring_deposit_service"]
-        try:
-            return resolvers.delete_recurring_deposit(
-                family_id, account_id, current_uid, recurring_deposit_service
-            )
-        except ResourceNotFoundException as e:
-            raise Exception(f"Resource not found: {e.message}") from e
-        except InvalidAmountException as e:
-            raise Exception(f"Permission denied: {e.message}") from e
-        except DomainException as e:
-            raise Exception(f"Domain error: {e.message}") from e
-
 
 # スキーマの生成
 schema = strawberry.Schema(

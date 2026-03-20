@@ -8,7 +8,6 @@ from app.repositories.interfaces import (
     FamilyMemberRepository,
     FamilyRepository,
     ParentInviteRepository,
-    RecurringDepositRepository,
     TransactionRepository,
 )
 
@@ -17,7 +16,6 @@ __all__ = [
     "FamilyMemberRepository",
     "AccountRepository",
     "TransactionRepository",
-    "RecurringDepositRepository",
     "ParentInviteRepository",
     "ChildInviteRepository",
 ]

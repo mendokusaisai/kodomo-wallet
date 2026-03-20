@@ -61,16 +61,3 @@ def to_transaction(entity: e.Transaction) -> t.TransactionType:
         created_by_uid=entity.created_by_uid,
     )
 
-
-def to_recurring_deposit(entity: e.RecurringDeposit) -> t.RecurringDepositType:
-    return t.RecurringDepositType(
-        id=entity.id,
-        family_id=entity.family_id,
-        account_id=entity.account_id,
-        amount=entity.amount,
-        interval_days=entity.interval_days,
-        next_execute_at=_dt(entity.next_execute_at),
-        is_active=entity.is_active,
-        created_at=_dt(entity.created_at),
-        created_by_uid=entity.created_by_uid,
-    )

@@ -13,7 +13,6 @@ from app.domain.entities import (
     Family,
     FamilyMember,
     ParentInvite,
-    RecurringDeposit,
     Transaction,
 )
 
@@ -135,56 +134,6 @@ class TransactionRepository(ABC):
         created_at: datetime,
     ) -> Transaction:
         """新規トランザクションを作成"""
-        pass
-
-
-class RecurringDepositRepository(ABC):
-    """RecurringDeposit のデータアクセスインターフェース"""
-
-    @abstractmethod
-    def get_by_id(self, recurring_deposit_id: str) -> RecurringDeposit | None:
-        """IDで定期入金設定を取得"""
-        pass
-
-    @abstractmethod
-    def get_by_account_id(self, family_id: str, account_id: str) -> RecurringDeposit | None:
-        """口座IDで定期入金設定を取得"""
-        pass
-
-    @abstractmethod
-    def create(
-        self,
-        family_id: str,
-        account_id: str,
-        amount: int,
-        interval_days: int,
-        next_execute_at: datetime,
-        created_by_uid: str,
-        created_at: datetime,
-    ) -> RecurringDeposit:
-        """新規定期入金設定を作成"""
-        pass
-
-    @abstractmethod
-    def update(
-        self,
-        recurring_deposit: RecurringDeposit,
-        amount: int | None,
-        interval_days: int | None,
-        is_active: bool | None,
-        next_execute_at: datetime | None,
-    ) -> RecurringDeposit:
-        """定期入金設定を更新"""
-        pass
-
-    @abstractmethod
-    def delete(self, recurring_deposit_id: str) -> bool:
-        """定期入金設定を削除"""
-        pass
-
-    @abstractmethod
-    def get_due(self, now: datetime) -> list[RecurringDeposit]:
-        """実行期限が到来した有効な定期入金設定を取得"""
         pass
 
 

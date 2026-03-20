@@ -12,7 +12,6 @@ from app.repositories.interfaces import (
     FamilyMemberRepository,
     FamilyRepository,
     ParentInviteRepository,
-    RecurringDepositRepository,
     TransactionRepository,
 )
 from app.repositories.mock_repositories import (
@@ -21,7 +20,6 @@ from app.repositories.mock_repositories import (
     MockFamilyMemberRepository,
     MockFamilyRepository,
     MockParentInviteRepository,
-    MockRecurringDepositRepository,
     MockTransactionRepository,
 )
 from app.services.mailer import ConsoleMailer, Mailer
@@ -40,7 +38,6 @@ class RepositoryModule(Module):
         member_repo: MockFamilyMemberRepository,
         account_repo: MockAccountRepository,
         transaction_repo: MockTransactionRepository,
-        recurring_deposit_repo: MockRecurringDepositRepository | None = None,
         parent_invite_repo: MockParentInviteRepository | None = None,
         child_invite_repo: MockChildInviteRepository | None = None,
     ):
@@ -48,7 +45,6 @@ class RepositoryModule(Module):
         self.member_repo = member_repo
         self.account_repo = account_repo
         self.transaction_repo = transaction_repo
-        self.recurring_deposit_repo = recurring_deposit_repo or MockRecurringDepositRepository()
         self.parent_invite_repo = parent_invite_repo or MockParentInviteRepository()
         self.child_invite_repo = child_invite_repo or MockChildInviteRepository()
 
@@ -57,7 +53,6 @@ class RepositoryModule(Module):
         binder.bind(FamilyMemberRepository, to=self.member_repo)
         binder.bind(AccountRepository, to=self.account_repo)
         binder.bind(TransactionRepository, to=self.transaction_repo)
-        binder.bind(RecurringDepositRepository, to=self.recurring_deposit_repo)
         binder.bind(ParentInviteRepository, to=self.parent_invite_repo)
         binder.bind(ChildInviteRepository, to=self.child_invite_repo)
         binder.bind(Mailer, to=ConsoleMailer())
@@ -146,7 +141,6 @@ def injector_with_mocks(
     mock_member_repository: MockFamilyMemberRepository,
     mock_account_repository: MockAccountRepository,
     mock_transaction_repository: MockTransactionRepository,
-    mock_recurring_deposit_repository: MockRecurringDepositRepository,
     mock_parent_invite_repository: MockParentInviteRepository,
     mock_child_invite_repository: MockChildInviteRepository,
 ) -> Injector:
@@ -155,7 +149,6 @@ def injector_with_mocks(
         member_repo=mock_member_repository,
         account_repo=mock_account_repository,
         transaction_repo=mock_transaction_repository,
-        recurring_deposit_repo=mock_recurring_deposit_repository,
         parent_invite_repo=mock_parent_invite_repository,
         child_invite_repo=mock_child_invite_repository,
     )
