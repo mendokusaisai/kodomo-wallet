@@ -1,130 +1,103 @@
-"""テスト用のリポジトリのモック実装"""
+"""テスト用のリポジトリのモック実装（家族中心モデル対応）"""
 
+from dataclasses import replace
 from datetime import datetime
 from uuid import uuid4
 
 from app.domain.entities import (
     Account,
     ChildInvite,
-    FamilyRelationship,
+    Family,
+    FamilyMember,
     ParentInvite,
-    Profile,
     RecurringDeposit,
     Transaction,
 )
 from app.repositories.interfaces import (
     AccountRepository,
     ChildInviteRepository,
-    FamilyRelationshipRepository,
+    FamilyMemberRepository,
+    FamilyRepository,
     ParentInviteRepository,
-    ProfileRepository,
     RecurringDepositRepository,
     TransactionRepository,
 )
 
 
-class MockProfileRepository(ProfileRepository):
-    """テスト用の ProfileRepository のモック実装"""
+class MockFamilyRepository(FamilyRepository):
+    """テスト用の FamilyRepository のモック実装"""
 
-    def __init__(self, relationships: set[tuple[str, str]] | None = None):
-        self.profiles: dict[str, Profile] = {}
-        # 親子関係を (parent_id, child_id) のタプルで保持
-        self.relationships: set[tuple[str, str]] = (
-            relationships if relationships is not None else set()
-        )
+    def __init__(self):
+        self.families: dict[str, Family] = {}
 
-    def get_by_id(self, user_id: str) -> Profile | None:
-        """ID でプロフィールを取得"""
-        return self.profiles.get(user_id)
+    def get_by_id(self, family_id: str) -> Family | None:
+        return self.families.get(family_id)
 
-    def get_children(self, parent_id: str) -> list[Profile]:
-        """親の全ての子プロフィールを取得"""
-        child_ids = {child for (parent, child) in self.relationships if parent == parent_id}
-        return [p for pid, p in self.profiles.items() if pid in child_ids]
-
-    def get_by_auth_user_id(self, auth_user_id: str) -> Profile | None:
-        """認証ユーザー ID でプロフィールを取得"""
-        for profile in self.profiles.values():
-            if profile.auth_user_id and profile.auth_user_id == auth_user_id:
-                return profile
-        return None
-
-    def create_child(self, name: str, parent_id: str, email: str | None = None) -> Profile:
-        """
-        認証なしで子プロフィールを作成
-        作成した親および関連する全親との関係を自動作成
-        """
-        profile = Profile(
+    def create(self, name: str | None = None) -> Family:
+        family = Family(
             id=str(uuid4()),
             name=name,
-            role="child",
-            email=email,
-            auth_user_id=None,
             created_at=datetime.now(),
+        )
+        self.families[family.id] = family
+        return family
+
+    def add(self, family: Family) -> None:
+        self.families[family.id] = family
+
+
+class MockFamilyMemberRepository(FamilyMemberRepository):
+    """テスト用の FamilyMemberRepository のモック実装"""
+
+    def __init__(self):
+        # (family_id, uid) → FamilyMember
+        self.members: dict[tuple[str, str], FamilyMember] = {}
+
+    def get_by_uid(self, family_id: str, uid: str) -> FamilyMember | None:
+        return self.members.get((family_id, uid))
+
+    def get_by_auth_uid(self, uid: str) -> FamilyMember | None:
+        for member in self.members.values():
+            if member.uid == uid:
+                return member
+        return None
+
+    def list_members(self, family_id: str) -> list[FamilyMember]:
+        return [m for (fid, _), m in self.members.items() if fid == family_id]
+
+    def create(
+        self,
+        family_id: str,
+        uid: str,
+        name: str,
+        role: str,
+        email: str | None = None,
+    ) -> FamilyMember:
+        member = FamilyMember(
+            uid=uid,
+            family_id=family_id,
+            name=name,
+            role=role,  # type: ignore
+            email=email,
+            joined_at=datetime.now(),
             updated_at=datetime.now(),
         )
-        self.profiles[profile.id] = profile
+        self.members[(family_id, uid)] = member
+        return member
 
-        # 作成した親との関係を追加
-        self.relationships.add((parent_id, profile.id))
+    def update(self, member: FamilyMember) -> FamilyMember:
+        self.members[(member.family_id, member.uid)] = member
+        return member
 
-        # 同じ家族の他の親との関係も作成
-        related_parents = self._get_related_parents(parent_id)
-        for other_parent_id in related_parents:
-            self.relationships.add((other_parent_id, profile.id))
-
-        return profile
-
-    def _get_related_parents(self, parent_id: str) -> list[str]:
-        """指定した親と同じ子を持つ他の親を取得"""
-        # parent_id が持つ全子どもを取得
-        children = {child for (parent, child) in self.relationships if parent == parent_id}
-
-        if not children:
-            return []
-
-        # それらの子どもを持つ他の親を取得
-        related_parents = set()
-        for parent, child in self.relationships:
-            if child in children and parent != parent_id:
-                related_parents.add(parent)
-
-        return list(related_parents)
-
-    def link_to_auth(self, profile_id: str, auth_user_id: str) -> Profile:
-        """既存プロフィールを認証アカウントに紐付け"""
-        profile = self.profiles.get(profile_id)
-        if not profile:
-            raise ValueError(f"Profile {profile_id} not found")
-        # dataclassは不変ではないので直接書き換えは不可。新しいインスタンスを作成
-        from dataclasses import replace
-
-        updated_profile = replace(profile, auth_user_id=auth_user_id, updated_at=datetime.now())
-        self.profiles[profile_id] = updated_profile
-        return updated_profile
-
-    def delete(self, user_id: str) -> bool:
-        """プロフィールを削除"""
-        if user_id in self.profiles:
-            del self.profiles[user_id]
+    def delete(self, family_id: str, uid: str) -> bool:
+        key = (family_id, uid)
+        if key in self.members:
+            del self.members[key]
             return True
         return False
 
-    def update(self, profile: Profile) -> Profile:
-        """プロフィールを更新"""
-        self.profiles[profile.id] = profile
-        return profile
-
-    def add(self, profile: Profile) -> None:
-        """テスト用にプロフィールを追加"""
-        self.profiles[str(profile.id)] = profile
-
-    # テスト支援: 親子関係の追加/削除
-    def add_relationship(self, parent_id: str, child_id: str) -> None:
-        self.relationships.add((parent_id, child_id))
-
-    def remove_relationship(self, parent_id: str, child_id: str) -> None:
-        self.relationships.discard((parent_id, child_id))
+    def add(self, member: FamilyMember) -> None:
+        self.members[(member.family_id, member.uid)] = member
 
 
 class MockAccountRepository(AccountRepository):
@@ -133,31 +106,26 @@ class MockAccountRepository(AccountRepository):
     def __init__(self):
         self.accounts: dict[str, Account] = {}
 
-    def get_by_user_id(self, user_id: str) -> list[Account]:
-        """ユーザーの全アカウントを取得"""
-        return [acc for acc in self.accounts.values() if acc.user_id == user_id]
+    def get_by_family_id(self, family_id: str) -> list[Account]:
+        return [a for a in self.accounts.values() if a.family_id == family_id]
 
-    def get_by_id(self, account_id: str) -> Account | None:
-        """ID でアカウントを取得"""
-        return self.accounts.get(account_id)
+    def get_by_id(self, family_id: str, account_id: str) -> Account | None:
+        account = self.accounts.get(account_id)
+        if account and account.family_id == family_id:
+            return account
+        return None
 
-    def update_balance(self, account: Account, new_balance: int) -> None:
-        """アカウント残高を更新"""
-        from dataclasses import replace
-
-        updated_account = replace(account, balance=new_balance, updated_at=datetime.now())
-        self.accounts[account.id] = updated_account
-
-    def update(self, account: Account) -> Account:
-        """アカウントを更新"""
-        self.accounts[account.id] = account
-        return account
-
-    def create(self, user_id: str, balance: int, currency: str) -> Account:
-        """新規アカウントを作成"""
+    def create(
+        self,
+        family_id: str,
+        name: str,
+        balance: int = 0,
+        currency: str = "JPY",
+    ) -> Account:
         account = Account(
             id=str(uuid4()),
-            user_id=user_id,
+            family_id=family_id,
+            name=name,
             balance=balance,
             currency=currency,
             goal_name=None,
@@ -168,16 +136,22 @@ class MockAccountRepository(AccountRepository):
         self.accounts[account.id] = account
         return account
 
-    def delete(self, account_id: str) -> bool:
-        """アカウントを削除"""
+    def update(self, account: Account) -> Account:
+        self.accounts[account.id] = account
+        return account
+
+    def update_balance(self, account: Account, new_balance: int) -> None:
+        updated = replace(account, balance=new_balance, updated_at=datetime.now())
+        self.accounts[account.id] = updated
+
+    def delete(self, family_id: str, account_id: str) -> bool:
         if account_id in self.accounts:
             del self.accounts[account_id]
             return True
         return False
 
     def add(self, account: Account) -> None:
-        """テスト用にアカウントを追加"""
-        self.accounts[str(account.id)] = account
+        self.accounts[account.id] = account
 
 
 class MockTransactionRepository(TransactionRepository):
@@ -186,29 +160,35 @@ class MockTransactionRepository(TransactionRepository):
     def __init__(self):
         self.transactions: list[Transaction] = []
 
-    def get_by_account_id(self, account_id: str, limit: int = 50) -> list[Transaction]:
-        """アカウントのトランザクションを取得"""
-        account_transactions = [t for t in self.transactions if t.account_id == account_id]
-        # created_at の降順でソート
-        account_transactions.sort(key=lambda t: t.created_at, reverse=True)
-        return account_transactions[:limit]
+    def get_by_account_id(
+        self, family_id: str, account_id: str, limit: int = 50
+    ) -> list[Transaction]:
+        txs = [
+            t for t in self.transactions
+            if t.account_id == account_id and t.family_id == family_id
+        ]
+        txs.sort(key=lambda t: t.created_at, reverse=True)
+        return txs[:limit]
 
     def create(
         self,
+        family_id: str,
         account_id: str,
         transaction_type: str,
         amount: int,
-        description: str | None,
+        note: str | None,
+        created_by_uid: str,
         created_at: datetime,
     ) -> Transaction:
-        """新規トランザクションを作成"""
         transaction = Transaction(
             id=str(uuid4()),
             account_id=account_id,
+            family_id=family_id,
             type=transaction_type,  # type: ignore
             amount=amount,
-            description=description,
+            note=note,
             created_at=created_at,
+            created_by_uid=created_by_uid,
         )
         self.transactions.append(transaction)
         return transaction
@@ -218,28 +198,38 @@ class MockRecurringDepositRepository(RecurringDepositRepository):
     """テスト用の RecurringDepositRepository のモック実装"""
 
     def __init__(self):
+        # account_id をキーに保持（同一口座に1設定）
         self.deposits: dict[str, RecurringDeposit] = {}
 
-    def get_by_account_id(self, account_id: str) -> RecurringDeposit | None:
-        """アカウント ID で定期入金設定を取得"""
+    def get_by_id(self, recurring_deposit_id: str) -> RecurringDeposit | None:
+        for d in self.deposits.values():
+            if d.id == recurring_deposit_id:
+                return d
+        return None
+
+    def get_by_account_id(self, family_id: str, account_id: str) -> RecurringDeposit | None:
         return self.deposits.get(account_id)
 
     def create(
         self,
+        family_id: str,
         account_id: str,
         amount: int,
-        day_of_month: int,
+        interval_days: int,
+        next_execute_at: datetime,
+        created_by_uid: str,
         created_at: datetime,
     ) -> RecurringDeposit:
-        """新規定期入金設定を作成"""
         deposit = RecurringDeposit(
             id=str(uuid4()),
+            family_id=family_id,
             account_id=account_id,
             amount=amount,
-            day_of_month=day_of_month,
+            interval_days=interval_days,
+            next_execute_at=next_execute_at,
             is_active=True,
             created_at=created_at,
-            updated_at=created_at,
+            created_by_uid=created_by_uid,
         )
         self.deposits[account_id] = deposit
         return deposit
@@ -248,155 +238,71 @@ class MockRecurringDepositRepository(RecurringDepositRepository):
         self,
         recurring_deposit: RecurringDeposit,
         amount: int | None,
-        day_of_month: int | None,
+        interval_days: int | None,
         is_active: bool | None,
-        updated_at: datetime,
+        next_execute_at: datetime | None,
     ) -> RecurringDeposit:
-        """定期入金設定を更新"""
-        from dataclasses import replace
-
-        updates: dict = {"updated_at": updated_at}
+        updates: dict = {}
         if amount is not None:
             updates["amount"] = amount
-        if day_of_month is not None:
-            updates["day_of_month"] = day_of_month
+        if interval_days is not None:
+            updates["interval_days"] = interval_days
         if is_active is not None:
             updates["is_active"] = is_active
-        updated_deposit = replace(recurring_deposit, **updates)
-        self.deposits[recurring_deposit.account_id] = updated_deposit
-        return updated_deposit
+        if next_execute_at is not None:
+            updates["next_execute_at"] = next_execute_at
+        updated = replace(recurring_deposit, **updates)
+        self.deposits[recurring_deposit.account_id] = updated
+        return updated
 
-    def delete(self, recurring_deposit: RecurringDeposit) -> bool:
-        """定期入金設定を削除"""
-        account_id = recurring_deposit.account_id
-        if account_id in self.deposits:
-            del self.deposits[account_id]
-            return True
+    def delete(self, recurring_deposit_id: str) -> bool:
+        for key, d in list(self.deposits.items()):
+            if d.id == recurring_deposit_id:
+                del self.deposits[key]
+                return True
         return False
 
-    def get_active_by_day_of_month(self, day_of_month: int) -> list[RecurringDeposit]:
-        """指定した日付の有効な定期入金設定を取得"""
-        return [
-            deposit
-            for deposit in self.deposits.values()
-            if deposit.is_active and deposit.day_of_month == day_of_month
-        ]
+    def get_due(self, now: datetime) -> list[RecurringDeposit]:
+        return [d for d in self.deposits.values() if d.is_active and d.next_execute_at <= now]
 
-
-class MockFamilyRelationshipRepository(FamilyRelationshipRepository):
-    """テスト用の FamilyRelationshipRepository のモック実装"""
-
-    def __init__(
-        self,
-        relationships: set[tuple[str, str]] | None = None,
-        profiles: dict[str, Profile] | None = None,
-    ):
-        # 親子関係 (parent_id, child_id)
-        self.relationships: set[tuple[str, str]] = (
-            relationships if relationships is not None else set()
-        )
-        # プロフィール参照（親/子の取得に使用）
-        self.profiles = profiles if profiles is not None else {}
-
-    def get_parents(self, child_id: str) -> list[Profile]:
-        parent_ids = {parent for (parent, child) in self.relationships if child == child_id}
-        return [p for pid, p in self.profiles.items() if pid in parent_ids]
-
-    def get_children(self, parent_id: str) -> list[Profile]:
-        child_ids = {child for (parent, child) in self.relationships if parent == parent_id}
-        return [p for pid, p in self.profiles.items() if pid in child_ids]
-
-    def has_relationship(self, parent_id: str, child_id: str) -> bool:
-        return (parent_id, child_id) in self.relationships
-
-    def add_relationship(
-        self, parent_id: str, child_id: str, relationship_type: str = "parent"
-    ) -> FamilyRelationship:
-        # relationship_type はモックでは未使用
-        self.relationships.add((parent_id, child_id))
-        return FamilyRelationship(
-            id=str(uuid4()),
-            parent_id=parent_id,
-            child_id=child_id,
-            relationship_type="parent",
-            created_at=datetime.now(),
-        )
-
-    def remove_relationship(self, parent_id: str, child_id: str) -> bool:
-        if (parent_id, child_id) in self.relationships:
-            self.relationships.remove((parent_id, child_id))
-            return True
-        return False
-
-    def get_relationship(self, parent_id: str, child_id: str) -> FamilyRelationship | None:
-        if (parent_id, child_id) in self.relationships:
-            return FamilyRelationship(
-                id=str(uuid4()),
-                parent_id=parent_id,
-                child_id=child_id,
-                relationship_type="parent",
-                created_at=datetime.now(),
-            )
-        return None
-
-    def get_related_parents(self, parent_id: str) -> list[str]:
-        """指定した親と同じ子を持つ他の親のIDリストを取得"""
-        # parent_id が持つ全子どもを取得
-        children = {child for (parent, child) in self.relationships if parent == parent_id}
-
-        if not children:
-            return []
-
-        # それらの子どもを持つ他の親を取得
-        related_parents = set()
-        for parent, child in self.relationships:
-            if child in children and parent != parent_id:
-                related_parents.add(parent)
-
-        return list(related_parents)
-
-    def create_relationship(self, parent_id: str, child_id: str) -> None:
-        """親子関係を作成(重複は無視)"""
-        # 既に存在していても何もしない(重複を無視)
-        self.relationships.add((parent_id, child_id))
+    def add(self, deposit: RecurringDeposit) -> None:
+        self.deposits[deposit.account_id] = deposit
 
 
 class MockParentInviteRepository(ParentInviteRepository):
     """テスト用の ParentInviteRepository のモック実装"""
 
     def __init__(self):
-        # token をキーに保持
         self.invites: dict[str, ParentInvite] = {}
-
-    def create(
-        self,
-        child_id: str,
-        inviter_id: str,
-        email: str,
-        expires_at: datetime,
-    ) -> ParentInvite:
-        token = str(uuid4())
-        invite = ParentInvite(
-            id=str(uuid4()),
-            token=token,
-            child_id=child_id,
-            inviter_id=inviter_id,
-            email=email,
-            status="pending",
-            expires_at=expires_at,
-            created_at=datetime.now(),
-        )
-        self.invites[token] = invite
-        return invite
 
     def get_by_token(self, token: str) -> ParentInvite | None:
         return self.invites.get(token)
 
-    def update_status(self, invite: ParentInvite, status: str) -> ParentInvite:
-        from dataclasses import replace
+    def create(
+        self,
+        token: str,
+        family_id: str,
+        inviter_uid: str,
+        email: str,
+        expires_at: datetime,
+        created_at: datetime,
+    ) -> ParentInvite:
+        invite = ParentInvite(
+            token=token,
+            family_id=family_id,
+            inviter_uid=inviter_uid,
+            email=email,
+            expires_at=expires_at,
+            accepted_at=None,
+            created_at=created_at,
+        )
+        self.invites[token] = invite
+        return invite
 
-        updated = replace(invite, status=status)
-        self.invites[invite.token] = updated
+    def mark_accepted(self, token: str, accepted_at: datetime) -> ParentInvite:
+        invite = self.invites[token]
+        updated = replace(invite, accepted_at=accepted_at)
+        self.invites[token] = updated
         return updated
 
 
@@ -406,25 +312,33 @@ class MockChildInviteRepository(ChildInviteRepository):
     def __init__(self):
         self.invites: dict[str, ChildInvite] = {}
 
-    def create(self, child_id: str, email: str, token: str, expires_at: datetime) -> ChildInvite:
+    def get_by_token(self, token: str) -> ChildInvite | None:
+        return self.invites.get(token)
+
+    def create(
+        self,
+        token: str,
+        family_id: str,
+        inviter_uid: str,
+        child_name: str,
+        expires_at: datetime,
+        created_at: datetime,
+    ) -> ChildInvite:
         invite = ChildInvite(
-            id=str(uuid4()),
             token=token,
-            child_id=child_id,
-            email=email,
-            status="pending",
+            family_id=family_id,
+            inviter_uid=inviter_uid,
+            child_name=child_name,
             expires_at=expires_at,
-            created_at=datetime.now(),
+            accepted_at=None,
+            created_at=created_at,
         )
         self.invites[token] = invite
         return invite
 
-    def get_by_token(self, token: str) -> ChildInvite | None:
-        return self.invites.get(token)
-
-    def update_status(self, invite: ChildInvite, status: str) -> ChildInvite:
-        from dataclasses import replace
-
-        updated = replace(invite, status=status)
-        self.invites[invite.token] = updated
+    def mark_accepted(self, token: str, accepted_at: datetime) -> ChildInvite:
+        invite = self.invites[token]
+        updated = replace(invite, accepted_at=accepted_at)
+        self.invites[token] = updated
         return updated
+

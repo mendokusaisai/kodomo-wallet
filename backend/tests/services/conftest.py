@@ -5,26 +5,30 @@ from datetime import UTC, datetime
 import pytest
 from injector import Binder, Injector, Module
 
-from app.domain.entities import Account, Profile
+from app.domain.entities import Account, Family, FamilyMember
 from app.repositories.interfaces import (
     AccountRepository,
     ChildInviteRepository,
-    FamilyRelationshipRepository,
+    FamilyMemberRepository,
+    FamilyRepository,
     ParentInviteRepository,
-    ProfileRepository,
     RecurringDepositRepository,
     TransactionRepository,
 )
 from app.repositories.mock_repositories import (
     MockAccountRepository,
     MockChildInviteRepository,
-    MockFamilyRelationshipRepository,
+    MockFamilyMemberRepository,
+    MockFamilyRepository,
     MockParentInviteRepository,
-    MockProfileRepository,
     MockRecurringDepositRepository,
     MockTransactionRepository,
 )
 from app.services.mailer import ConsoleMailer, Mailer
+
+FAMILY_ID = "test-family-id"
+PARENT_UID = "test-parent-uid"
+CHILD_UID = "test-child-uid"
 
 
 class RepositoryModule(Module):
@@ -32,73 +36,89 @@ class RepositoryModule(Module):
 
     def __init__(
         self,
-        profile_repo: MockProfileRepository,
+        family_repo: MockFamilyRepository,
+        member_repo: MockFamilyMemberRepository,
         account_repo: MockAccountRepository,
         transaction_repo: MockTransactionRepository,
         recurring_deposit_repo: MockRecurringDepositRepository | None = None,
-        family_relationship_repo: MockFamilyRelationshipRepository | None = None,
+        parent_invite_repo: MockParentInviteRepository | None = None,
         child_invite_repo: MockChildInviteRepository | None = None,
     ):
-        self.profile_repo = profile_repo
+        self.family_repo = family_repo
+        self.member_repo = member_repo
         self.account_repo = account_repo
         self.transaction_repo = transaction_repo
         self.recurring_deposit_repo = recurring_deposit_repo or MockRecurringDepositRepository()
-        self.family_relationship_repo = (
-            family_relationship_repo
-            or MockFamilyRelationshipRepository(
-                relationships=getattr(profile_repo, "relationships", set()),
-                profiles=getattr(profile_repo, "profiles", {}),
-            )
-        )
+        self.parent_invite_repo = parent_invite_repo or MockParentInviteRepository()
         self.child_invite_repo = child_invite_repo or MockChildInviteRepository()
 
     def configure(self, binder: Binder) -> None:
-        """モックリポジトリをバインド"""
-        binder.bind(ProfileRepository, to=self.profile_repo)
+        binder.bind(FamilyRepository, to=self.family_repo)
+        binder.bind(FamilyMemberRepository, to=self.member_repo)
         binder.bind(AccountRepository, to=self.account_repo)
         binder.bind(TransactionRepository, to=self.transaction_repo)
         binder.bind(RecurringDepositRepository, to=self.recurring_deposit_repo)
-        binder.bind(FamilyRelationshipRepository, to=self.family_relationship_repo)
-        binder.bind(ParentInviteRepository, to=MockParentInviteRepository())
+        binder.bind(ParentInviteRepository, to=self.parent_invite_repo)
         binder.bind(ChildInviteRepository, to=self.child_invite_repo)
-        # メール送信はスタブ(コンソール出力)
         binder.bind(Mailer, to=ConsoleMailer())
 
 
 @pytest.fixture
-def sample_profile() -> Profile:
-    """サンプルプロフィールを作成"""
-    return Profile(
-        id="sample-id",
-        auth_user_id="sample-auth-user-id",
-        email=None,
-        name="Test User",
-        role="parent",
-        created_at=datetime.now(UTC),
-        updated_at=datetime.now(UTC),
-    )
+def mock_family_repository() -> MockFamilyRepository:
+    repo = MockFamilyRepository()
+    repo.add(Family(id=FAMILY_ID, name="Test Family", created_at=datetime.now(UTC)))
+    return repo
 
 
 @pytest.fixture
-def sample_child(sample_profile: Profile) -> Profile:
-    """サンプル子プロフィールを作成"""
-    return Profile(
-        id="sample-child-id",
-        auth_user_id=None,
-        email=None,
-        name="Test Child",
-        role="child",
-        created_at=datetime.now(UTC),
-        updated_at=datetime.now(UTC),
+def mock_member_repository() -> MockFamilyMemberRepository:
+    repo = MockFamilyMemberRepository()
+    repo.add(
+        FamilyMember(
+            uid=PARENT_UID,
+            family_id=FAMILY_ID,
+            name="Test Parent",
+            role="parent",
+            email="parent@example.com",
+            joined_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC),
+        )
     )
+    repo.add(
+        FamilyMember(
+            uid=CHILD_UID,
+            family_id=FAMILY_ID,
+            name="Test Child",
+            role="child",
+            email=None,
+            joined_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC),
+        )
+    )
+    return repo
 
 
 @pytest.fixture
-def sample_account(sample_profile: Profile) -> Account:
-    """サンプルアカウントを作成"""
-    return Account(
+def mock_account_repository() -> MockAccountRepository:
+    return MockAccountRepository()
+
+
+@pytest.fixture
+def mock_transaction_repository() -> MockTransactionRepository:
+    return MockTransactionRepository()
+
+
+@pytest.fixture
+def mock_recurring_deposit_repository() -> MockRecurringDepositRepository:
+    return MockRecurringDepositRepository()
+
+
+@pytest.fixture
+def sample_account(mock_account_repository: MockAccountRepository) -> Account:
+    account = Account(
         id="sample-account-id",
-        user_id=sample_profile.id,
+        family_id=FAMILY_ID,
+        name="Test Account",
         balance=10000,
         currency="JPY",
         goal_name=None,
@@ -106,60 +126,38 @@ def sample_account(sample_profile: Profile) -> Account:
         created_at=datetime.now(UTC),
         updated_at=datetime.now(UTC),
     )
+    mock_account_repository.add(account)
+    return account
 
 
 @pytest.fixture
-def mock_profile_repository() -> MockProfileRepository:
-    """モックのプロフィールリポジトリを作成"""
-    return MockProfileRepository()
+def mock_parent_invite_repository() -> MockParentInviteRepository:
+    return MockParentInviteRepository()
 
 
 @pytest.fixture
-def mock_account_repository() -> MockAccountRepository:
-    """モックのアカウントリポジトリを作成"""
-    return MockAccountRepository()
-
-
-@pytest.fixture
-def mock_transaction_repository() -> MockTransactionRepository:
-    """モックのトランザクションリポジトリを作成"""
-    return MockTransactionRepository()
-
-
-@pytest.fixture
-def mock_recurring_deposit_repository() -> MockRecurringDepositRepository:
-    """モックの定期入金リポジトリを作成"""
-    return MockRecurringDepositRepository()
-
-
-@pytest.fixture
-def mock_family_relationship_repository(
-    mock_profile_repository: MockProfileRepository,
-) -> MockFamilyRelationshipRepository:
-    """モックの家族関係リポジトリを作成（プロフィールとストレージ共有）"""
-    return MockFamilyRelationshipRepository(
-        relationships=mock_profile_repository.relationships,
-        profiles=mock_profile_repository.profiles,
-    )
+def mock_child_invite_repository() -> MockChildInviteRepository:
+    return MockChildInviteRepository()
 
 
 @pytest.fixture
 def injector_with_mocks(
-    mock_profile_repository,
-    mock_account_repository,
-    mock_transaction_repository,
-    mock_recurring_deposit_repository,
-    mock_family_relationship_repository,
+    mock_family_repository: MockFamilyRepository,
+    mock_member_repository: MockFamilyMemberRepository,
+    mock_account_repository: MockAccountRepository,
+    mock_transaction_repository: MockTransactionRepository,
+    mock_recurring_deposit_repository: MockRecurringDepositRepository,
+    mock_parent_invite_repository: MockParentInviteRepository,
+    mock_child_invite_repository: MockChildInviteRepository,
 ) -> Injector:
-    """モックリポジトリを持つインジェクターを作成"""
-    return Injector(
-        [
-            RepositoryModule(
-                mock_profile_repository,
-                mock_account_repository,
-                mock_transaction_repository,
-                mock_recurring_deposit_repository,
-                mock_family_relationship_repository,
-            )
-        ]
+    module = RepositoryModule(
+        family_repo=mock_family_repository,
+        member_repo=mock_member_repository,
+        account_repo=mock_account_repository,
+        transaction_repo=mock_transaction_repository,
+        recurring_deposit_repo=mock_recurring_deposit_repository,
+        parent_invite_repo=mock_parent_invite_repository,
+        child_invite_repo=mock_child_invite_repository,
     )
+    return Injector([module])
+

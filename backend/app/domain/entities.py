@@ -1,5 +1,7 @@
 """
 ドメインエンティティ - 永続化技術に依存しないビジネスモデル
+
+家族中心の設計: 口座は特定メンバーに紐づかず家族全体のリソース
 """
 
 from dataclasses import dataclass
@@ -8,24 +10,34 @@ from typing import Literal
 
 
 @dataclass
-class Profile:
-    """ユーザープロフィールエンティティ"""
+class Family:
+    """家族エンティティ"""
 
     id: str
-    auth_user_id: str | None
-    email: str | None
+    name: str | None
+    created_at: datetime
+
+
+@dataclass
+class FamilyMember:
+    """家族メンバーエンティティ（ドキュメントIDは Firebase Auth UID）"""
+
+    uid: str
+    family_id: str
     name: str
     role: Literal["parent", "child"]
-    created_at: datetime
+    email: str | None  # 親のみ
+    joined_at: datetime
     updated_at: datetime
 
 
 @dataclass
 class Account:
-    """アカウントエンティティ"""
+    """口座エンティティ（家族直下。特定メンバーへの紐づけなし）"""
 
     id: str
-    user_id: str
+    family_id: str
+    name: str
     balance: int
     currency: str
     goal_name: str | None
@@ -40,10 +52,12 @@ class Transaction:
 
     id: str
     account_id: str
+    family_id: str
     type: Literal["deposit", "withdraw", "reward"]
     amount: int
-    description: str | None
+    note: str | None
     created_at: datetime
+    created_by_uid: str
 
 
 @dataclass
@@ -51,62 +65,38 @@ class RecurringDeposit:
     """定期入金エンティティ（自動お小遣い）"""
 
     id: str
+    family_id: str
     account_id: str
     amount: int
-    day_of_month: int
+    interval_days: int
+    next_execute_at: datetime
     is_active: bool
     created_at: datetime
-    updated_at: datetime
-
-
-@dataclass
-class RecurringDepositExecution:
-    """定期入金実行履歴エンティティ"""
-
-    id: str
-    recurring_deposit_id: str
-    transaction_id: str | None
-    executed_at: datetime
-    status: Literal["success", "failed", "skipped"]
-    error_message: str | None
-    amount: int
-    day_of_month: int
-    created_at: datetime
-
-
-@dataclass
-class FamilyRelationship:
-    """家族関係エンティティ（親-子の多対多関係）"""
-
-    id: str
-    parent_id: str
-    child_id: str
-    relationship_type: Literal["parent", "guardian"]
-    created_at: datetime
+    created_by_uid: str
 
 
 @dataclass
 class ParentInvite:
-    """親招待エンティティ"""
+    """親招待エンティティ（子が親を家族に招待）"""
 
-    id: str
     token: str
-    child_id: str
-    inviter_id: str
+    family_id: str
+    inviter_uid: str
     email: str
-    status: Literal["pending", "accepted", "expired", "cancelled"]
     expires_at: datetime
+    accepted_at: datetime | None
     created_at: datetime
 
 
 @dataclass
 class ChildInvite:
-    """子どもの認証アカウント作成招待エンティティ"""
+    """子招待エンティティ（親が子を家族に招待）"""
 
-    id: str
     token: str
-    child_id: str
-    email: str
-    status: Literal["pending", "accepted", "expired", "cancelled"]
+    family_id: str
+    inviter_uid: str
+    child_name: str
     expires_at: datetime
+    accepted_at: datetime | None
     created_at: datetime
+

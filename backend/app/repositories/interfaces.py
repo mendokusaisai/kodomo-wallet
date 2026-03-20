@@ -1,5 +1,7 @@
 """
 データアクセスのためのRepositoryインターフェース（抽象基底クラス）
+
+家族中心の Firestore データモデルに対応したインターフェース定義。
 """
 
 from abc import ABC, abstractmethod
@@ -8,170 +10,128 @@ from datetime import datetime
 from app.domain.entities import (
     Account,
     ChildInvite,
-    FamilyRelationship,
+    Family,
+    FamilyMember,
     ParentInvite,
-    Profile,
     RecurringDeposit,
-    RecurringDepositExecution,
     Transaction,
 )
 
 
-class ProfileRepository(ABC):
-    """Profileのデータアクセスインターフェース"""
+class FamilyRepository(ABC):
+    """Family のデータアクセスインターフェース"""
 
     @abstractmethod
-    def get_by_id(self, user_id: str) -> Profile | None:
-        """IDでプロフィールを取得"""
+    def get_by_id(self, family_id: str) -> Family | None:
+        """IDで家族を取得"""
         pass
 
     @abstractmethod
-    def get_children(self, parent_id: str) -> list[Profile]:
-        """親の全ての子プロフィールを取得"""
-        pass
-
-    @abstractmethod
-    def get_by_auth_user_id(self, auth_user_id: str) -> Profile | None:
-        """認証ユーザーIDでプロフィールを取得"""
-        pass
-
-    @abstractmethod
-    def create_child(self, name: str, parent_id: str, email: str | None = None) -> Profile:
-        """子プロフィールを作成（auth.users経由）"""
-        pass
-
-    @abstractmethod
-    def link_to_auth(self, profile_id: str, auth_user_id: str) -> Profile:
-        """既存プロフィールを認証アカウントに紐付け"""
-        pass
-
-    @abstractmethod
-    def delete(self, user_id: str) -> bool:
-        """プロフィールを削除"""
-        pass
-
-    @abstractmethod
-    def update(self, profile: Profile) -> Profile:
-        """プロフィールを更新"""
+    def create(self, name: str | None = None) -> Family:
+        """家族を作成"""
         pass
 
 
-class FamilyRelationshipRepository(ABC):
-    """FamilyRelationship のデータアクセスインターフェース"""
+class FamilyMemberRepository(ABC):
+    """FamilyMember のデータアクセスインターフェース"""
 
     @abstractmethod
-    def get_parents(self, child_id: str) -> list[Profile]:
-        """子どもの全ての親を取得"""
+    def get_by_uid(self, family_id: str, uid: str) -> FamilyMember | None:
+        """UID で家族メンバーを取得"""
         pass
 
     @abstractmethod
-    def get_children(self, parent_id: str) -> list[Profile]:
-        """親の全ての子どもを取得"""
+    def get_by_auth_uid(self, uid: str) -> FamilyMember | None:
+        """Auth UID で所属家族メンバー（どの家族でも）を取得"""
         pass
 
     @abstractmethod
-    def has_relationship(self, parent_id: str, child_id: str) -> bool:
-        """親子関係が存在するか確認"""
-        pass
-
-    @abstractmethod
-    def add_relationship(
-        self, parent_id: str, child_id: str, relationship_type: str = "parent"
-    ) -> FamilyRelationship:
-        """親子関係を追加"""
-        pass
-
-    @abstractmethod
-    def remove_relationship(self, parent_id: str, child_id: str) -> bool:
-        """親子関係を削除"""
-        pass
-
-    @abstractmethod
-    def get_relationship(self, parent_id: str, child_id: str) -> FamilyRelationship | None:
-        """特定の親子関係を取得"""
-        pass
-
-    @abstractmethod
-    def get_related_parents(self, parent_id: str) -> list[str]:
-        """
-        指定した親と家族関係にある他の親のIDリストを取得
-        同じ子どもを共有している親を返す
-
-        Args:
-            parent_id: 基準となる親のID
-
-        Returns:
-            家族関係にある他の親のIDリスト
-
-        Example:
-            親1と親2が子Aを共有 → get_related_parents(親1) → [親2のID]
-        """
-        pass
-
-    @abstractmethod
-    def create_relationship(self, parent_id: str, child_id: str) -> None:
-        """
-        親子関係を作成（UNIQUE制約により重複は無視）
-
-        Args:
-            parent_id: 親のID
-            child_id: 子どものID
-
-        Note:
-            既に同じ関係が存在する場合は何もしない（エラーにならない）
-        """
-        pass
-
-
-class AccountRepository(ABC):
-    """Accountのデータアクセスインターフェース"""
-
-    @abstractmethod
-    def get_by_user_id(self, user_id: str) -> list[Account]:
-        """ユーザーの全アカウントを取得"""
-        pass
-
-    @abstractmethod
-    def get_by_id(self, account_id: str) -> Account | None:
-        """IDでアカウントを取得"""
-        pass
-
-    @abstractmethod
-    def update_balance(self, account: Account, new_balance: int) -> None:
-        """アカウント残高を更新"""
-        pass
-
-    @abstractmethod
-    def update(self, account: Account) -> Account:
-        """アカウントを更新"""
-        pass
-
-    @abstractmethod
-    def create(self, user_id: str, balance: int, currency: str) -> Account:
-        """新規アカウントを作成"""
-        pass
-
-    @abstractmethod
-    def delete(self, account_id: str) -> bool:
-        """アカウントを削除"""
-        pass
-
-
-class TransactionRepository(ABC):
-    """Transactionのデータアクセスインターフェース"""
-
-    @abstractmethod
-    def get_by_account_id(self, account_id: str, limit: int = 50) -> list[Transaction]:
-        """アカウントのトランザクションを取得"""
+    def list_members(self, family_id: str) -> list[FamilyMember]:
+        """家族の全メンバーを取得"""
         pass
 
     @abstractmethod
     def create(
         self,
+        family_id: str,
+        uid: str,
+        name: str,
+        role: str,
+        email: str | None = None,
+    ) -> FamilyMember:
+        """家族メンバーを追加"""
+        pass
+
+    @abstractmethod
+    def update(self, member: FamilyMember) -> FamilyMember:
+        """メンバー情報を更新"""
+        pass
+
+    @abstractmethod
+    def delete(self, family_id: str, uid: str) -> bool:
+        """メンバーを削除"""
+        pass
+
+
+class AccountRepository(ABC):
+    """Account のデータアクセスインターフェース"""
+
+    @abstractmethod
+    def get_by_family_id(self, family_id: str) -> list[Account]:
+        """家族の全口座を取得"""
+        pass
+
+    @abstractmethod
+    def get_by_id(self, family_id: str, account_id: str) -> Account | None:
+        """IDで口座を取得"""
+        pass
+
+    @abstractmethod
+    def create(
+        self,
+        family_id: str,
+        name: str,
+        balance: int = 0,
+        currency: str = "JPY",
+    ) -> Account:
+        """新規口座を作成"""
+        pass
+
+    @abstractmethod
+    def update(self, account: Account) -> Account:
+        """口座情報を更新"""
+        pass
+
+    @abstractmethod
+    def update_balance(self, account: Account, new_balance: int) -> None:
+        """口座残高を更新"""
+        pass
+
+    @abstractmethod
+    def delete(self, family_id: str, account_id: str) -> bool:
+        """口座を削除"""
+        pass
+
+
+class TransactionRepository(ABC):
+    """Transaction のデータアクセスインターフェース"""
+
+    @abstractmethod
+    def get_by_account_id(
+        self, family_id: str, account_id: str, limit: int = 50
+    ) -> list[Transaction]:
+        """口座のトランザクションを取得"""
+        pass
+
+    @abstractmethod
+    def create(
+        self,
+        family_id: str,
         account_id: str,
         transaction_type: str,
         amount: int,
-        description: str | None,
+        note: str | None,
+        created_by_uid: str,
         created_at: datetime,
     ) -> Transaction:
         """新規トランザクションを作成"""
@@ -179,19 +139,27 @@ class TransactionRepository(ABC):
 
 
 class RecurringDepositRepository(ABC):
-    """RecurringDepositのデータアクセスインターフェース"""
+    """RecurringDeposit のデータアクセスインターフェース"""
 
     @abstractmethod
-    def get_by_account_id(self, account_id: str) -> RecurringDeposit | None:
-        """アカウントIDで定期入金設定を取得"""
+    def get_by_id(self, recurring_deposit_id: str) -> RecurringDeposit | None:
+        """IDで定期入金設定を取得"""
+        pass
+
+    @abstractmethod
+    def get_by_account_id(self, family_id: str, account_id: str) -> RecurringDeposit | None:
+        """口座IDで定期入金設定を取得"""
         pass
 
     @abstractmethod
     def create(
         self,
+        family_id: str,
         account_id: str,
         amount: int,
-        day_of_month: int,
+        interval_days: int,
+        next_execute_at: datetime,
+        created_by_uid: str,
         created_at: datetime,
     ) -> RecurringDeposit:
         """新規定期入金設定を作成"""
@@ -202,100 +170,74 @@ class RecurringDepositRepository(ABC):
         self,
         recurring_deposit: RecurringDeposit,
         amount: int | None,
-        day_of_month: int | None,
+        interval_days: int | None,
         is_active: bool | None,
-        updated_at: datetime,
+        next_execute_at: datetime | None,
     ) -> RecurringDeposit:
         """定期入金設定を更新"""
         pass
 
     @abstractmethod
-    def delete(self, recurring_deposit: RecurringDeposit) -> bool:
+    def delete(self, recurring_deposit_id: str) -> bool:
         """定期入金設定を削除"""
         pass
 
     @abstractmethod
-    def get_active_by_day_of_month(self, day_of_month: int) -> list[RecurringDeposit]:
-        """指定日が実行日で有効な定期入金設定を取得"""
-        pass
-
-
-class RecurringDepositExecutionRepository(ABC):
-    """定期入金実行履歴のデータアクセスインターフェース"""
-
-    @abstractmethod
-    def create(
-        self,
-        recurring_deposit_id: str,
-        transaction_id: str | None,
-        status: str,
-        amount: int,
-        day_of_month: int,
-        error_message: str | None,
-        executed_at: datetime,
-        created_at: datetime,
-    ) -> RecurringDepositExecution:
-        """実行履歴を作成"""
-        pass
-
-    @abstractmethod
-    def has_execution_this_month(self, recurring_deposit_id: str, year: int, month: int) -> bool:
-        """指定した年月に成功した実行履歴が存在するかチェック"""
-        pass
-
-    @abstractmethod
-    def get_by_recurring_deposit_id(
-        self, recurring_deposit_id: str, limit: int = 10
-    ) -> list[RecurringDepositExecution]:
-        """定期入金設定IDで実行履歴を取得（最新順）"""
+    def get_due(self, now: datetime) -> list[RecurringDeposit]:
+        """実行期限が到来した有効な定期入金設定を取得"""
         pass
 
 
 class ParentInviteRepository(ABC):
-    """親招待のデータアクセスインターフェース"""
+    """ParentInvite のデータアクセスインターフェース"""
+
+    @abstractmethod
+    def get_by_token(self, token: str) -> ParentInvite | None:
+        """トークンで招待を取得"""
+        pass
 
     @abstractmethod
     def create(
         self,
-        child_id: str,
-        inviter_id: str,
+        token: str,
+        family_id: str,
+        inviter_uid: str,
         email: str,
         expires_at: datetime,
+        created_at: datetime,
     ) -> ParentInvite:
         """親招待を作成"""
         pass
 
     @abstractmethod
-    def get_by_token(self, token: str) -> ParentInvite | None:
-        """トークンで親招待を取得"""
-        pass
-
-    @abstractmethod
-    def update_status(self, invite: ParentInvite, status: str) -> ParentInvite:
-        """親招待のステータスを更新"""
+    def mark_accepted(self, token: str, accepted_at: datetime) -> ParentInvite:
+        """招待を承認済みにする"""
         pass
 
 
 class ChildInviteRepository(ABC):
-    """子どもの認証アカウント作成招待のデータアクセスインターフェース"""
+    """ChildInvite のデータアクセスインターフェース"""
+
+    @abstractmethod
+    def get_by_token(self, token: str) -> ChildInvite | None:
+        """トークンで招待を取得"""
+        pass
 
     @abstractmethod
     def create(
         self,
-        child_id: str,
-        email: str,
         token: str,
+        family_id: str,
+        inviter_uid: str,
+        child_name: str,
         expires_at: datetime,
+        created_at: datetime,
     ) -> ChildInvite:
-        """子ども招待を作成"""
+        """子招待を作成"""
         pass
 
     @abstractmethod
-    def get_by_token(self, token: str) -> ChildInvite | None:
-        """トークンで子ども招待を取得"""
+    def mark_accepted(self, token: str, accepted_at: datetime) -> ChildInvite:
+        """招待を承認済みにする"""
         pass
 
-    @abstractmethod
-    def update_status(self, invite: ChildInvite, status: str) -> ChildInvite:
-        """子ども招待のステータスを更新"""
-        pass
