@@ -14,7 +14,6 @@ from app.repositories.interfaces import (
     ProfileRepository,
     RecurringDepositRepository,
     TransactionRepository,
-    WithdrawalRequestRepository,
 )
 from app.repositories.mock_repositories import (
     MockAccountRepository,
@@ -24,7 +23,6 @@ from app.repositories.mock_repositories import (
     MockProfileRepository,
     MockRecurringDepositRepository,
     MockTransactionRepository,
-    MockWithdrawalRequestRepository,
 )
 from app.services.mailer import ConsoleMailer, Mailer
 
@@ -37,7 +35,6 @@ class RepositoryModule(Module):
         profile_repo: MockProfileRepository,
         account_repo: MockAccountRepository,
         transaction_repo: MockTransactionRepository,
-        withdrawal_request_repo: MockWithdrawalRequestRepository | None = None,
         recurring_deposit_repo: MockRecurringDepositRepository | None = None,
         family_relationship_repo: MockFamilyRelationshipRepository | None = None,
         child_invite_repo: MockChildInviteRepository | None = None,
@@ -45,7 +42,6 @@ class RepositoryModule(Module):
         self.profile_repo = profile_repo
         self.account_repo = account_repo
         self.transaction_repo = transaction_repo
-        self.withdrawal_request_repo = withdrawal_request_repo or MockWithdrawalRequestRepository()
         self.recurring_deposit_repo = recurring_deposit_repo or MockRecurringDepositRepository()
         self.family_relationship_repo = (
             family_relationship_repo
@@ -61,7 +57,6 @@ class RepositoryModule(Module):
         binder.bind(ProfileRepository, to=self.profile_repo)
         binder.bind(AccountRepository, to=self.account_repo)
         binder.bind(TransactionRepository, to=self.transaction_repo)
-        binder.bind(WithdrawalRequestRepository, to=self.withdrawal_request_repo)
         binder.bind(RecurringDepositRepository, to=self.recurring_deposit_repo)
         binder.bind(FamilyRelationshipRepository, to=self.family_relationship_repo)
         binder.bind(ParentInviteRepository, to=MockParentInviteRepository())
@@ -132,12 +127,6 @@ def mock_transaction_repository() -> MockTransactionRepository:
 
 
 @pytest.fixture
-def mock_withdrawal_request_repository() -> MockWithdrawalRequestRepository:
-    """モックの出金リクエストリポジトリを作成"""
-    return MockWithdrawalRequestRepository()
-
-
-@pytest.fixture
 def mock_recurring_deposit_repository() -> MockRecurringDepositRepository:
     """モックの定期入金リポジトリを作成"""
     return MockRecurringDepositRepository()
@@ -159,7 +148,6 @@ def injector_with_mocks(
     mock_profile_repository,
     mock_account_repository,
     mock_transaction_repository,
-    mock_withdrawal_request_repository,
     mock_recurring_deposit_repository,
     mock_family_relationship_repository,
 ) -> Injector:
@@ -170,7 +158,6 @@ def injector_with_mocks(
                 mock_profile_repository,
                 mock_account_repository,
                 mock_transaction_repository,
-                mock_withdrawal_request_repository,
                 mock_recurring_deposit_repository,
                 mock_family_relationship_repository,
             )

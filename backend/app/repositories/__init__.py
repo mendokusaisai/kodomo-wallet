@@ -7,14 +7,12 @@ from app.repositories.interfaces import (
     ProfileRepository,
     RecurringDepositRepository,
     TransactionRepository,
-    WithdrawalRequestRepository,
 )
 from app.repositories.sqlalchemy import (
     SQLAlchemyAccountRepository,
     SQLAlchemyProfileRepository,
     SQLAlchemyRecurringDepositRepository,
     SQLAlchemyTransactionRepository,
-    SQLAlchemyWithdrawalRequestRepository,
 )
 
 __all__ = [
@@ -22,10 +20,8 @@ __all__ = [
     "ProfileRepository",
     "RecurringDepositRepository",
     "TransactionRepository",
-    "WithdrawalRequestRepository",
     "SQLAlchemyAccountRepository",
     "SQLAlchemyProfileRepository",
     "SQLAlchemyRecurringDepositRepository",
     "SQLAlchemyTransactionRepository",
-    "SQLAlchemyWithdrawalRequestRepository",
 ]

@@ -26,9 +26,6 @@ from app.repositories.sqlalchemy.sqlalchemy_recurring_deposit_repository import 
 from app.repositories.sqlalchemy.sqlalchemy_transaction_repository import (
     SQLAlchemyTransactionRepository,
 )
-from app.repositories.sqlalchemy.sqlalchemy_withdrawal_request_repository import (
-    SQLAlchemyWithdrawalRequestRepository,
-)
 
 __all__ = [
     "SQLAlchemyAccountRepository",
@@ -37,7 +34,6 @@ __all__ = [
     "SQLAlchemyRecurringDepositRepository",
     "SQLAlchemyRecurringDepositExecutionRepository",
     "SQLAlchemyTransactionRepository",
-    "SQLAlchemyWithdrawalRequestRepository",
     "SQLAlchemyFamilyRelationshipRepository",
     "SQLAlchemyParentInviteRepository",
 ]

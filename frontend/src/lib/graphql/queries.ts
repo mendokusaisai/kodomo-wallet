@@ -72,20 +72,6 @@ export const GET_TRANSACTIONS = gql`
   }
 `;
 
-export const GET_WITHDRAWAL_REQUESTS = gql`
-  query GetWithdrawalRequests($parentId: String!) {
-    withdrawalRequests(parentId: $parentId) {
-      id
-      accountId
-      amount
-      description
-      status
-      createdAt
-      updatedAt
-    }
-  }
-`;
-
 export const GET_RECURRING_DEPOSIT = gql`
   query GetRecurringDeposit($accountId: String!, $currentUserId: String!) {
     recurringDeposit(accountId: $accountId, currentUserId: $currentUserId) {
@@ -181,47 +167,6 @@ export const ACCEPT_CHILD_INVITE = gql`
 	mutation AcceptChildInvite($token: String!, $authUserId: String!) {
 		acceptChildInvite(token: $token, authUserId: $authUserId)
 	}
-`;
-
-export const CREATE_WITHDRAWAL_REQUEST = gql`
-  mutation CreateWithdrawalRequest(
-    $accountId: String!
-    $amount: Int!
-    $description: String!
-  ) {
-    createWithdrawalRequest(
-      accountId: $accountId
-      amount: $amount
-      description: $description
-    ) {
-      id
-      accountId
-      amount
-      description
-      status
-      createdAt
-    }
-  }
-`;
-
-export const APPROVE_WITHDRAWAL = gql`
-  mutation ApproveWithdrawalRequest($requestId: String!) {
-    approveWithdrawalRequest(requestId: $requestId) {
-      id
-      status
-      updatedAt
-    }
-  }
-`;
-
-export const REJECT_WITHDRAWAL = gql`
-  mutation RejectWithdrawalRequest($requestId: String!) {
-    rejectWithdrawalRequest(requestId: $requestId) {
-      id
-      status
-      updatedAt
-    }
-  }
 `;
 
 export const UPDATE_GOAL = gql`

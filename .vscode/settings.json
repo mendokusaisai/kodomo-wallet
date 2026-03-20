@@ -1,6 +1,4 @@
 {
-	// Python設定
-	"python-envs.pythonProjects": [],
 	"python.testing.pytestArgs": [
 		"tests",
 		"-v"

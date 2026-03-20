@@ -66,9 +66,6 @@ class Account(Base):
     transactions = relationship(
         "Transaction", back_populates="account", cascade="all, delete-orphan"
     )
-    withdrawal_requests = relationship(
-        "WithdrawalRequest", back_populates="account", cascade="all, delete-orphan"
-    )
     recurring_deposits = relationship(
         "RecurringDeposit", back_populates="account", cascade="all, delete-orphan"
     )
@@ -95,30 +92,6 @@ class Transaction(Base):
 
     __table_args__ = (
         CheckConstraint("type IN ('deposit', 'withdraw', 'reward')", name="check_transaction_type"),
-    )
-
-
-class WithdrawalRequest(Base):
-    """出金リクエストモデル"""
-
-    __tablename__ = "withdrawal_requests"
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    account_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("accounts.id", ondelete="CASCADE"),
-        nullable=False,
-    )
-    amount = Column(BigInteger, nullable=False)
-    description = Column(Text, nullable=True)
-    status = Column(Text, default="pending", nullable=False)
-    created_at = Column(Text, nullable=False)
-    updated_at = Column(Text, nullable=False)
-
-    # リレーション
-    account = relationship("Account", back_populates="withdrawal_requests")
-
-    __table_args__ = (
-        CheckConstraint("status IN ('pending', 'approved', 'rejected')", name="check_status"),
     )
 
 

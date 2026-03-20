@@ -55,21 +55,6 @@ def to_graphql_transaction(entity: domain_entities.Transaction) -> graphql_types
     )
 
 
-def to_graphql_withdrawal_request(
-    entity: domain_entities.WithdrawalRequest,
-) -> graphql_types.WithdrawalRequest:
-    """ドメインのWithdrawalRequestをGraphQL型に変換"""
-    return graphql_types.WithdrawalRequest(
-        id=str(entity.id),
-        account_id=str(entity.account_id),
-        amount=entity.amount,
-        description=entity.description,
-        status=entity.status,
-        created_at=_to_iso_string(entity.created_at),
-        updated_at=_to_iso_string(entity.updated_at),
-    )
-
-
 def to_graphql_recurring_deposit(
     entity: domain_entities.RecurringDeposit,
 ) -> graphql_types.RecurringDeposit:

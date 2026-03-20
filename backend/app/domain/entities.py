@@ -47,19 +47,6 @@ class Transaction:
 
 
 @dataclass
-class WithdrawalRequest:
-    """出金リクエストエンティティ"""
-
-    id: str
-    account_id: str
-    amount: int
-    description: str | None
-    status: Literal["pending", "approved", "rejected"]
-    created_at: datetime
-    updated_at: datetime
-
-
-@dataclass
 class RecurringDeposit:
     """定期入金エンティティ（自動お小遣い）"""
 
