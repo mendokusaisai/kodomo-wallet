@@ -1,287 +1,115 @@
-import uuid
-from datetime import UTC, datetime
+"""RecurringDepositRepository の Firestore Emulator テスト"""
 
-from sqlalchemy.orm import Session
+from datetime import UTC, datetime, timedelta
 
-from app.repositories.mock_repositories import MockRecurringDepositRepository
-from app.repositories.sqlalchemy import SQLAlchemyRecurringDepositRepository
-from app.repositories.sqlalchemy.models import Account, Profile
+import pytest
+
+from app.repositories.firestore.family_repository import FirestoreFamilyRepository
+from app.repositories.firestore.account_repository import FirestoreAccountRepository
+from app.repositories.firestore.recurring_deposit_repository import (
+    FirestoreRecurringDepositRepository,
+)
 
 
-# ============================================================================
-# MockRecurringDepositRepository Tests
-# ============================================================================
-class TestMockRecurringDepositRepository:
-    """MockRecurringDepositRepository のテスト"""
+@pytest.fixture(autouse=True)
+def cleanup_firestore():
+    from app.core.database import get_firestore_client
+    yield
+    db = get_firestore_client()
+    for doc in db.collection("families").stream():
+        doc.reference.delete()
+    for doc in db.collection("recurringDeposits").stream():
+        doc.reference.delete()
 
-    def test_create_recurring_deposit(self):
-        """定期入金設定を作成できることをテスト"""
-        repo = MockRecurringDepositRepository()
-        account_id = str(uuid.uuid4())
+
+@pytest.fixture
+def family():
+    return FirestoreFamilyRepository().create(name="テスト家族")
+
+
+@pytest.fixture
+def account(family):
+    return FirestoreAccountRepository().create(family_id=family.id, name="テスト口座")
+
+
+class TestFirestoreRecurringDepositRepository:
+    def test_create_and_get_recurring_deposit(self, family, account):
+        repo = FirestoreRecurringDepositRepository()
+        now = datetime.now(UTC)
+        next_at = now + timedelta(days=7)
 
         rd = repo.create(
-            account_id=account_id,
-            amount=5000,
-            day_of_month=15,
-            created_at=datetime.now(UTC),
+            family_id=family.id,
+            account_id=account.id,
+            amount=1000,
+            interval_days=7,
+            next_execute_at=next_at,
+            created_by_uid="parent-uid",
+            created_at=now,
+        )
+        assert rd.id
+        assert rd.amount == 1000
+        assert rd.interval_days == 7
+
+        fetched = repo.get_by_id(rd.id)
+        assert fetched is not None
+        assert fetched.id == rd.id
+
+    def test_get_by_account_id(self, family, account):
+        repo = FirestoreRecurringDepositRepository()
+        now = datetime.now(UTC)
+        repo.create(
+            family_id=family.id,
+            account_id=account.id,
+            amount=500,
+            interval_days=30,
+            next_execute_at=now + timedelta(days=30),
+            created_by_uid="parent-uid",
+            created_at=now,
         )
 
-        assert rd is not None
-        assert str(rd.account_id) == account_id
-        assert rd.amount == 5000
-        assert rd.day_of_month == 15
-        assert rd.is_active is True
-
-    def test_get_by_account_id(self):
-        """account_idで定期入金設定を取得できることをテスト"""
-        repo = MockRecurringDepositRepository()
-        account_id = str(uuid.uuid4())
-
-        # 作成
-        rd = repo.create(
-            account_id=account_id,
-            amount=3000,
-            day_of_month=1,
-            created_at=datetime.now(UTC),
-        )
-
-        # 取得
-        result = repo.get_by_account_id(account_id)
+        result = repo.get_by_account_id(family.id, account.id)
         assert result is not None
-        assert result.id == rd.id
-        assert result.amount == 3000
+        assert result.amount == 500
 
-    def test_get_by_account_id_returns_none_when_not_found(self):
-        """存在しないaccount_idの場合Noneを返すことをテスト"""
-        repo = MockRecurringDepositRepository()
-        account_id = str(uuid.uuid4())
-
-        result = repo.get_by_account_id(account_id)
+    def test_get_by_account_id_not_found(self, family):
+        repo = FirestoreRecurringDepositRepository()
+        result = repo.get_by_account_id(family.id, "non-existent-account")
         assert result is None
 
-    def test_update_recurring_deposit(self):
-        """定期入金設定を更新できることをテスト"""
-        repo = MockRecurringDepositRepository()
-        account_id = str(uuid.uuid4())
+    def test_get_due(self, family, account):
+        repo = FirestoreRecurringDepositRepository()
+        now = datetime.now(UTC)
 
-        # 作成
+        # 期限が過ぎているもの
+        repo.create(
+            family_id=family.id,
+            account_id=account.id,
+            amount=1000,
+            interval_days=7,
+            next_execute_at=now - timedelta(hours=1),
+            created_by_uid="parent-uid",
+            created_at=now,
+        )
+
+        due = repo.get_due(now)
+        assert len(due) >= 1
+
+    def test_delete_recurring_deposit(self, family, account):
+        repo = FirestoreRecurringDepositRepository()
+        now = datetime.now(UTC)
         rd = repo.create(
-            account_id=account_id,
-            amount=5000,
-            day_of_month=15,
-            created_at=datetime.now(UTC),
+            family_id=family.id,
+            account_id=account.id,
+            amount=1000,
+            interval_days=7,
+            next_execute_at=now + timedelta(days=7),
+            created_by_uid="parent-uid",
+            created_at=now,
         )
 
-        # 更新
-        updated_rd = repo.update(
-            rd,
-            amount=10000,
-            day_of_month=25,
-            is_active=False,
-            updated_at=datetime.now(UTC),
-        )
+        deleted = repo.delete(rd.id)
+        assert deleted is True
 
-        assert updated_rd.amount == 10000
-        assert updated_rd.day_of_month == 25
-        assert updated_rd.is_active is False
-
-    def test_delete_recurring_deposit(self):
-        """定期入金設定を削除できることをテスト"""
-        repo = MockRecurringDepositRepository()
-        account_id = str(uuid.uuid4())
-
-        # 作成
-        rd = repo.create(
-            account_id=account_id,
-            amount=5000,
-            day_of_month=15,
-            created_at=datetime.now(UTC),
-        )
-
-        # 削除
-        result = repo.delete(rd)
-        assert result is True
-
-        # 削除後は取得できない
-        assert repo.get_by_account_id(account_id) is None
-
-
-# ============================================================================
-# SQLAlchemyRecurringDepositRepository Tests
-# ============================================================================
-class TestSQLAlchemyRecurringDepositRepository:
-    """SQLAlchemyRecurringDepositRepository のテスト"""
-
-    def test_create_recurring_deposit(self, in_memory_db: Session):
-        """定期入金設定を作成できることをテスト"""
-        # プロフィールとアカウントを作成
-        profile = Profile(
-            id=uuid.uuid4(),
-            name="Parent",
-            role="parent",
-            created_at=datetime.now(UTC),
-            updated_at=datetime.now(UTC),
-        )
-        account = Account(
-            id=uuid.uuid4(),
-            user_id=profile.id,
-            balance=0,
-            currency="JPY",
-            goal_name=None,
-            goal_amount=None,
-            created_at=datetime.now(UTC),
-            updated_at=datetime.now(UTC),
-        )
-        in_memory_db.add_all([profile, account])
-        in_memory_db.commit()
-
-        # 定期入金設定を作成
-        repo = SQLAlchemyRecurringDepositRepository(in_memory_db)
-        rd = repo.create(
-            account_id=str(account.id),
-            amount=5000,
-            day_of_month=15,
-            created_at=datetime.now(UTC),
-        )
-        in_memory_db.commit()
-
-        assert rd is not None
-        assert str(rd.account_id) == str(account.id)
-        assert rd.amount == 5000
-        assert rd.day_of_month == 15
-
-    def test_get_by_account_id(self, in_memory_db: Session):
-        """account_idで定期入金設定を取得できることをテスト"""
-        # プロフィールとアカウントを作成
-        profile = Profile(
-            id=uuid.uuid4(),
-            name="Parent",
-            role="parent",
-            created_at=datetime.now(UTC),
-            updated_at=datetime.now(UTC),
-        )
-        account = Account(
-            id=uuid.uuid4(),
-            user_id=profile.id,
-            balance=0,
-            currency="JPY",
-            goal_name=None,
-            goal_amount=None,
-            created_at=datetime.now(UTC),
-            updated_at=datetime.now(UTC),
-        )
-        in_memory_db.add_all([profile, account])
-        in_memory_db.commit()
-
-        # 定期入金設定を作成
-        repo = SQLAlchemyRecurringDepositRepository(in_memory_db)
-        rd = repo.create(
-            account_id=str(account.id),
-            amount=3000,
-            day_of_month=1,
-            created_at=datetime.now(UTC),
-        )
-        in_memory_db.commit()
-
-        # 取得
-        result = repo.get_by_account_id(str(account.id))
-        assert result is not None
-        assert str(result.id) == str(rd.id)
-        assert result.amount == 3000
-
-    def test_get_by_account_id_returns_none_when_not_found(self, in_memory_db: Session):
-        """存在しないaccount_idの場合Noneを返すことをテスト"""
-        repo = SQLAlchemyRecurringDepositRepository(in_memory_db)
-        account_id = str(uuid.uuid4())
-
-        result = repo.get_by_account_id(account_id)
+        result = repo.get_by_id(rd.id)
         assert result is None
-
-    def test_update_recurring_deposit(self, in_memory_db: Session):
-        """定期入金設定を更新できることをテスト"""
-        # プロフィールとアカウントを作成
-        profile = Profile(
-            id=uuid.uuid4(),
-            name="Parent",
-            role="parent",
-            created_at=datetime.now(UTC),
-            updated_at=datetime.now(UTC),
-        )
-        account = Account(
-            id=uuid.uuid4(),
-            user_id=profile.id,
-            balance=0,
-            currency="JPY",
-            goal_name=None,
-            goal_amount=None,
-            created_at=datetime.now(UTC),
-            updated_at=datetime.now(UTC),
-        )
-        in_memory_db.add_all([profile, account])
-        in_memory_db.commit()
-
-        # 定期入金設定を作成
-        repo = SQLAlchemyRecurringDepositRepository(in_memory_db)
-        rd = repo.create(
-            account_id=str(account.id),
-            amount=5000,
-            day_of_month=15,
-            created_at=datetime.now(UTC),
-        )
-        in_memory_db.commit()
-
-        # 更新
-        updated_rd = repo.update(
-            rd,
-            amount=10000,
-            day_of_month=25,
-            is_active=False,
-            updated_at=datetime.now(UTC),
-        )
-        in_memory_db.commit()
-
-        assert updated_rd.amount == 10000
-        assert updated_rd.day_of_month == 25
-        assert not updated_rd.is_active
-
-    def test_delete_recurring_deposit(self, in_memory_db: Session):
-        """定期入金設定を削除できることをテスト"""
-        # プロフィールとアカウントを作成
-        profile = Profile(
-            id=uuid.uuid4(),
-            name="Parent",
-            role="parent",
-            created_at=datetime.now(UTC),
-            updated_at=datetime.now(UTC),
-        )
-        account = Account(
-            id=uuid.uuid4(),
-            user_id=profile.id,
-            balance=0,
-            currency="JPY",
-            goal_name=None,
-            goal_amount=None,
-            created_at=datetime.now(UTC),
-            updated_at=datetime.now(UTC),
-        )
-        in_memory_db.add_all([profile, account])
-        in_memory_db.commit()
-
-        # 定期入金設定を作成
-        repo = SQLAlchemyRecurringDepositRepository(in_memory_db)
-        rd = repo.create(
-            account_id=str(account.id),
-            amount=5000,
-            day_of_month=15,
-            created_at=datetime.now(UTC),
-        )
-        in_memory_db.commit()
-
-        # 削除
-        result = repo.delete(rd)
-        in_memory_db.commit()
-
-        assert result is True
-
-        # 削除後は取得できない
-        assert repo.get_by_account_id(str(account.id)) is None
