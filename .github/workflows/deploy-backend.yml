@@ -38,12 +38,13 @@ jobs:
 
       - name: Build and push image
         run: |
-          docker build \
+          docker buildx build \
+            --platform linux/amd64 \
+            --provenance=false \
             -t ${{ env.IMAGE }}:${{ github.sha }} \
             -t ${{ env.IMAGE }}:latest \
+            --push \
             ./backend
-          docker push ${{ env.IMAGE }}:${{ github.sha }}
-          docker push ${{ env.IMAGE }}:latest
 
       - name: Deploy to Cloud Run
         run: |
@@ -59,7 +60,7 @@ jobs:
             --timeout 300s \
             --port 8080 \
             --set-env-vars "ENVIRONMENT=production" \
-            --set-secrets "DATABASE_URL=DATABASE_URL:latest,SUPABASE_URL=SUPABASE_URL:latest,SUPABASE_KEY=SUPABASE_KEY:latest,SECRET_KEY=SECRET_KEY:latest,FRONTEND_ORIGIN=FRONTEND_ORIGIN:latest" \
+            --set-secrets "FIREBASE_SERVICE_ACCOUNT=FIREBASE_SERVICE_ACCOUNT:latest,SECRET_KEY=SECRET_KEY:latest,FRONTEND_ORIGIN=FRONTEND_ORIGIN:latest" \
             --project ${{ env.PROJECT_ID }}
 
       - name: Show service URL
