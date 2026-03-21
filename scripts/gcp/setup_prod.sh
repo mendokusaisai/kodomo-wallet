@@ -75,4 +75,29 @@ gcloud projects add-iam-policy-binding "${PROJECT_ID}" \
   --member="serviceAccount:${RUNTIME_SA}" \
   --role="roles/secretmanager.secretAccessor" >/dev/null
 
+echo "[+] Creating Firestore (default) database and indexes..."
+# Create (default) database if it doesn't exist
+if ! gcloud firestore databases describe --database="(default)" --project "${PROJECT_ID}" >/dev/null 2>&1; then
+  gcloud firestore databases create \
+    --database="(default)" \
+    --location="${REGION}" \
+    --project "${PROJECT_ID}"
+  echo "  Firestore (default) database created."
+else
+  echo "  Firestore (default) database already exists."
+fi
+
+# Collection group index for members.uid (required for MY_FAMILY query)
+if ! gcloud firestore indexes fields list \
+    --collection-group=members \
+    --project "${PROJECT_ID}" 2>/dev/null | grep -q "uid"; then
+  gcloud firestore indexes fields update uid \
+    --collection-group=members \
+    --index=order=ASCENDING \
+    --project "${PROJECT_ID}" --async
+  echo "  Firestore index for members.uid created (building in background)."
+else
+  echo "  Firestore index for members.uid already exists."
+fi
+
 echo "Done. Next: register secrets in Secret Manager."

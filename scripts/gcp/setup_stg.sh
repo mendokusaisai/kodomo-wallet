@@ -71,21 +71,58 @@ gcloud projects add-iam-policy-binding "${STG_PROJECT_ID}" \
   --member="serviceAccount:${RUNTIME_SA}" \
   --role="roles/secretmanager.secretAccessor" >/dev/null
 
-echo "[6/7] Granting stg runtime SA read access to prod Artifact Registry..."
+echo "[6/7] Granting stg SAs access to prod Artifact Registry..."
 # stg pulls images from prod's Artifact Registry (shared registry)
+# Cloud Run runtime SA needs reader access
 gcloud artifacts repositories add-iam-policy-binding "${AR_REPO}" \
   --location="${REGION}" \
   --member="serviceAccount:${RUNTIME_SA}" \
   --role="roles/artifactregistry.reader" \
   --project "${PROD_PROJECT_ID}" >/dev/null
 
+# Cloud Run Service Agent also needs reader access to pull images across projects
+# The project number is needed: retrieve it dynamically
+STG_PROJECT_NUMBER=$(gcloud projects describe "${STG_PROJECT_ID}" --format="value(projectNumber)")
+CR_SERVICE_AGENT="service-${STG_PROJECT_NUMBER}@serverless-robot-prod.iam.gserviceaccount.com"
+gcloud artifacts repositories add-iam-policy-binding "${AR_REPO}" \
+  --location="${REGION}" \
+  --member="serviceAccount:${CR_SERVICE_AGENT}" \
+  --role="roles/artifactregistry.reader" \
+  --project "${PROD_PROJECT_ID}" >/dev/null
+
+# deployer SA needs writer access to push stg-tagged images
 gcloud artifacts repositories add-iam-policy-binding "${AR_REPO}" \
   --location="${REGION}" \
   --member="serviceAccount:${DEPLOY_SA}" \
   --role="roles/artifactregistry.writer" \
   --project "${PROD_PROJECT_ID}" >/dev/null
 
-echo "[7/7] Done!"
+echo "[7/7] Creating Firestore (default) database and indexes..."
+# Create (default) database if it doesn't exist
+if ! gcloud firestore databases describe --database="(default)" --project "${STG_PROJECT_ID}" >/dev/null 2>&1; then
+  gcloud firestore databases create \
+    --database="(default)" \
+    --location="${REGION}" \
+    --project "${STG_PROJECT_ID}"
+  echo "  Firestore (default) database created."
+else
+  echo "  Firestore (default) database already exists."
+fi
+
+# Collection group index for members.uid (required for MY_FAMILY query)
+if ! gcloud firestore indexes fields list \
+    --collection-group=members \
+    --project "${STG_PROJECT_ID}" 2>/dev/null | grep -q "uid"; then
+  gcloud firestore indexes fields update uid \
+    --collection-group=members \
+    --index=order=ASCENDING \
+    --project "${STG_PROJECT_ID}" --async
+  echo "  Firestore index for members.uid created (building in background)."
+else
+  echo "  Firestore index for members.uid already exists."
+fi
+
+echo "[Done]"
 echo ""
 echo "=== Next Steps ==="
 echo "1. Create a Firebase project for stg: https://console.firebase.google.com"
