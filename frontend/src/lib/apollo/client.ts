@@ -8,6 +8,15 @@ import { setContext } from "@apollo/client/link/context";
 import { RetryLink } from "@apollo/client/link/retry";
 import { auth } from "@/lib/firebase/client";
 
+// Firebase Auth の初期化（IndexedDB からの復元）完了を待つ Promise
+// onAuthStateChanged は初回 resolve 後にすぐ unsubscribe するため1回だけ発火
+const authReady = new Promise<void>((resolve) => {
+	const unsubscribe = auth.onAuthStateChanged(() => {
+		unsubscribe();
+		resolve();
+	});
+});
+
 const httpLink = new HttpLink({
 	uri: process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT || "http://localhost:8000/graphql",
 });
@@ -36,6 +45,7 @@ const retryLink = new RetryLink({
 const authLink = setContext(async (_, { headers }) => {
 	let token: string | null = null;
 	try {
+		await authReady; // Auth 初期化（IndexedDB 復元）完了を待つ
 		const user = auth.currentUser;
 		if (user) {
 			token = await user.getIdToken();
