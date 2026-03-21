@@ -2,29 +2,80 @@
 
 ## 基盤セットアップ
 
-API有効化・Artifact Registry・サービスアカウント・IAM付与は以下のスクリプトで自動化済み：
+API有効化・Artifact Registry・サービスアカウント・IAM付与・Firestore DB・インデックス作成は以下のスクリプトで自動化済み：
 
 ```bash
 export REGION="asia-northeast1"
-./scripts/gcp/setup_phase2_prod.sh
+./scripts/gcp/setup_prod.sh
+```
+
+## Firebase セットアップ（手動）
+
+以下は Firebase Console で手動実施が必要：
+
+### 1. Firebase プロジェクトの有効化
+
+1. [Firebase Console](https://console.firebase.google.com/) を開く
+2. `kodomo-wallet` GCP プロジェクトを選択し「Firebase を追加」
+3. Authentication → Sign-in method → Google を有効化
+4. Authentication → Settings → 承認済みドメイン に prod frontend URL を追加:
+   ```
+   kodomo-wallet-frontend-ptfunabkpq-an.a.run.app
+   ```
+
+### 2. サービスアカウントキーの取得
+
+Firebase Console → プロジェクト設定 → サービスアカウント → 「新しい秘密鍵の生成」で JSON をダウンロード。
+このJSONが `FIREBASE_SERVICE_ACCOUNT` シークレットの値になる。
+
+### 3. Web アプリの設定値取得
+
+Firebase Console → プロジェクト設定 → マイアプリ → Web アプリを追加（または既存選択）。
+
+以下の値を控える：
+```json
+{
+  "apiKey": "...",
+  "authDomain": "kodomo-wallet.firebaseapp.com",
+  "projectId": "kodomo-wallet",
+  "storageBucket": "kodomo-wallet.firebasestorage.app",
+  "messagingSenderId": "...",
+  "appId": "..."
+}
 ```
 
 ## Secret Manager 登録
 
-本番で使用する最小シークレット:
-- DATABASE_URL
-- SUPABASE_URL
-- SUPABASE_KEY
-- SECRET_KEY
-- FRONTEND_ORIGIN
-- NEXT_PUBLIC_SUPABASE_URL
-- NEXT_PUBLIC_SUPABASE_ANON_KEY
-- NEXT_PUBLIC_GRAPHQL_ENDPOINT
+### 必要なシークレット一覧
 
-作成（初回）:
+| シークレット名 | 説明 |
+|---|---|
+| `FIREBASE_SERVICE_ACCOUNT` | Firebase Admin SDK 用サービスアカウントキー JSON（全体） |
+| `SECRET_KEY` | FastAPI セッション用ランダム秘密鍵（既存流用可） |
+| `FRONTEND_ORIGIN` | frontend の Cloud Run URL（CORS 許可用） |
+| `NEXT_PUBLIC_FIREBASE_API_KEY` | Firebase Web アプリ apiKey |
+| `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN` | Firebase Web アプリ authDomain |
+| `NEXT_PUBLIC_FIREBASE_PROJECT_ID` | Firebase Web アプリ projectId |
+| `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET` | Firebase Web アプリ storageBucket |
+| `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID` | Firebase Web アプリ messagingSenderId |
+| `NEXT_PUBLIC_FIREBASE_APP_ID` | Firebase Web アプリ appId |
+| `NEXT_PUBLIC_GRAPHQL_ENDPOINT` | backend の Cloud Run URL + `/graphql` |
+
+### 登録コマンド
+
+初回作成:
 
 ```bash
-printf '%s' "$DATABASE_URL" | gcloud secrets create DATABASE_URL \
+export PROJECT_ID=kodomo-wallet
+
+# Firebase Service Account (JSONファイルから)
+gcloud secrets create FIREBASE_SERVICE_ACCOUNT \
+  --replication-policy="automatic" \
+  --data-file=/path/to/serviceAccountKey.json \
+  --project "$PROJECT_ID"
+
+# 文字列をそのまま渡す場合
+printf '%s' "$VALUE" | gcloud secrets create SECRET_NAME \
   --replication-policy="automatic" \
   --data-file=- \
   --project "$PROJECT_ID"
@@ -33,21 +84,37 @@ printf '%s' "$DATABASE_URL" | gcloud secrets create DATABASE_URL \
 更新（2回目以降）:
 
 ```bash
-printf '%s' "$DATABASE_URL" | gcloud secrets versions add DATABASE_URL \
+printf '%s' "$VALUE" | gcloud secrets versions add SECRET_NAME \
   --data-file=- \
   --project "$PROJECT_ID"
+```
+
+### 旧 Supabase シークレットの削除（移行完了後）
+
+prod 動作確認が完了したら旧シークレットを削除する:
+
+```bash
+export PROJECT_ID=kodomo-wallet
+
+for SECRET in DATABASE_URL SUPABASE_URL SUPABASE_KEY \
+              NEXT_PUBLIC_SUPABASE_URL NEXT_PUBLIC_SUPABASE_ANON_KEY; do
+  gcloud secrets delete "$SECRET" --project "$PROJECT_ID" --quiet && echo "deleted $SECRET"
+done
 ```
 
 ## 検証コマンド
 
 ```bash
-gcloud services list --enabled --project "$PROJECT_ID" | grep -E 'run|cloudbuild|artifactregistry|secretmanager'
+gcloud services list --enabled --project "$PROJECT_ID" | grep -E 'run|cloudbuild|artifactregistry|secretmanager|firestore'
 
 gcloud iam service-accounts list --project "$PROJECT_ID" | grep -E 'deployer|cloud-run-runtime'
 
 gcloud artifacts repositories list --location="$REGION" --project "$PROJECT_ID"
 
 gcloud secrets list --project "$PROJECT_ID"
+
+# Firestore DB 確認
+gcloud firestore databases list --project "$PROJECT_ID"
 ```
 
 ## Phase3: backend Cloud Run デプロイ
@@ -79,10 +146,10 @@ printf '%s' "https://placeholder.run.app" \
 gcloud auth configure-docker asia-northeast1-docker.pkg.dev
 
 # イメージをビルド＆プッシュ（amd64 を明示：Apple Silicon Mac でも Cloud Run で動く）
-docker build --platform linux/amd64 \
+docker buildx build --platform linux/amd64 --provenance=false \
   -t asia-northeast1-docker.pkg.dev/kodomo-wallet/kodomo-wallet/backend:latest \
+  --push \
   ./backend
-docker push asia-northeast1-docker.pkg.dev/kodomo-wallet/kodomo-wallet/backend:latest
 
 # Cloud Run へデプロイ
 export IMAGE_TAG=latest
@@ -123,17 +190,30 @@ printf '%s' "$SERVICE_URL/graphql" \
 
 ## Phase4: frontend Cloud Run デプロイ
 
-### 1. NEXT_PUBLIC_GRAPHQL_ENDPOINT が登録済みか確認
+### 1. Firebase シークレットが登録済みか確認
 
-Phase3 の疎通確認後に登録しているはず。未登録の場合は先に登録する（Phase3 手順 6 参照）。
+```bash
+for SECRET in NEXT_PUBLIC_FIREBASE_API_KEY NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN \
+              NEXT_PUBLIC_FIREBASE_PROJECT_ID NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET \
+              NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID NEXT_PUBLIC_FIREBASE_APP_ID \
+              NEXT_PUBLIC_GRAPHQL_ENDPOINT; do
+  echo -n "$SECRET: "
+  gcloud secrets versions access latest --secret="$SECRET" --project=kodomo-wallet \
+    | cut -c1-40
+done
+```
 
 ### 2. 初回デプロイ（手動）
 
 Secret Manager から値を取得してデプロイ：
 
 ```bash
-export NEXT_PUBLIC_SUPABASE_URL=$(gcloud secrets versions access latest --secret=NEXT_PUBLIC_SUPABASE_URL --project=kodomo-wallet)
-export NEXT_PUBLIC_SUPABASE_ANON_KEY=$(gcloud secrets versions access latest --secret=NEXT_PUBLIC_SUPABASE_ANON_KEY --project=kodomo-wallet)
+export NEXT_PUBLIC_FIREBASE_API_KEY=$(gcloud secrets versions access latest --secret=NEXT_PUBLIC_FIREBASE_API_KEY --project=kodomo-wallet)
+export NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=$(gcloud secrets versions access latest --secret=NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN --project=kodomo-wallet)
+export NEXT_PUBLIC_FIREBASE_PROJECT_ID=$(gcloud secrets versions access latest --secret=NEXT_PUBLIC_FIREBASE_PROJECT_ID --project=kodomo-wallet)
+export NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=$(gcloud secrets versions access latest --secret=NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET --project=kodomo-wallet)
+export NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=$(gcloud secrets versions access latest --secret=NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID --project=kodomo-wallet)
+export NEXT_PUBLIC_FIREBASE_APP_ID=$(gcloud secrets versions access latest --secret=NEXT_PUBLIC_FIREBASE_APP_ID --project=kodomo-wallet)
 export NEXT_PUBLIC_GRAPHQL_ENDPOINT=$(gcloud secrets versions access latest --secret=NEXT_PUBLIC_GRAPHQL_ENDPOINT --project=kodomo-wallet)
 export IMAGE_TAG=latest
 
@@ -144,12 +224,12 @@ export IMAGE_TAG=latest
 
 `main` ブランチへの push で GitHub Actions (`deploy-frontend.yml`) が自動実行。
 
-### 4. Supabase OAuth リダイレクト URL に追加
+### 4. Firebase 承認済みドメインに追加
 
-Supabase ダッシュボード → Authentication → URL Configuration → Redirect URLs に追加：
+Firebase Console → Authentication → Settings → 承認済みドメイン に追加：
 
 ```
-https://kodomo-wallet-frontend-<hash>-an.a.run.app/**
+kodomo-wallet-frontend-ptfunabkpq-an.a.run.app
 ```
 
 ### 5. FRONTEND_ORIGIN を正式な URL に更新
@@ -191,7 +271,7 @@ GitHub Actions で継続運用。設定済みのワークフロー：
 | ワークフロー | スケジュール | 用途 |
 |---|---|---|
 | `recurring-deposits.yml` | 毎日 UTC 15:00 (JST 0:00) | 定期入金バッチ |
-| `keepalive.yml` | 毎日 UTC 00:00 (JST 9:00) | Supabase / Cloud Run ping |
+| `keepalive.yml` | 毎日 UTC 00:00 (JST 9:00) | Cloud Run ping |
 
 ### keepalive に必要な GitHub Secret の追加
 
@@ -250,56 +330,68 @@ curl -o /dev/null -s -w "%{http_code}\n" "$FRONTEND_URL/login"
 # → 200
 ```
 
-#### Supabase OAuth リダイレクト URL 確認
+#### Firebase 設定確認
 
-Supabase ダッシュボード → Authentication → URL Configuration で以下が登録済みか確認：
-
-```
-https://kodomo-wallet-frontend-<hash>-an.a.run.app/**
-```
-
-未登録の場合は追加してから続行する。
+- [ ] Firebase Console の承認済みドメインに prod frontend URL が追加済み
+- [ ] Firebase Authentication で Google ログインが有効化済み
+- [ ] Firestore `(default)` DB が作成済み（`setup_prod.sh` で自動作成）
 
 #### Secret Manager 登録値の確認
 
 ```bash
-for SECRET in DATABASE_URL SUPABASE_URL SUPABASE_KEY SECRET_KEY FRONTEND_ORIGIN \
-              NEXT_PUBLIC_SUPABASE_URL NEXT_PUBLIC_SUPABASE_ANON_KEY \
+export PROJECT_ID=kodomo-wallet
+
+for SECRET in FIREBASE_SERVICE_ACCOUNT SECRET_KEY FRONTEND_ORIGIN \
+              NEXT_PUBLIC_FIREBASE_API_KEY NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN \
+              NEXT_PUBLIC_FIREBASE_PROJECT_ID NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET \
+              NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID NEXT_PUBLIC_FIREBASE_APP_ID \
               NEXT_PUBLIC_GRAPHQL_ENDPOINT; do
   echo -n "$SECRET: "
   gcloud secrets versions access latest --secret="$SECRET" --project="$PROJECT_ID" \
     | cut -c1-40
+  echo
 done
 ```
 
-### 2. 機能確認（ブラウザ手動）
+### 2. main ブランチへのマージ・デプロイ
 
-以下の導線をブラウザで動作確認する：
+すべての確認が完了したら feature ブランチを main にマージする：
+
+```bash
+git checkout main
+git merge feature/migrate-supabase-to-firestore
+git push origin main
+```
+
+`main` へのプッシュで GitHub Actions が自動的に backend・frontend を prod にデプロイする。
+
+### 3. 機能確認（ブラウザ手動）
+
+デプロイ完了後、以下の導線をブラウザで動作確認する：
 
 | 確認項目 | 手順 |
 |---|---|
-| ログイン | `$FRONTEND_URL/login` → Supabase 認証 → ダッシュボードへリダイレクト |
+| Google ログイン | `$FRONTEND_URL/login` → Google 認証 → ダッシュボードへリダイレクト |
+| 家族作成 | 初回ログイン → 家族作成フォーム → toast 表示 → ダッシュボード表示 |
 | 入金 | ダッシュボード → 入金操作 → 残高反映 |
 | 出金申請 | 出金申請 → 承認フロー確認 |
-| 定期入金確認 | Supabase DB で recurring_deposits テーブルの内容確認 |
-| 画像アップロード | プロフィール画像など Supabase Storage 連携確認 |
-| 親招待 | 招待メール送信 → 受諾フロー |
+| 親招待 | 招待フロー → 受諾 |
+| プロフィール | プロフィール画像アップロード |
 
-### 3. 旧サービス停止（Vercel / Render）
+### 4. 旧サービス停止（確認後）
 
-機能確認がすべて Pass したら旧サービスを停止する。
+機能確認がすべて Pass したら旧シークレットを削除する：
 
-#### Vercel 停止手順
+```bash
+export PROJECT_ID=kodomo-wallet
 
-1. Vercel ダッシュボード → プロジェクト → Settings → General → "Delete Project"
-   （または一時的に無効化する場合は Environment Variables を削除して再デプロイ）
+for SECRET in DATABASE_URL SUPABASE_URL SUPABASE_KEY \
+              NEXT_PUBLIC_SUPABASE_URL NEXT_PUBLIC_SUPABASE_ANON_KEY; do
+  gcloud secrets delete "$SECRET" --project "$PROJECT_ID" --quiet && echo "deleted $SECRET"
+done
+```
 
-#### Render 停止手順
-
-1. Render ダッシュボード → サービス → "Suspend" または "Delete"
-2. `render.yaml` はリファレンスとして残しておくか、不要なら削除する
-
-### 4. 切替後の監視（24〜48 時間）
+### 5. 切替後の監視（24〜48 時間）
 
 #### Cloud Run ログ確認
 
@@ -327,26 +419,14 @@ open "https://console.cloud.google.com/run/detail/asia-northeast1/kodomo-wallet-
 
 GitHub Actions → `keepalive.yml` の直近実行が成功しているか確認する。
 
-### 5. ロールバック手順
+### 6. ロールバック手順
 
-Cloud Run での問題が解決できない場合、旧サービスに戻す手順：
-
-#### frontend ロールバック
-
-1. Vercel プロジェクトを再有効化（または再デプロイ）
-2. Vercel の `NEXT_PUBLIC_GRAPHQL_ENDPOINT` を旧 Render の backend URL に戻す
-3. Supabase OAuth リダイレクト URL を旧 Vercel URL に変更
-
-#### backend ロールバック
-
-1. Render サービスを Resume（または再デプロイ）
-2. Vercel 側の `NEXT_PUBLIC_GRAPHQL_ENDPOINT` を Render の URL に戻す
-
-#### Cloud Run の前バージョンへのロールバック
-
-旧 Render/Vercel に戻さず Cloud Run の前リビジョンに戻す場合：
+問題が発生した場合、Cloud Run の前リビジョンに戻す：
 
 ```bash
+export PROJECT_ID=kodomo-wallet
+export REGION=asia-northeast1
+
 # 直前のリビジョン一覧
 gcloud run revisions list --service kodomo-wallet-backend \
   --region "$REGION" --project "$PROJECT_ID" --limit 5
@@ -357,10 +437,10 @@ gcloud run services update-traffic kodomo-wallet-backend \
   --region "$REGION" --project "$PROJECT_ID"
 ```
 
-### 6. 完了条件
+### 7. 完了条件
 
 - [ ] `$BACKEND_URL/health` が `{"status":"healthy"}` を返す
-- [ ] `$FRONTEND_URL` がブラウザで正常表示される
-- [ ] Supabase 認証（ログイン）が動作する
+- [ ] `$FRONTEND_URL` でブラウザから Google ログインできる
+- [ ] 家族作成・入金・出金申請が正常動作する
 - [ ] keepalive workflow が正常実行される
-- [ ] 旧 Vercel / Render サービスが停止済み（または停止計画が確定済み）
+- [ ] 旧 Supabase シークレットが削除済み（または削除計画が確定済み）
