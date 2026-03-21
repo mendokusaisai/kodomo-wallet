@@ -2,30 +2,39 @@
 Kodomo Wallet API - FastAPIアプリケーション（GraphQL対応）
 """
 
+import logging
 from collections.abc import AsyncGenerator
 from typing import Any
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from strawberry.fastapi import GraphQLRouter
 
 from app.api.graphql.schema import schema
 from app.core.config import cors_settings
-from app.core.context import GraphQLContext
+from app.core.context import GraphQLContext, verify_firebase_token
+
+logger = logging.getLogger(__name__)
 
 
 # GraphQLコンテキスト取得関数 - 依存性注入によりサービスを提供
-async def get_context() -> AsyncGenerator[dict[str, Any]]:
+async def get_context(request: Request) -> AsyncGenerator[dict[str, Any]]:
     """
-    データベースセッションとサービスをGraphQLコンテキストに提供します。
-
-    GraphQLContextマネージャーを使用してリソースのクリーンアップを保証します。
-    セッションはリクエスト完了後に自動的にクローズされます。
+    Authorizationヘッダーから Firebase ID トークンを検証し、
+    サービスをGraphQLコンテキストに提供します。
 
     Yields:
-        dict: データベースセッションと注入されたサービスを含むコンテキスト
+        dict: current_uid と注入されたサービスを含むコンテキスト
     """
     async with GraphQLContext() as ctx:
+        authorization: str = request.headers.get("authorization", "")
+        if authorization.startswith("Bearer "):
+            token = authorization.removeprefix("Bearer ")
+            try:
+                decoded = verify_firebase_token(token)
+                ctx.current_uid = decoded.get("uid")
+            except Exception:
+                logger.warning("Firebase token verification failed")
         yield ctx.to_dict()
 
 
