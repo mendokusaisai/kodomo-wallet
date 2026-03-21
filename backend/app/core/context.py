@@ -15,7 +15,7 @@ from injector import Injector
 
 from app.core.container import create_injector
 from app.core.exceptions import ResourceNotFoundException
-from app.services import AccountService, FamilyService, RecurringDepositService, TransactionService
+from app.services import AccountService, FamilyService, TransactionService
 
 logger = logging.getLogger(__name__)
 
@@ -37,14 +37,12 @@ class GraphQLContext:
         self.family_service: FamilyService | None = None
         self.account_service: AccountService | None = None
         self.transaction_service: TransactionService | None = None
-        self.recurring_deposit_service: RecurringDepositService | None = None
 
     def __enter__(self) -> GraphQLContext:
         self._injector = create_injector()
         self.family_service = self._injector.get(FamilyService)
         self.account_service = self._injector.get(AccountService)
         self.transaction_service = self._injector.get(TransactionService)
-        self.recurring_deposit_service = self._injector.get(RecurringDepositService)
         return self
 
     def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
@@ -62,6 +60,5 @@ class GraphQLContext:
             "family_service": self.family_service,
             "account_service": self.account_service,
             "transaction_service": self.transaction_service,
-            "recurring_deposit_service": self.recurring_deposit_service,
         }
 

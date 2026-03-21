@@ -270,7 +270,6 @@ GitHub Actions で継続運用。設定済みのワークフロー：
 
 | ワークフロー | スケジュール | 用途 |
 |---|---|---|
-| `recurring-deposits.yml` | 毎日 UTC 15:00 (JST 0:00) | 定期入金バッチ |
 | `keepalive.yml` | 毎日 UTC 00:00 (JST 9:00) | Cloud Run ping |
 
 ### keepalive に必要な GitHub Secret の追加
