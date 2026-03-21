@@ -10,22 +10,6 @@ jobs:
   ping:
     runs-on: ubuntu-latest
     steps:
-      - name: Ping Supabase (prevent free tier pause)
-        env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
-        run: |
-          STATUS=$(curl -o /dev/null -s -w "%{http_code}" \
-            -H "apikey: $SUPABASE_ANON_KEY" \
-            -H "Authorization: Bearer $SUPABASE_ANON_KEY" \
-            "$SUPABASE_URL/rest/v1/")
-          echo "Supabase status: $STATUS"
-          # 200 or 404 (no tables matched) はどちらも正常
-          if [ "$STATUS" != "200" ] && [ "$STATUS" != "404" ]; then
-            echo "⚠️ Supabase ping failed (status: $STATUS)"
-            exit 1
-          fi
-
       - name: Ping Cloud Run backend (prevent cold start)
         env:
           BACKEND_URL: ${{ secrets.CLOUD_RUN_BACKEND_URL }}

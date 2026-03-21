@@ -67,8 +67,7 @@ export default function Home() {
 							安心・安全なシステム
 						</h3>
 						<p className="text-gray-600 dark:text-gray-400 text-sm">
-							Supabase認証とRow Level
-							Securityで、家族のデータをしっかり保護します。
+							Firebase認証で、家族のデータをしっかり保護します。
 						</p>
 					</div>
 				</div>
@@ -109,7 +108,7 @@ export default function Home() {
 						</p>
 						<p className="flex items-center gap-2">
 							<span className="w-2 h-2 bg-purple-500 rounded-full animate-pulse" />
-							<strong>認証:</strong> Supabase Auth
+							<strong>認証:</strong> Firebase Auth
 						</p>
 					</div>
 					<div className="text-center text-xs text-gray-400 mt-2">

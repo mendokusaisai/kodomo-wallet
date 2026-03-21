@@ -185,7 +185,7 @@ export default function SettingsPage() {
 						<div className="flex items-center gap-3 mb-4">
 							<Users className="w-5 h-5 text-blue-600" />
 							<h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">
-								家族メンバー{family.name ? ` (${family.name}家)` : ""}
+								家族メンバー{family.name ? ` (${family.name})` : ""}
 							</h2>
 						</div>
 						<div className="space-y-2">

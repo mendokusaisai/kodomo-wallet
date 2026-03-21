@@ -7,8 +7,8 @@ FastAPI + GraphQL (Strawberry) によるバックエンドAPI。
 - **Python 3.14**
 - **FastAPI**
 - **Strawberry GraphQL**
-- **SQLAlchemy** (ORM)
-- **PostgreSQL** (Supabase)
+- **Firestore** (NoSQL データベース)
+- **Firebase Auth** (認証)
 - **uv** (パッケージマネージャー)
 
 ## 開発環境セットアップ 🚀
@@ -24,12 +24,14 @@ uv sync
 `.env` ファイルを作成:
 
 ```env
-# データベース (Supabase Transaction Pooler)
-DATABASE_URL=postgresql://postgres.xxx:password@xxx.pooler.supabase.com:6543/postgres
+# Firebase サービスアカウント (JSONファイルのパスまたはJSON文字列)
+FIREBASE_SERVICE_ACCOUNT=path/to/service-account.json
 
-# Supabase設定
-SUPABASE_URL=https://xxx.supabase.co
-SUPABASE_KEY=eyJhbGci...  # service_role key
+# フロントエンド Origin (CORS)
+FRONTEND_ORIGIN=http://localhost:3000
+
+# アプリセキュリティ
+SECRET_KEY=your-secret-key
 ```
 
 ### 3. サーバー起動
@@ -47,11 +49,10 @@ uv run uvicorn app.main:app --reload
 - 👨‍👩‍👧‍👦 プロフィール・親子関係管理
 - 💰 アカウント・残高管理
 - 📊 トランザクション (入金・出金・承認)
-- 🔄 定期お小遣い
 - ✉️ 親子招待システム
-- 🔐 Supabase認証統合
+- 🔐 Firebase Auth 統合
 
-## ディレクトリ構成 �
+## ディレクトリ構成 📁
 
 ```
 app/
@@ -60,7 +61,6 @@ app/
 ├── core/               # 設定・DI・データベース
 ├── domain/             # エンティティ
 ├── repositories/       # データアクセス層
-│   └── sqlalchemy/     # SQLAlchemy実装
 └── services/           # ビジネスロジック
 ```
 
@@ -72,7 +72,9 @@ uv run pytest
 
 ## デプロイ 🌐
 
-Render.comにデプロイ可能。環境変数を設定してください。
+Google Cloud Run にデプロイ。Secret Manager で環境変数を管理。
+
+詳細は [docs/gcp-runbook.md](../docs/gcp-runbook.md) を参照。
 
 ### クエリ例
 
@@ -97,17 +99,6 @@ query {
       goalName
       goalAmount
     }
-  }
-}
-
-# アカウント情報取得
-query {
-  accounts(userId: "user-uuid-here") {
-    id
-    balance
-    currency
-    goalName
-    goalAmount
   }
 }
 ```
@@ -139,18 +130,6 @@ mutation {
     role
   }
 }
-
-# 招待メール送信
-mutation {
-  inviteChildToAuth(
-    childId: "child-uuid-here"
-    email: "child@example.com"
-  ) {
-    id
-    name
-    email
-  }
-}
 ```
 
 ## 🏗️ アーキテクチャ
@@ -166,41 +145,17 @@ backend/
 │   │       └── resolvers.py    # リゾルバ関数
 │   ├── core/
 │   │   ├── config.py           # 設定
-│   │   ├── database.py         # DB接続
+│   │   ├── database.py         # Firestore 接続
 │   │   ├── container.py        # DI コンテナ
 │   │   └── context.py          # GraphQL コンテキスト
-│   ├── models/
-│   │   └── models.py           # SQLAlchemy モデル
+│   ├── domain/
+│   │   └── entities.py         # ドメインエンティティ
 │   ├── repositories/
-│   │   ├── interfaces.py       # Repository インターフェース
-│   │   └── sqlalchemy_repositories.py  # Repository 実装
-│   └── services/
-│       └── business_services.py  # ビジネスロジック
+│   │   └── interfaces.py       # Repository インターフェース
+│   └── services/               # ビジネスロジック
 ├── pyproject.toml              # プロジェクト設定
 └── README.md                   # このファイル
 ```
-
-## 🛠️ 技術スタック
-
-- **FastAPI**: 0.1.0
-- **Strawberry GraphQL**: 最新版
-- **SQLAlchemy**: 2.x
-- **PostgreSQL**: Supabase
-- **dependency-injector**: DI コンテナ
-- **httpx**: HTTP クライアント（Supabase Admin API用）
-- **uvicorn**: ASGI サーバー
-
-## 📝 開発メモ
-
-### データベース接続
-
-- Supabase Transaction Pooler を使用（`pooler.supabase.com:6543`）
-- IPアドレス直接指定も可能（DNS問題がある場合）
-
-### 注意事項
-
-- Python 3.14 + Pydantic V1 の互換性警告が出ますが、動作に問題ありません
-- `SUPABASE_SERVICE_ROLE_KEY` は管理者権限を持つため、安全に管理してください
 
 ### トラブルシューティング
 
@@ -210,13 +165,8 @@ backend/
 uv sync --reinstall
 ```
 
-**データベース接続エラー**
-```bash
-# .env ファイルのDATABASE_URLを確認
-# Transaction Pooler (port 6543) を使用しているか確認
-```
-
 ## 📚 関連ドキュメント
 
 - [GraphQL Playground](http://127.0.0.1:8000/graphql) - APIテスト用
 - [FastAPI Docs](http://127.0.0.1:8000/docs) - 自動生成されたAPI仕様
+- [GCP Runbook](../docs/gcp-runbook.md) - デプロイ・運用手順

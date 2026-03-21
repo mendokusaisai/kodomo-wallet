@@ -405,8 +405,7 @@ def test_get_profile_by_id_success():
 
 2. **認証・認可の実装**
 
-   - Supabase 認証との統合
-   - Row Level Security (RLS) の活用
+   - Firebase Auth との統合
 
 3. **キャッシュ層の追加** (オプション)
 

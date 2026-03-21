@@ -161,7 +161,7 @@ export default function DashboardPage() {
 							</h1>
 							{familyData?.myFamily?.name && (
 								<p className="text-xs md:text-sm text-gray-600 dark:text-gray-400">
-									{familyData.myFamily.name}家
+									{familyData.myFamily.name}
 								</p>
 							)}
 						</div>
