@@ -4,6 +4,7 @@ import { useMutation, useQuery } from "@apollo/client/react";
 import { Settings } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { toast } from "sonner";
 import { DashboardSkeleton } from "@/components/dashboard-skeleton";
 import { DepositDialog } from "@/components/deposit-dialog";
 import { LogoutButton } from "@/components/logout-button";
@@ -79,8 +80,12 @@ export default function DashboardPage() {
 			await createFamily({
 				variables: { myName: myName.trim(), email, familyName: familyName.trim() || null },
 			});
+			toast.success("家族を作成しました！");
 		} catch (error) {
 			console.error("家族作成エラー:", error);
+			toast.error("家族の作成に失敗しました", {
+				description: error instanceof Error ? error.message : "もう一度お試しください",
+			});
 		} finally {
 			setIsCreating(false);
 		}
