@@ -3,7 +3,7 @@
 import pytest
 from injector import Injector
 
-from app.core.exceptions import InvalidAmountException, ResourceNotFoundException
+from app.core.exceptions import BusinessRuleViolationException, InvalidAmountException, ResourceNotFoundException
 from app.domain.entities import Account
 from app.repositories.mock_repositories import MockAccountRepository
 from app.services import AccountService
@@ -58,7 +58,7 @@ class TestAccountService:
     ):
         """子供が口座作成しようとするとエラー"""
         service = injector_with_mocks.get(AccountService)
-        with pytest.raises(InvalidAmountException):
+        with pytest.raises(BusinessRuleViolationException):
             service.create_account(
                 family_id=FAMILY_ID,
                 name="子供の口座",
@@ -90,7 +90,7 @@ class TestAccountService:
     ):
         """子供が目標を変更しようとするとエラー"""
         service = injector_with_mocks.get(AccountService)
-        with pytest.raises(InvalidAmountException):
+        with pytest.raises(BusinessRuleViolationException):
             service.update_goal(
                 family_id=FAMILY_ID,
                 account_id=sample_account.id,

@@ -2,7 +2,7 @@ from datetime import UTC, datetime
 
 from injector import inject
 
-from app.core.exceptions import InvalidAmountException, ResourceNotFoundException
+from app.core.exceptions import BusinessRuleViolationException, InsufficientBalanceException, InvalidAmountException, ResourceNotFoundException
 from app.domain.entities import Transaction
 from app.repositories.interfaces import (
     AccountRepository,
@@ -45,7 +45,7 @@ class TransactionService:
 
         member = self.member_repo.get_by_uid(family_id, current_uid)
         if not member or member.role != "parent":
-            raise InvalidAmountException(0, "Only parents can create deposits")
+            raise BusinessRuleViolationException("parent_only", "Only parents can create deposits")
 
         account = self.account_repo.get_by_id(family_id, account_id)
         if not account:
@@ -77,17 +77,14 @@ class TransactionService:
 
         member = self.member_repo.get_by_uid(family_id, current_uid)
         if not member or member.role != "parent":
-            raise InvalidAmountException(0, "Only parents can create withdrawals")
+            raise BusinessRuleViolationException("parent_only", "Only parents can create withdrawals")
 
         account = self.account_repo.get_by_id(family_id, account_id)
         if not account:
             raise ResourceNotFoundException("Account", account_id)
 
         if account.balance < amount:
-            raise InvalidAmountException(
-                amount,
-                f"Insufficient balance. Current: {account.balance}, Required: {amount}",
-            )
+            raise InsufficientBalanceException(account.id, required=amount, available=account.balance)
 
         self.account_repo.update_balance(account, account.balance - amount)
 

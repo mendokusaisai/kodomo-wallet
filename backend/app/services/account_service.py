@@ -3,7 +3,7 @@ from datetime import UTC, datetime
 
 from injector import inject
 
-from app.core.exceptions import InvalidAmountException, ResourceNotFoundException
+from app.core.exceptions import BusinessRuleViolationException, InvalidAmountException, ResourceNotFoundException
 from app.domain.entities import Account
 from app.repositories.interfaces import AccountRepository, FamilyMemberRepository
 
@@ -34,7 +34,7 @@ class AccountService:
         """口座を新規作成（親のみ）"""
         member = self.member_repo.get_by_uid(family_id, current_uid)
         if not member or member.role != "parent":
-            raise InvalidAmountException(0, "Only parents can create accounts")
+            raise BusinessRuleViolationException("parent_only", "Only parents can create accounts")
 
         return self.account_repo.create(
             family_id=family_id,
@@ -54,7 +54,7 @@ class AccountService:
         """口座の貯金目標を更新（親のみ）"""
         member = self.member_repo.get_by_uid(family_id, current_uid)
         if not member or member.role != "parent":
-            raise InvalidAmountException(0, "Only parents can update account goals")
+            raise BusinessRuleViolationException("parent_only", "Only parents can update account goals")
 
         account = self.account_repo.get_by_id(family_id, account_id)
         if not account:

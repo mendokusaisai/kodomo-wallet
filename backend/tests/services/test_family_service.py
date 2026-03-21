@@ -3,7 +3,7 @@
 import pytest
 from injector import Injector
 
-from app.core.exceptions import ResourceNotFoundException
+from app.core.exceptions import BusinessRuleViolationException, ResourceNotFoundException
 from app.repositories.mock_repositories import (
     MockChildInviteRepository,
     MockFamilyMemberRepository,
@@ -60,9 +60,8 @@ class TestFamilyService:
         injector_with_mocks: Injector,
     ):
         """子供が招待を送ろうとするとエラー"""
-        from app.core.exceptions import InvalidAmountException
         service = injector_with_mocks.get(FamilyService)
-        with pytest.raises(InvalidAmountException):
+        with pytest.raises(BusinessRuleViolationException):
             service.invite_child(
                 family_id=FAMILY_ID,
                 inviter_uid=CHILD_UID,

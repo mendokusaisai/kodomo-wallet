@@ -5,7 +5,7 @@ from datetime import UTC, datetime
 import pytest
 from injector import Injector
 
-from app.core.exceptions import InvalidAmountException, ResourceNotFoundException
+from app.core.exceptions import BusinessRuleViolationException, InsufficientBalanceException, InvalidAmountException, ResourceNotFoundException
 from app.domain.entities import Account
 from app.repositories.mock_repositories import MockAccountRepository, MockTransactionRepository
 from app.services import TransactionService
@@ -87,7 +87,7 @@ class TestTransactionService:
     ):
         """子供が入金しようとするとエラー"""
         service = injector_with_mocks.get(TransactionService)
-        with pytest.raises(InvalidAmountException):
+        with pytest.raises(BusinessRuleViolationException):
             service.create_deposit(
                 family_id=FAMILY_ID,
                 account_id=sample_account.id,
@@ -153,7 +153,7 @@ class TestTransactionService:
     ):
         """残高不足で出金エラー"""
         service = injector_with_mocks.get(TransactionService)
-        with pytest.raises(InvalidAmountException):
+        with pytest.raises(InsufficientBalanceException):
             service.create_withdraw(
                 family_id=FAMILY_ID,
                 account_id=sample_account.id,

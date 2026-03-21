@@ -4,7 +4,7 @@ from datetime import UTC, datetime, timedelta
 from injector import inject
 
 from app.core.config import frontend_settings
-from app.core.exceptions import InvalidAmountException, ResourceNotFoundException
+from app.core.exceptions import BusinessRuleViolationException, ResourceNotFoundException
 from app.domain.entities import ChildInvite, Family, FamilyMember, ParentInvite
 from app.repositories.interfaces import (
     ChildInviteRepository,
@@ -116,9 +116,9 @@ class FamilyService:
         if not invite:
             raise ResourceNotFoundException("ParentInvite", token)
         if invite.accepted_at is not None:
-            raise InvalidAmountException(0, "Invite already accepted")
+            raise BusinessRuleViolationException("invite_already_accepted", "Invite already accepted")
         if invite.expires_at < datetime.now(UTC):
-            raise InvalidAmountException(0, "Invite expired")
+            raise BusinessRuleViolationException("invite_expired", "Invite expired")
 
         member = self.member_repo.create(
             family_id=invite.family_id,
@@ -141,7 +141,7 @@ class FamilyService:
         """子供を家族に招待するトークンを発行（親が発行）"""
         inviter = self.member_repo.get_by_uid(family_id, inviter_uid)
         if not inviter or inviter.role != "parent":
-            raise InvalidAmountException(0, "Only parents can invite children")
+            raise BusinessRuleViolationException("parent_only", "Only parents can invite children")
 
         token = secrets.token_urlsafe(32)
         now = datetime.now(UTC)
@@ -166,9 +166,9 @@ class FamilyService:
         if not invite:
             raise ResourceNotFoundException("ChildInvite", token)
         if invite.accepted_at is not None:
-            raise InvalidAmountException(0, "Invite already accepted")
+            raise BusinessRuleViolationException("invite_already_accepted", "Invite already accepted")
         if invite.expires_at < datetime.now(UTC):
-            raise InvalidAmountException(0, "Invite expired")
+            raise BusinessRuleViolationException("invite_expired", "Invite expired")
 
         member = self.member_repo.create(
             family_id=invite.family_id,

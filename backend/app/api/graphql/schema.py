@@ -13,7 +13,9 @@ from app.api.graphql.types import (
     TransactionType,
 )
 from app.core.exceptions import (
+    BusinessRuleViolationException,
     DomainException,
+    InsufficientBalanceException,
     InvalidAmountException,
     ResourceNotFoundException,
 )
@@ -122,7 +124,7 @@ class Mutation:
         family_service = info.context["family_service"]
         try:
             return resolvers.invite_child(family_id, current_uid, child_name, family_service)
-        except InvalidAmountException as e:
+        except BusinessRuleViolationException as e:
             raise Exception(f"Permission denied: {e.message}") from e
         except DomainException as e:
             raise Exception(f"Domain error: {e.message}") from e
@@ -144,7 +146,7 @@ class Mutation:
             return resolvers.join_as_parent(token, current_uid, name, email, family_service)
         except ResourceNotFoundException as e:
             raise Exception(f"Resource not found: {e.message}") from e
-        except InvalidAmountException as e:
+        except BusinessRuleViolationException as e:
             raise Exception(f"Invalid operation: {e.message}") from e
         except DomainException as e:
             raise Exception(f"Domain error: {e.message}") from e
@@ -164,7 +166,7 @@ class Mutation:
             return resolvers.join_as_child(token, current_uid, family_service)
         except ResourceNotFoundException as e:
             raise Exception(f"Resource not found: {e.message}") from e
-        except InvalidAmountException as e:
+        except BusinessRuleViolationException as e:
             raise Exception(f"Invalid operation: {e.message}") from e
         except DomainException as e:
             raise Exception(f"Domain error: {e.message}") from e
@@ -184,7 +186,7 @@ class Mutation:
         account_service = info.context["account_service"]
         try:
             return resolvers.create_account(family_id, current_uid, name, account_service, currency)
-        except InvalidAmountException as e:
+        except BusinessRuleViolationException as e:
             raise Exception(f"Permission denied: {e.message}") from e
         except DomainException as e:
             raise Exception(f"Domain error: {e.message}") from e
@@ -234,6 +236,10 @@ class Mutation:
             )
         except ResourceNotFoundException as e:
             raise Exception(f"Resource not found: {e.message}") from e
+        except InsufficientBalanceException as e:
+            raise Exception(f"Insufficient balance: {e.message}") from e
+        except BusinessRuleViolationException as e:
+            raise Exception(f"Permission denied: {e.message}") from e
         except InvalidAmountException as e:
             raise Exception(f"Invalid amount: {e.message}") from e
         except DomainException as e:
